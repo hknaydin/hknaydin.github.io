@@ -1,0 +1,1059 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Çoğullama Teknolojileri</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f1117;
+  --surface: #171b26;
+  --surface2: #1e2436;
+  --amber: #f5a623;
+  --amber-dim: #c4831a;
+  --teal: #2dd4bf;
+  --coral: #f87171;
+  --blue: #60a5fa;
+  --violet: #a78bfa;
+  --green: #4ade80;
+  --text: #e8eaf0;
+  --muted: #6b7280;
+  --border: #2a3045;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { height:100%; overflow:hidden; background:var(--bg); color:var(--text); font-family:'DM Sans', sans-serif; }
+
+/* ── SLIDE ENGINE ── */
+.slides { width:100vw; height:100vh; position:relative; overflow:hidden; }
+.slide {
+  position:absolute; inset:0;
+  display:flex; flex-direction:column;
+  opacity:0; pointer-events:none;
+  transition:opacity .6s ease, transform .6s ease;
+  transform:translateY(30px);
+}
+.slide.active { opacity:1; pointer-events:all; transform:translateY(0); }
+.slide.exit   { opacity:0; transform:translateY(-30px); }
+
+/* ── HEADER ── */
+.top-bar {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:14px 40px;
+  border-bottom:1px solid var(--border);
+  background:rgba(15,17,23,.95);
+  backdrop-filter:blur(10px);
+  flex-shrink:0; z-index:10; position:relative;
+}
+.brand {
+  font-family:'Playfair Display', serif;
+  font-size:13px; letter-spacing:3px; color:var(--amber);
+  text-transform:uppercase;
+}
+.slide-label {
+  font-family:'JetBrains Mono', monospace;
+  font-size:11px; color:var(--muted); letter-spacing:2px;
+}
+.slide-num {
+  font-family:'JetBrains Mono', monospace;
+  font-size:12px; color:var(--amber);
+}
+
+/* ── CONTENT ── */
+.content { flex:1; overflow:hidden; position:relative; }
+
+/* ── PROGRESS DOTS ── */
+.prog-dots {
+  position:fixed; right:24px; top:50%; transform:translateY(-50%);
+  display:flex; flex-direction:column; gap:8px; z-index:100;
+}
+.pdot {
+  width:8px; height:8px; border-radius:50%;
+  background:var(--border); border:1px solid var(--muted);
+  cursor:pointer; transition:all .3s;
+}
+.pdot.on { background:var(--amber); box-shadow:0 0 10px var(--amber); border-color:var(--amber); height:24px; border-radius:4px; }
+
+/* ── NAV ── */
+.nav-row {
+  display:flex; align-items:center; justify-content:center; gap:16px;
+  padding:12px; border-top:1px solid var(--border); flex-shrink:0;
+  background:rgba(15,17,23,.95);
+}
+.nbtn {
+  font-family:'JetBrains Mono', monospace; font-size:11px; letter-spacing:2px;
+  padding:8px 24px; background:transparent; border:1px solid var(--border);
+  color:var(--muted); cursor:pointer; border-radius:2px; transition:all .2s;
+}
+.nbtn:hover { border-color:var(--amber); color:var(--amber); background:rgba(245,166,35,.06); }
+
+/* ═══════════════════════════════════════════
+   SLIDE 1 — TITLE
+═══════════════════════════════════════════ */
+#s1 { background:var(--bg); }
+.s1-inner {
+  height:100%; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; gap:28px;
+  padding:40px; text-align:center; position:relative; overflow:hidden;
+}
+.s1-bg {
+  position:absolute; inset:0; overflow:hidden; pointer-events:none;
+}
+.s1-line {
+  position:absolute; height:1px; background:linear-gradient(90deg, transparent, var(--amber), transparent);
+  animation:lineSweep 4s ease-in-out infinite;
+}
+@keyframes lineSweep { 0%,100%{transform:scaleX(0);opacity:0} 50%{transform:scaleX(1);opacity:.6} }
+
+.s1-tagline {
+  font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:5px;
+  color:var(--muted); text-transform:uppercase;
+  animation:fadeIn .8s ease .2s both;
+}
+.s1-title {
+  font-family:'Playfair Display', serif; font-weight:900;
+  font-size:clamp(40px, 6vw, 80px); line-height:1.05;
+  background:linear-gradient(135deg, #f5a623 0%, #f8d57a 40%, #f5a623 80%);
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+  animation:fadeIn .8s ease .4s both;
+}
+.s1-sub {
+  font-size:16px; color:var(--muted); max-width:600px; line-height:1.7;
+  animation:fadeIn .8s ease .6s both;
+}
+@keyframes fadeIn { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:none} }
+
+.topic-pills {
+  display:flex; gap:10px; flex-wrap:wrap; justify-content:center;
+  animation:fadeIn .8s ease .8s both;
+}
+.pill {
+  padding:6px 18px; border-radius:100px; font-size:12px; font-weight:500;
+  letter-spacing:1px;
+}
+.pill-fdm { background:rgba(245,166,35,.15); border:1px solid rgba(245,166,35,.4); color:var(--amber); }
+.pill-tdm { background:rgba(45,212,191,.15); border:1px solid rgba(45,212,191,.4); color:var(--teal); }
+.pill-wdm { background:rgba(248,113,113,.15); border:1px solid rgba(248,113,113,.4); color:var(--coral); }
+.pill-cdma { background:rgba(167,139,250,.15); border:1px solid rgba(167,139,250,.4); color:var(--violet); }
+.pill-ofdm { background:rgba(96,165,250,.15); border:1px solid rgba(96,165,250,.4); color:var(--blue); }
+.pill-ofdma { background:rgba(74,222,128,.15); border:1px solid rgba(74,222,128,.4); color:var(--green); }
+
+/* ═══════════════════════════════════════════
+   SLIDE 2 — FDM / TDM / WDM
+═══════════════════════════════════════════ */
+#s2 .content { display:flex; flex-direction:column; }
+.s2-grid {
+  display:grid; grid-template-columns:1fr 1fr 1fr; gap:1px;
+  background:var(--border); flex:1; overflow:hidden;
+}
+.mux-card {
+  background:var(--bg); padding:28px 24px;
+  display:flex; flex-direction:column; gap:14px; overflow:hidden;
+  transition:background .3s;
+}
+.mux-card:hover { background:var(--surface); }
+.mux-tag {
+  font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:3px;
+  padding:4px 12px; border-radius:2px; width:fit-content;
+}
+.mux-heading {
+  font-family:'Playfair Display',serif; font-size:22px; font-weight:700; line-height:1.2;
+}
+.mux-body { font-size:13px; color:var(--muted); line-height:1.7; flex:1; }
+.mux-canvas-wrap { flex:1; min-height:0; max-height:160px; position:relative; }
+.mux-canvas-wrap canvas { width:100%; height:100%; position:absolute; inset:0; }
+
+.fdm-col { border-top:3px solid var(--amber); }
+.fdm-col .mux-tag { background:rgba(245,166,35,.12); color:var(--amber); border:1px solid rgba(245,166,35,.3); }
+.fdm-col .mux-heading { color:var(--amber); }
+
+.tdm-col { border-top:3px solid var(--teal); }
+.tdm-col .mux-tag { background:rgba(45,212,191,.12); color:var(--teal); border:1px solid rgba(45,212,191,.3); }
+.tdm-col .mux-heading { color:var(--teal); }
+
+.wdm-col { border-top:3px solid var(--coral); }
+.wdm-col .mux-tag { background:rgba(248,113,113,.12); color:var(--coral); border:1px solid rgba(248,113,113,.3); }
+.wdm-col .mux-heading { color:var(--coral); }
+
+.mux-specs { display:flex; flex-direction:column; gap:4px; }
+.spec-item { display:flex; justify-content:space-between; font-size:11px; color:var(--muted); padding:4px 0; border-bottom:1px solid var(--border); }
+.spec-val { color:var(--text); font-weight:500; }
+
+/* ═══════════════════════════════════════════
+   SLIDE 3 — CDMA
+═══════════════════════════════════════════ */
+#s3 .content { display:flex; gap:1px; background:var(--border); overflow:hidden; }
+.cdma-left {
+  width:300px; flex-shrink:0; background:var(--bg); padding:28px 24px;
+  display:flex; flex-direction:column; gap:20px; overflow-y:auto;
+}
+.cdma-right { flex:1; background:var(--bg); display:flex; flex-direction:column; overflow:hidden; }
+
+.sec-title {
+  font-family:'Playfair Display',serif; font-size:26px; font-weight:700;
+  color:var(--violet);
+}
+.sec-sub { font-size:13px; color:var(--muted); line-height:1.7; }
+
+.analogy-box {
+  background:var(--surface); border:1px solid var(--border); border-radius:6px;
+  padding:14px; font-size:12px; color:var(--muted); line-height:1.8;
+  border-left:3px solid var(--violet);
+}
+
+.cdma-top { flex:1; display:grid; grid-template-columns:1fr 1fr 1fr; gap:1px; background:var(--border); overflow:hidden; }
+.cdma-cell { background:var(--bg); display:flex; flex-direction:column; overflow:hidden; }
+.cdma-cell-head {
+  padding:10px 16px; border-bottom:1px solid var(--border);
+  font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:3px;
+  display:flex; align-items:center; gap:8px;
+}
+.cdma-cell-canvas { flex:1; position:relative; min-height:0; }
+.cdma-cell-canvas canvas { position:absolute; inset:0; width:100%; height:100%; }
+
+.cdma-bottom { height:120px; flex-shrink:0; border-top:1px solid var(--border); display:flex; align-items:center; padding:0 24px; gap:32px; }
+.mekanik-title { font-family:'Playfair Display',serif; font-size:14px; color:var(--violet); width:80px; flex-shrink:0; }
+.mekanik-text { font-size:12px; color:var(--muted); line-height:1.7; flex:1; }
+.mekanik-text strong { color:var(--text); }
+
+/* ═══════════════════════════════════════════
+   SLIDE 4 — OFDM
+═══════════════════════════════════════════ */
+#s4 .content { display:flex; gap:1px; background:var(--border); overflow:hidden; }
+.ofdm-left { width:280px; flex-shrink:0; background:var(--bg); padding:28px 24px; display:flex; flex-direction:column; gap:18px; overflow-y:auto; }
+.ofdm-right { flex:1; background:var(--bg); display:flex; flex-direction:column; overflow:hidden; }
+
+.ofdm-main-canvas { flex:1; position:relative; min-height:0; }
+.ofdm-main-canvas canvas { position:absolute; inset:0; width:100%; height:100%; }
+
+.ortho-box {
+  background:var(--surface); border-left:3px solid var(--blue);
+  border-radius:0 4px 4px 0; padding:12px; font-size:12px; line-height:1.7; color:var(--muted);
+}
+.ortho-box strong { color:var(--blue); }
+.superguc-box {
+  background:var(--surface); border-left:3px solid var(--green);
+  border-radius:0 4px 4px 0; padding:12px; font-size:12px; line-height:1.7; color:var(--muted);
+}
+.superguc-box strong { color:var(--green); }
+
+.ofdm-bottom {
+  height:100px; flex-shrink:0; border-top:1px solid var(--border);
+  display:flex; align-items:stretch; overflow:hidden;
+}
+.ofdm-stat {
+  flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  border-right:1px solid var(--border); gap:4px;
+}
+.ofdm-stat:last-child { border-right:none; }
+.ostat-num { font-family:'Playfair Display',serif; font-size:28px; font-weight:700; }
+.ostat-lbl { font-size:11px; color:var(--muted); letter-spacing:1px; text-align:center; padding:0 8px; }
+
+/* ═══════════════════════════════════════════
+   SLIDE 5 — OFDMA
+═══════════════════════════════════════════ */
+#s5 .content { display:flex; gap:1px; background:var(--border); overflow:hidden; }
+.ofdma-left { width:280px; flex-shrink:0; background:var(--bg); padding:28px 24px; display:flex; flex-direction:column; gap:18px; overflow-y:auto; }
+.ofdma-right { flex:1; background:var(--bg); display:flex; flex-direction:column; overflow:hidden; }
+
+.diff-box {
+  background:var(--surface); border:1px solid var(--border); border-radius:6px; overflow:hidden;
+}
+.diff-row {
+  display:flex; padding:10px 12px; gap:10px; border-bottom:1px solid var(--border);
+  font-size:12px; align-items:flex-start;
+}
+.diff-row:last-child { border-bottom:none; }
+.diff-tag {
+  font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:2px;
+  padding:2px 8px; border-radius:2px; flex-shrink:0; margin-top:2px;
+}
+.diff-desc { color:var(--muted); line-height:1.6; }
+
+.ofdma-canvas-area { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+.ofdma-top { flex:1; position:relative; }
+.ofdma-top canvas { position:absolute; inset:0; width:100%; height:100%; }
+.ofdma-legend {
+  height:80px; flex-shrink:0; border-top:1px solid var(--border);
+  display:flex; align-items:center; padding:0 24px; gap:24px;
+}
+.leg-item { display:flex; align-items:center; gap:8px; font-size:12px; color:var(--muted); }
+.leg-dot { width:14px; height:14px; border-radius:3px; }
+
+/* ═══════════════════════════════════════════
+   SLIDE 6 — COMPARISON TABLE
+═══════════════════════════════════════════ */
+#s6 .content { padding:20px 32px; overflow-y:auto; }
+.comp-title { font-family:'Playfair Display',serif; font-size:24px; font-weight:700; color:var(--amber); margin-bottom:16px; }
+.comp-table { width:100%; border-collapse:collapse; font-size:13px; }
+.comp-table thead tr { border-bottom:2px solid var(--amber); }
+.comp-table th { padding:10px 14px; text-align:left; font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:2px; color:var(--muted); font-weight:400; }
+.comp-table td { padding:10px 14px; border-bottom:1px solid var(--border); vertical-align:middle; }
+.comp-table tr:hover td { background:var(--surface); }
+.tech-badge {
+  font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:600;
+  padding:4px 10px; border-radius:3px; display:inline-block;
+}
+.bar-wrap { background:var(--surface); border-radius:100px; overflow:hidden; height:8px; width:120px; }
+.bar-fill { height:100%; border-radius:100px; }
+.tag-good { color:var(--green); font-size:11px; }
+.tag-med  { color:var(--amber); font-size:11px; }
+.tag-bad  { color:var(--coral); font-size:11px; }
+</style>
+</head>
+<body>
+
+<!-- PROGRESS DOTS -->
+<div class="prog-dots" id="prog-dots"></div>
+
+<!-- ════════════════════════════════════════
+     SLIDE 1 — TITLE
+════════════════════════════════════════ -->
+<div class="slides">
+<div class="slide active" id="s1">
+  <div class="top-bar">
+    <div class="brand">Haberleşme Teorisi</div>
+    <div class="slide-label">ÇOĞULLAMA TEKNOLOJİLERİ</div>
+    <div class="slide-num">01 / 06</div>
+  </div>
+  <div class="content">
+    <div class="s1-inner">
+      <div class="s1-bg">
+        <div class="s1-line" style="top:20%;width:60%;left:20%;animation-delay:0s"></div>
+        <div class="s1-line" style="top:50%;width:80%;left:10%;animation-delay:1.3s"></div>
+        <div class="s1-line" style="top:75%;width:50%;left:25%;animation-delay:2.6s"></div>
+      </div>
+      <div class="s1-tagline">Dijital Haberleşme Serisi</div>
+      <div class="s1-title">Kanalı Paylaşmak</div>
+      <div class="s1-sub">Milyonlarca kullanıcı aynı anda nasıl iletişim kurar? Spektrumu, zamanı ve kodu paylaşmanın tüm yolları.</div>
+      <div class="topic-pills">
+        <div class="pill pill-fdm">FDM</div>
+        <div class="pill pill-tdm">TDM</div>
+        <div class="pill pill-wdm">WDM</div>
+        <div class="pill pill-cdma">CDMA</div>
+        <div class="pill pill-ofdm">OFDM</div>
+        <div class="pill pill-ofdma">OFDMA</div>
+      </div>
+      <canvas id="s1-canvas" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;opacity:.35;"></canvas>
+    </div>
+  </div>
+  <div class="nav-row">
+    <button class="nbtn" onclick="prev()">← GERİ</button>
+    <button class="nbtn" onclick="next()">İLERİ →</button>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     SLIDE 2 — FDM / TDM / WDM
+════════════════════════════════════════ -->
+<div class="slide" id="s2">
+  <div class="top-bar">
+    <div class="brand">Haberleşme Teorisi</div>
+    <div class="slide-label">KLASIK ÇOĞULLAMA</div>
+    <div class="slide-num">02 / 06</div>
+  </div>
+  <div class="content">
+    <div class="s2-grid">
+      <!-- FDM -->
+      <div class="mux-card fdm-col">
+        <div class="mux-tag">FDM</div>
+        <div class="mux-heading">Frekans Bölmeli Çoğullama</div>
+        <div class="mux-body">Spektrum farklı frekans bantlarına ayrılır. Her kullanıcıya özel bir frekans kanalı tahsis edilir. Geleneksel radyo ve TV yayıncılığında kullanılır.</div>
+        <div class="mux-canvas-wrap"><canvas id="fdm-canvas"></canvas></div>
+        <div class="mux-specs">
+          <div class="spec-item"><span>Yöntem</span><span class="spec-val">Frekans tahsisi</span></div>
+          <div class="spec-item"><span>Uygulama</span><span class="spec-val">Radyo, TV, ADSL</span></div>
+          <div class="spec-item"><span>Koruma</span><span class="spec-val">Guard band</span></div>
+        </div>
+      </div>
+      <!-- TDM -->
+      <div class="mux-card tdm-col">
+        <div class="mux-tag">TDM</div>
+        <div class="mux-heading">Zaman Bölmeli Çoğullama</div>
+        <div class="mux-body">Aynı frekans kanalı kullanıcılara milisaniyelik zaman dilimleri atanarak paylaştırılır. GSM 2G standartlarının temelini oluşturur.</div>
+        <div class="mux-canvas-wrap"><canvas id="tdm-canvas"></canvas></div>
+        <div class="mux-specs">
+          <div class="spec-item"><span>Yöntem</span><span class="spec-val">Zaman dilimi</span></div>
+          <div class="spec-item"><span>Uygulama</span><span class="spec-val">GSM, T1/E1</span></div>
+          <div class="spec-item"><span>Senkronizasyon</span><span class="spec-val">Gerekli</span></div>
+        </div>
+      </div>
+      <!-- WDM -->
+      <div class="mux-card wdm-col">
+        <div class="mux-tag">WDM</div>
+        <div class="mux-heading">Dalga Boyu Bölmeli Çoğullama</div>
+        <div class="mux-body">Fiber optik kablo üzerinde farklı ışık renkleri (dalga boyları) eş zamanlı iletilir. DWDM ile tek fiberde 80+ kanal taşınabilir.</div>
+        <div class="mux-canvas-wrap"><canvas id="wdm-canvas"></canvas></div>
+        <div class="mux-specs">
+          <div class="spec-item"><span>Yöntem</span><span class="spec-val">Dalga boyu</span></div>
+          <div class="spec-item"><span>Uygulama</span><span class="spec-val">Fiber optik</span></div>
+          <div class="spec-item"><span>DWDM kanal</span><span class="spec-val">80+ kanal/fiber</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="nav-row">
+    <button class="nbtn" onclick="prev()">← GERİ</button>
+    <button class="nbtn" onclick="next()">İLERİ →</button>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     SLIDE 3 — CDMA
+════════════════════════════════════════ -->
+<div class="slide" id="s3">
+  <div class="top-bar">
+    <div class="brand">Haberleşme Teorisi</div>
+    <div class="slide-label">KOD BÖLMELİ ÇOKLU ERİŞİM</div>
+    <div class="slide-num">03 / 06</div>
+  </div>
+  <div class="content">
+    <div class="cdma-left">
+      <div class="sec-title">CDMA</div>
+      <div class="sec-sub">Herkes aynı anda, aynı frekansta konuşur. Peki girişim nasıl engellenir?</div>
+      <div class="analogy-box">
+        <strong style="color:var(--violet)">Oda Analojisi:</strong><br>
+        Odada 10 kişi var. Herkes aynı anda konuşuyor. Ancak bazıları İspanyolca, bazıları Çince konuşuyor. Sadece kendi dilinizi anlarsınız — diğerleri gürültüdür.
+      </div>
+      <div class="sec-sub" style="color:var(--text); font-weight:500">Matematiksel Temel</div>
+      <div class="sec-sub">Her vericiye <strong style="color:var(--violet)">ortogonal (birbirine dik)</strong> benzersiz bir yayma kodu (vektör) atanır. Alıcı sadece kendi koduyla eşleşen veriyi <strong style="color:var(--violet)">nokta çarpımı</strong> ile filtreler.</div>
+    </div>
+    <div class="cdma-right">
+      <div class="cdma-top">
+        <div class="cdma-cell">
+          <div class="cdma-cell-head" style="color:var(--blue)"><span style="width:8px;height:8px;border-radius:50%;background:var(--blue);display:inline-block"></span>FDMA</div>
+          <div class="cdma-cell-canvas"><canvas id="fdma-c"></canvas></div>
+        </div>
+        <div class="cdma-cell">
+          <div class="cdma-cell-head" style="color:var(--teal)"><span style="width:8px;height:8px;border-radius:50%;background:var(--teal);display:inline-block"></span>TDMA</div>
+          <div class="cdma-cell-canvas"><canvas id="tdma-c"></canvas></div>
+        </div>
+        <div class="cdma-cell">
+          <div class="cdma-cell-head" style="color:var(--violet)"><span style="width:8px;height:8px;border-radius:50%;background:var(--violet);display:inline-block"></span>CDMA</div>
+          <div class="cdma-cell-canvas"><canvas id="cdma-c"></canvas></div>
+        </div>
+      </div>
+      <div class="cdma-bottom">
+        <div class="mekanik-title">Mekanik</div>
+        <div class="mekanik-text">
+          Her vericiye <strong>ortogonal chip kodu</strong> atanır.
+          Alıcı sadece <strong>kendi şifresiyle eşleşen</strong> veriyi (nokta çarpımı ile) filtreler.
+          Diğer sinyaller matematiksel olarak sıfıra yaklaşır.
+          3G (WCDMA) altyapısının temelidir.
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="nav-row">
+    <button class="nbtn" onclick="prev()">← GERİ</button>
+    <button class="nbtn" onclick="next()">İLERİ →</button>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     SLIDE 4 — OFDM
+════════════════════════════════════════ -->
+<div class="slide" id="s4">
+  <div class="top-bar">
+    <div class="brand">Haberleşme Teorisi</div>
+    <div class="slide-label">DİK FREKANS BÖLMELİ ÇOĞULLAMA</div>
+    <div class="slide-num">04 / 06</div>
+  </div>
+  <div class="content">
+    <div class="ofdm-left">
+      <div class="sec-title" style="color:var(--blue)">OFDM</div>
+      <div class="sec-sub">Tek bir çok hızlı taşıyıcı yerine, veriyi yüzlerce yavaş alt taşıyıcıya böler ve paralel gönderir.</div>
+      <div class="ortho-box">
+        <strong>Diklik (Orthogonality):</strong> Alt taşıyıcılar matematiksel olarak birbirine dik. Yan yana sıkıştırılabilir, girişim yapmazlar. FDM'deki koruma bantlarına gerek yok.
+      </div>
+      <div class="superguc-box">
+        <strong>Süper Güç:</strong> Çoklu yol gecikmelerine (multipath fading) ve frekans seçici sönümlenmelere karşı inanılmaz direnç. QAM ile birleşince devasa veri hızları sağlar.
+      </div>
+    </div>
+    <div class="ofdm-right">
+      <div class="ofdm-main-canvas"><canvas id="ofdm-main"></canvas></div>
+      <div class="ofdm-bottom">
+        <div class="ofdm-stat">
+          <div class="ostat-num" style="color:var(--blue)">1000+</div>
+          <div class="ostat-lbl">Alt Taşıyıcı (LTE)</div>
+        </div>
+        <div class="ofdm-stat">
+          <div class="ostat-num" style="color:var(--green)">%100</div>
+          <div class="ostat-lbl">Spektral Verimlilik</div>
+        </div>
+        <div class="ofdm-stat">
+          <div class="ostat-num" style="color:var(--teal)">CP</div>
+          <div class="ostat-lbl">Cyclic Prefix ile ISI Koruması</div>
+        </div>
+        <div class="ofdm-stat">
+          <div class="ostat-num" style="color:var(--violet)">IFFT</div>
+          <div class="ostat-lbl">Ters FFT ile Modülasyon</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="nav-row">
+    <button class="nbtn" onclick="prev()">← GERİ</button>
+    <button class="nbtn" onclick="next()">İLERİ →</button>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     SLIDE 5 — OFDMA
+════════════════════════════════════════ -->
+<div class="slide" id="s5">
+  <div class="top-bar">
+    <div class="brand">Haberleşme Teorisi</div>
+    <div class="slide-label">ÇOKLU KULLANICI ÇAĞI</div>
+    <div class="slide-num">05 / 06</div>
+  </div>
+  <div class="content">
+    <div class="ofdma-left">
+      <div class="sec-title" style="color:var(--green)">OFDMA</div>
+      <div class="sec-sub">Wi-Fi 6 ve 5G'nin arkasındaki güç. OFDM'i çok kullanıcılı sisteme dönüştürür.</div>
+      <div class="diff-box">
+        <div class="diff-row">
+          <div class="diff-tag" style="background:rgba(96,165,250,.15);color:var(--blue);border:1px solid rgba(96,165,250,.3)">OFDM</div>
+          <div class="diff-desc">Tüm alt taşıyıcılar belirli bir zaman diliminde tek bir kullanıcıya tahsis edilir.</div>
+        </div>
+        <div class="diff-row">
+          <div class="diff-tag" style="background:rgba(74,222,128,.15);color:var(--green);border:1px solid rgba(74,222,128,.3)">OFDMA</div>
+          <div class="diff-desc">Alt taşıyıcılar <strong style="color:var(--text)">Resource Block</strong>'lara ayrılır. Farklı kullanıcılar eş zamanlı farklı bloklara hizmet alır.</div>
+        </div>
+      </div>
+      <div class="sec-sub" style="color:var(--text); font-size:12px; line-height:1.8">
+        ✦ Daha düşük gecikme (latency)<br>
+        ✦ Adil bant genişliği paylaşımı<br>
+        ✦ Yüksek yoğunluklu ortamlarda üstün performans<br>
+        ✦ Wi-Fi 6 (802.11ax) ve 5G NR standardı
+      </div>
+    </div>
+    <div class="ofdma-right">
+      <div class="ofdma-canvas-area">
+        <div class="ofdma-top"><canvas id="ofdma-canvas"></canvas></div>
+        <div class="ofdma-legend">
+          <div style="font-size:11px;color:var(--muted);margin-right:8px;font-family:'JetBrains Mono',monospace;letter-spacing:2px">KULLANICI:</div>
+          <div class="leg-item"><div class="leg-dot" style="background:#60a5fa"></div>Kullanıcı A</div>
+          <div class="leg-item"><div class="leg-dot" style="background:#4ade80"></div>Kullanıcı B</div>
+          <div class="leg-item"><div class="leg-dot" style="background:#f59e0b"></div>Kullanıcı C</div>
+          <div class="leg-item"><div class="leg-dot" style="background:#f87171"></div>Kullanıcı D</div>
+          <div class="leg-item"><div class="leg-dot" style="background:#a78bfa"></div>Kullanıcı E</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="nav-row">
+    <button class="nbtn" onclick="prev()">← GERİ</button>
+    <button class="nbtn" onclick="next()">İLERİ →</button>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     SLIDE 6 — COMPARISON
+════════════════════════════════════════ -->
+<div class="slide" id="s6">
+  <div class="top-bar">
+    <div class="brand">Haberleşme Teorisi</div>
+    <div class="slide-label">KARŞILAŞTIRMALI ANALİZ</div>
+    <div class="slide-num">06 / 06</div>
+  </div>
+  <div class="content" style="padding:20px 36px; overflow-y:auto;">
+    <div class="comp-title">Teknoloji Karşılaştırması</div>
+    <table class="comp-table">
+      <thead>
+        <tr>
+          <th>TEKNOLOJİ</th>
+          <th>KAYNAK PAYLAŞIMI</th>
+          <th>SPEKTRAL VERİMLİLİK</th>
+          <th>GÜRÜLTÜ BAĞIŞIKLIĞI</th>
+          <th>GECIKME</th>
+          <th>TEMEL UYGULAMA</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="tech-badge" style="background:rgba(245,166,35,.15);color:var(--amber);border:1px solid rgba(245,166,35,.3)">FDM</span></td>
+          <td>Frekans bantları</td>
+          <td><div class="bar-wrap"><div class="bar-fill" style="width:35%;background:var(--amber)"></div></div></td>
+          <td><span class="tag-med">▲ Orta</span></td>
+          <td><span class="tag-good">● Düşük</span></td>
+          <td style="color:var(--muted)">AM/FM Radyo, TV, ADSL</td>
+        </tr>
+        <tr>
+          <td><span class="tech-badge" style="background:rgba(45,212,191,.15);color:var(--teal);border:1px solid rgba(45,212,191,.3)">TDM</span></td>
+          <td>Zaman dilimleri</td>
+          <td><div class="bar-wrap"><div class="bar-fill" style="width:45%;background:var(--teal)"></div></div></td>
+          <td><span class="tag-med">▲ Orta</span></td>
+          <td><span class="tag-good">● Düşük</span></td>
+          <td style="color:var(--muted)">GSM (2G), T1/E1 hatları</td>
+        </tr>
+        <tr>
+          <td><span class="tech-badge" style="background:rgba(248,113,113,.15);color:var(--coral);border:1px solid rgba(248,113,113,.3)">WDM</span></td>
+          <td>Dalga boyları</td>
+          <td><div class="bar-wrap"><div class="bar-fill" style="width:90%;background:var(--coral)"></div></div></td>
+          <td><span class="tag-good">✓ Yüksek</span></td>
+          <td><span class="tag-good">● Çok Düşük</span></td>
+          <td style="color:var(--muted)">Fiber optik backbone</td>
+        </tr>
+        <tr>
+          <td><span class="tech-badge" style="background:rgba(167,139,250,.15);color:var(--violet);border:1px solid rgba(167,139,250,.3)">CDMA</span></td>
+          <td>Yayma kodları</td>
+          <td><div class="bar-wrap"><div class="bar-fill" style="width:60%;background:var(--violet)"></div></div></td>
+          <td><span class="tag-good">✓ Çok Yüksek</span></td>
+          <td><span class="tag-med">▲ Orta</span></td>
+          <td style="color:var(--muted)">3G (WCDMA, CDMA2000)</td>
+        </tr>
+        <tr>
+          <td><span class="tech-badge" style="background:rgba(96,165,250,.15);color:var(--blue);border:1px solid rgba(96,165,250,.3)">OFDM</span></td>
+          <td>Ortogonal alt taşıyıcı</td>
+          <td><div class="bar-wrap"><div class="bar-fill" style="width:85%;background:var(--blue)"></div></div></td>
+          <td><span class="tag-good">✓ Çok Yüksek</span></td>
+          <td><span class="tag-good">● Düşük</span></td>
+          <td style="color:var(--muted)">LTE (4G), Wi-Fi 5, DVB-T</td>
+        </tr>
+        <tr>
+          <td><span class="tech-badge" style="background:rgba(74,222,128,.15);color:var(--green);border:1px solid rgba(74,222,128,.3)">OFDMA</span></td>
+          <td>Resource Blocks</td>
+          <td><div class="bar-wrap"><div class="bar-fill" style="width:98%;background:var(--green)"></div></div></td>
+          <td><span class="tag-good">✓ En Yüksek</span></td>
+          <td><span class="tag-good">● Çok Düşük</span></td>
+          <td style="color:var(--muted)">5G NR, Wi-Fi 6 (802.11ax)</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="nav-row">
+    <button class="nbtn" onclick="prev()">← GERİ</button>
+    <button class="nbtn" onclick="next()">İLERİ →</button>
+  </div>
+</div>
+</div><!-- .slides -->
+
+<script>
+// ── SLIDE MANAGEMENT ─────────────────────────────────────────────────────────
+const TOTAL = 6;
+let cur = 1;
+const slides = () => Array.from(document.querySelectorAll('.slide'));
+
+function buildDots() {
+  const c = document.getElementById('prog-dots');
+  c.innerHTML = '';
+  for (let i = 1; i <= TOTAL; i++) {
+    const d = document.createElement('div');
+    d.className = 'pdot' + (i === cur ? ' on' : '');
+    d.onclick = () => goTo(i);
+    c.appendChild(d);
+  }
+}
+function goTo(n) {
+  document.getElementById('s'+cur).classList.remove('active');
+  cur = Math.max(1, Math.min(TOTAL, n));
+  document.getElementById('s'+cur).classList.add('active');
+  buildDots();
+  triggerSlideAnim(cur);
+}
+function next() { goTo(cur+1); }
+function prev() { goTo(cur-1); }
+document.addEventListener('keydown', e => {
+  if (e.key==='ArrowRight'||e.key===' ') next();
+  if (e.key==='ArrowLeft') prev();
+});
+buildDots();
+
+// ── HELPERS ──────────────────────────────────────────────────────────────────
+function initCanvas(id) {
+  const el = document.getElementById(id);
+  if (!el) return null;
+  const r = el.parentElement.getBoundingClientRect();
+  el.width = r.width || el.offsetWidth;
+  el.height = r.height || el.offsetHeight;
+  return el;
+}
+function bg(ctx,w,h) {
+  ctx.fillStyle = 'rgba(15,17,23,0)';
+  ctx.clearRect(0,0,w,h);
+}
+function grid(ctx,w,h,col='rgba(255,255,255,0.04)') {
+  ctx.strokeStyle=col; ctx.lineWidth=1;
+  for(let x=0;x<w;x+=40){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,h);ctx.stroke();}
+  for(let y=0;y<h;y+=40){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke();}
+}
+
+// ── SLIDE 1 CANVAS — animated waveform bands ─────────────────────────────────
+let s1Anim = null;
+function drawS1() {
+  const el = document.getElementById('s1-canvas');
+  if(!el) return;
+  const r = el.parentElement.getBoundingClientRect();
+  el.width = r.width; el.height = r.height;
+  const ctx = el.getContext('2d');
+  const W=el.width, H=el.height;
+  let t = 0;
+  function frame() {
+    ctx.clearRect(0,0,W,H);
+    const waves = [
+      {f:0.8,amp:30,y:H*0.25,col:'rgba(245,166,35,'},
+      {f:1.4,amp:22,y:H*0.45,col:'rgba(45,212,191,'},
+      {f:2.0,amp:18,y:H*0.60,col:'rgba(248,113,113,'},
+      {f:0.6,amp:35,y:H*0.75,col:'rgba(167,139,250,'},
+      {f:1.8,amp:14,y:H*0.88,col:'rgba(96,165,250,'},
+    ];
+    waves.forEach(w => {
+      ctx.beginPath();
+      for(let x=0;x<=W;x+=2) {
+        const y = w.y + Math.sin((x/W)*Math.PI*8*w.f + t*w.f)*w.amp;
+        x===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+      }
+      ctx.strokeStyle = w.col+'0.5)';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    });
+    t += 0.015;
+    s1Anim = requestAnimationFrame(frame);
+  }
+  frame();
+}
+
+// ── SLIDE 2: FDM ─────────────────────────────────────────────────────────────
+let s2Anim = null;
+function drawFDM() {
+  const el = initCanvas('fdm-canvas'); if(!el) return;
+  const ctx = el.getContext('2d');
+  const W=el.width, H=el.height;
+  let t=0;
+  const chans = [
+    {f:2.5,col:'#f5a623',label:'Ch1'},
+    {f:4.5,col:'#fb923c',label:'Ch2'},
+    {f:7.0,col:'#fcd34d',label:'Ch3'},
+  ];
+  function frame() {
+    ctx.clearRect(0,0,W,H);
+    grid(ctx,W,H,'rgba(245,166,35,0.06)');
+    // center line
+    ctx.strokeStyle='rgba(245,166,35,0.15)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(0,H/2); ctx.lineTo(W,H/2); ctx.stroke();
+    chans.forEach((c,i) => {
+      ctx.beginPath();
+      for(let x=0;x<=W;x+=2){
+        const env = Math.exp(-Math.pow((x/W - (i*0.3+0.15)),2)*40);
+        const y = H/2 - Math.sin(c.f*(x/W)*Math.PI*6+t)*env*H*0.35;
+        x===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+      }
+      ctx.strokeStyle=c.col; ctx.lineWidth=1.5;
+      ctx.shadowColor=c.col; ctx.shadowBlur=6;
+      ctx.stroke(); ctx.shadowBlur=0;
+      // label
+      const lx = (i*0.3+0.15)*W;
+      ctx.fillStyle=c.col; ctx.font='10px JetBrains Mono';
+      ctx.textAlign='center'; ctx.fillText(c.label, lx, 14);
+    });
+    t += 0.04;
+    if(document.getElementById('s2').classList.contains('active'))
+      s2Anim = requestAnimationFrame(frame);
+  }
+  if(s2Anim) cancelAnimationFrame(s2Anim);
+  frame();
+}
+function drawTDM() {
+  const el = initCanvas('tdm-canvas'); if(!el) return;
+  const ctx = el.getContext('2d');
+  const W=el.width, H=el.height;
+  let t=0;
+  const users = ['#2dd4bf','#06b6d4','#67e8f9'];
+  function frame() {
+    ctx.clearRect(0,0,W,H);
+    grid(ctx,W,H,'rgba(45,212,191,0.06)');
+    ctx.strokeStyle='rgba(45,212,191,0.15)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(0,H/2); ctx.lineTo(W,H/2); ctx.stroke();
+    const slotW = W/9;
+    for(let i=0;i<9;i++){
+      const ui = i%3;
+      const x0=i*slotW, x1=(i+1)*slotW;
+      const mid=(x0+x1)/2;
+      // fill slot
+      ctx.fillStyle = users[ui]+'22';
+      ctx.fillRect(x0+1,H*0.1,slotW-2,H*0.8);
+      // waveform inside slot
+      ctx.beginPath();
+      for(let x=x0;x<=x1;x+=1){
+        const phase = ((x-x0)/slotW)*Math.PI*4 + t*(ui+1)*0.5;
+        const y = H/2 - Math.sin(phase)*H*0.3;
+        x===x0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+      }
+      ctx.strokeStyle=users[ui]; ctx.lineWidth=1.5;
+      ctx.shadowColor=users[ui]; ctx.shadowBlur=5;
+      ctx.stroke(); ctx.shadowBlur=0;
+      // label
+      ctx.fillStyle=users[ui]; ctx.font='9px JetBrains Mono';
+      ctx.textAlign='center'; ctx.fillText('U'+(ui+1), mid, 14);
+    }
+    t += 0.04;
+    if(document.getElementById('s2').classList.contains('active'))
+      requestAnimationFrame(frame);
+  }
+  frame();
+}
+function drawWDM() {
+  const el = initCanvas('wdm-canvas'); if(!el) return;
+  const ctx = el.getContext('2d');
+  const W=el.width, H=el.height;
+  let t=0;
+  const colors = ['#ef4444','#f97316','#eab308','#22c55e','#3b82f6','#8b5cf6'];
+  function frame() {
+    ctx.clearRect(0,0,W,H);
+    grid(ctx,W,H,'rgba(248,113,113,0.05)');
+    // fiber outline
+    ctx.strokeStyle='rgba(248,113,113,0.2)'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(0,H/2-8); ctx.lineTo(W,H/2-8); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0,H/2+8); ctx.lineTo(W,H/2+8); ctx.stroke();
+    // wavelengths traveling
+    colors.forEach((col,i) => {
+      const pos = ((t*1.2 + i/colors.length)*W) % W;
+      const amp = 5;
+      ctx.beginPath();
+      for(let x=0;x<W;x+=1){
+        const dist = Math.min(Math.abs(x-pos), W-Math.abs(x-pos));
+        const env = Math.exp(-dist*dist/2500);
+        const phase = (x - pos) * (0.08 + i*0.015);
+        const y = H/2 + Math.sin(phase)*amp*env;
+        x===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+      }
+      ctx.strokeStyle=col; ctx.lineWidth=2;
+      ctx.shadowColor=col; ctx.shadowBlur=8;
+      ctx.stroke(); ctx.shadowBlur=0;
+    });
+    // wavelength labels at right
+    colors.forEach((col,i) => {
+      ctx.fillStyle=col; ctx.font='9px JetBrains Mono';
+      ctx.textAlign='right';
+      ctx.fillText('λ'+(i+1), W-4, H*0.12+i*13);
+    });
+    t += 0.015;
+    if(document.getElementById('s2').classList.contains('active'))
+      requestAnimationFrame(frame);
+  }
+  frame();
+}
+
+// ── SLIDE 3: CDMA ─────────────────────────────────────────────────────────────
+function drawFDMA3D() {
+  const el = initCanvas('fdma-c'); if(!el) return;
+  const ctx = el.getContext('2d');
+  const W=el.width, H=el.height;
+  ctx.clearRect(0,0,W,H);
+  const bars = [
+    {x:.15,col:'#f87171'},{x:.4,col:'#4ade80'},{x:.65,col:'#60a5fa'}
+  ];
+  ctx.font='9px JetBrains Mono';
+  bars.forEach(b=>{
+    const bw=W*0.15, bx=b.x*W-bw/2, by=H*0.12, bh=H*0.62;
+    ctx.fillStyle=b.col+'44';
+    ctx.strokeStyle=b.col;
+    ctx.lineWidth=1.5;
+    ctx.fillRect(bx,by,bw,bh);
+    ctx.strokeRect(bx,by,bw,bh);
+  });
+  ctx.strokeStyle='rgba(255,255,255,0.2)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(W*0.05,H*0.75); ctx.lineTo(W*0.9,H*0.75); ctx.stroke();
+  ctx.fillStyle='#6b7280'; ctx.textAlign='center';
+  ctx.fillText('Frequency',W/2,H*0.92);
+  ctx.fillText('Time →',W*0.04,H*0.4);
+}
+function drawTDMA3D() {
+  const el = initCanvas('tdma-c'); if(!el) return;
+  const ctx = el.getContext('2d');
+  const W=el.width, H=el.height;
+  ctx.clearRect(0,0,W,H);
+  const bars = [{y:.15,col:'#f87171'},{y:.38,col:'#4ade80'},{y:.61,col:'#2dd4bf'}];
+  ctx.font='9px JetBrains Mono';
+  bars.forEach(b=>{
+    const bh=H*0.18, bx=W*0.12, bw=W*0.7, by=b.y*H;
+    ctx.fillStyle=b.col+'44';
+    ctx.strokeStyle=b.col;
+    ctx.lineWidth=1.5;
+    ctx.fillRect(bx,by,bw,bh);
+    ctx.strokeRect(bx,by,bw,bh);
+  });
+  ctx.strokeStyle='rgba(255,255,255,0.2)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(W*0.12,H*0.82); ctx.lineTo(W*0.85,H*0.82); ctx.stroke();
+  ctx.fillStyle='#6b7280'; ctx.textAlign='center';
+  ctx.fillText('Frequency →',W*0.5,H*0.93);
+  ctx.fillText('T',W*0.04,H*0.5);
+}
+let cdmaT = 0, cdmaAnim = null;
+function drawCDMA3D() {
+  const el = initCanvas('cdma-c'); if(!el) return;
+  const ctx = el.getContext('2d');
+  const W=el.width, H=el.height;
+  function frame(){
+    ctx.clearRect(0,0,W,H);
+    // 3D-ish grid of colored blocks
+    const cols=['#f87171','#4ade80','#60a5fa','#fbbf24','#a78bfa','#f472b6'];
+    const rows=3, c=3;
+    const bw=(W-40)/c, bh=(H*0.6)/rows;
+    for(let r=0;r<rows;r++){
+      for(let ci=0;ci<c;ci++){
+        const x=20+ci*bw, y=H*0.05+r*bh;
+        const col=cols[(r*c+ci)%cols.length];
+        const alpha=0.2+(Math.sin(cdmaT+(r+ci)*0.7)*0.15);
+        ctx.fillStyle=col+Math.floor(alpha*255).toString(16).padStart(2,'0');
+        ctx.strokeStyle=col+'88';
+        ctx.lineWidth=1;
+        ctx.fillRect(x+1,y+1,bw-2,bh-2);
+        ctx.strokeRect(x+1,y+1,bw-2,bh-2);
+      }
+    }
+    ctx.fillStyle='#6b7280'; ctx.font='9px JetBrains Mono'; ctx.textAlign='center';
+    ctx.fillText('Frequency',W/2,H*0.88); ctx.fillText('Code →',W*0.85,H*0.5);
+    cdmaT+=0.04;
+    if(document.getElementById('s3').classList.contains('active'))
+      cdmaAnim = requestAnimationFrame(frame);
+  }
+  if(cdmaAnim) cancelAnimationFrame(cdmaAnim);
+  frame();
+}
+
+// ── SLIDE 4: OFDM ─────────────────────────────────────────────────────────────
+let ofdmT=0, ofdmAnim=null;
+function drawOFDM() {
+  const el = initCanvas('ofdm-main'); if(!el) return;
+  const ctx = el.getContext('2d');
+  const W=el.width, H=el.height;
+  const subCarriers = 18;
+  const colors = ['#60a5fa','#2dd4bf','#4ade80','#f59e0b','#f87171','#a78bfa'];
+  function frame() {
+    ctx.clearRect(0,0,W,H);
+    grid(ctx,W,H,'rgba(96,165,250,0.04)');
+    // center axis
+    ctx.strokeStyle='rgba(96,165,250,0.15)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(0,H*0.7); ctx.lineTo(W,H*0.7); ctx.stroke();
+    // draw each sub-carrier
+    for(let i=0;i<subCarriers;i++){
+      const freq = (i+1) * 0.9;
+      const col = colors[i%colors.length];
+      const phase = i*0.7 + ofdmT*(0.3+i*0.02);
+      ctx.beginPath();
+      for(let x=0;x<=W;x+=2){
+        const t2 = x/W;
+        const amp = 35 * (1+Math.sin(ofdmT*0.3+i)*0.2);
+        const y = H*0.7 - Math.cos(freq * t2 * Math.PI * 2 + phase) * amp;
+        x===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+      }
+      ctx.strokeStyle = col;
+      ctx.lineWidth = 1.2;
+      ctx.globalAlpha = 0.7;
+      ctx.shadowColor = col; ctx.shadowBlur = 4;
+      ctx.stroke(); ctx.shadowBlur=0;
+      ctx.globalAlpha = 1;
+    }
+    // SUM signal
+    ctx.beginPath();
+    for(let x=0;x<=W;x+=1){
+      const t2=x/W;
+      let sum=0;
+      for(let i=0;i<subCarriers;i++){
+        sum += Math.cos((i+1)*0.9*t2*Math.PI*2 + i*0.7+ofdmT*(0.3+i*0.02)) * 6;
+      }
+      const y = H*0.28 + sum;
+      x===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    }
+    ctx.strokeStyle='#ffffff'; ctx.lineWidth=1.5; ctx.globalAlpha=0.5;
+    ctx.stroke(); ctx.globalAlpha=1;
+    // Labels
+    ctx.fillStyle='rgba(96,165,250,0.7)'; ctx.font='10px JetBrains Mono';
+    ctx.textAlign='left'; ctx.fillText('SUM (OFDM çıkış)', 12, H*0.16);
+    ctx.fillStyle='rgba(255,255,255,0.4)'; ctx.fillText('↑ Alt taşıyıcılar (her biri diklik koşulunu sağlar)', 12, H*0.58);
+    ofdmT += 0.03;
+    if(document.getElementById('s4').classList.contains('active'))
+      ofdmAnim = requestAnimationFrame(frame);
+  }
+  if(ofdmAnim) cancelAnimationFrame(ofdmAnim);
+  frame();
+}
+
+// ── SLIDE 5: OFDMA ───────────────────────────────────────────────────────────
+let ofdmaT=0, ofdmaAnim=null;
+function drawOFDMA() {
+  const el = initCanvas('ofdma-canvas'); if(!el) return;
+  const ctx = el.getContext('2d');
+  const W=el.width, H=el.height;
+  const users=['#60a5fa','#4ade80','#f59e0b','#f87171','#a78bfa'];
+  const unames=['A','B','C','D','E'];
+  const timeSlots=8, freqBands=10;
+  // Resource block assignment (random but deterministic)
+  const rbs=[];
+  const seed=[[0,0],[0,2],[0,5],[0,7],[1,1],[1,3],[1,6],[2,0],[2,4],[2,7],
+              [3,2],[3,5],[3,8],[4,1],[4,3],[4,6],[5,0],[5,4],[5,9],[6,2],
+              [6,5],[6,7],[7,1],[7,3],[7,6],[7,8],[1,8],[2,9],[3,0],[4,9]];
+  seed.forEach((s,i)=>rbs.push({t:s[0],f:s[1],u:i%5}));
+
+  function frame(){
+    ctx.clearRect(0,0,W,H);
+    const padL=50,padB=30,padT=20,padR=20;
+    const cw=(W-padL-padR)/freqBands, ch=(H-padT-padB)/timeSlots;
+
+    // Axes
+    ctx.strokeStyle='rgba(255,255,255,0.15)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(padL,padT); ctx.lineTo(padL,H-padB); ctx.lineTo(W-padR,H-padB); ctx.stroke();
+    ctx.fillStyle='#4b5563'; ctx.font='10px JetBrains Mono'; ctx.textAlign='center';
+    ctx.fillText('Frekans Bandı (Sub-carriers)', padL+(W-padL-padR)/2, H-6);
+    ctx.save(); ctx.translate(14, padT+(H-padT-padB)/2); ctx.rotate(-Math.PI/2);
+    ctx.fillText('Zaman Dilimi', 0, 0); ctx.restore();
+
+    // Grid lines
+    ctx.strokeStyle='rgba(255,255,255,0.05)';
+    for(let t2=0;t2<=timeSlots;t2++){
+      const y=padT+t2*ch;
+      ctx.beginPath(); ctx.moveTo(padL,y); ctx.lineTo(W-padR,y); ctx.stroke();
+      if(t2<timeSlots){ ctx.fillStyle='#374151'; ctx.font='9px JetBrains Mono'; ctx.textAlign='right'; ctx.fillText('T'+(t2+1), padL-4, y+ch/2+3); }
+    }
+    for(let f=0;f<=freqBands;f++){
+      const x=padL+f*cw;
+      ctx.beginPath(); ctx.moveTo(x,padT); ctx.lineTo(x,H-padB); ctx.stroke();
+      if(f<freqBands){ ctx.fillStyle='#374151'; ctx.font='9px JetBrains Mono'; ctx.textAlign='center'; ctx.fillText(f+1, x+cw/2, H-padB+12); }
+    }
+
+    // Resource blocks
+    const anim = (Math.sin(ofdmaT*2)+1)/2;
+    rbs.forEach(rb=>{
+      const x=padL+rb.f*cw+1, y=padT+rb.t*ch+1;
+      const col=users[rb.u];
+      const pulse = (rb.t+rb.f)%5===Math.floor(ofdmaT*2)%5 ? 0.3 : 0;
+      ctx.fillStyle=col+(Math.floor((0.25+pulse)*255)).toString(16).padStart(2,'0');
+      ctx.strokeStyle=col;
+      ctx.lineWidth=1;
+      ctx.fillRect(x,y,cw-2,ch-2);
+      ctx.strokeRect(x,y,cw-2,ch-2);
+      // user label inside block
+      ctx.fillStyle='rgba(255,255,255,0.8)'; ctx.font=`${Math.min(cw,ch)*0.45}px JetBrains Mono`;
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(unames[rb.u], x+(cw-2)/2, y+(ch-2)/2);
+      ctx.textBaseline='alphabetic';
+    });
+    ofdmaT+=0.02;
+    if(document.getElementById('s5').classList.contains('active'))
+      ofdmaAnim = requestAnimationFrame(frame);
+  }
+  if(ofdmaAnim) cancelAnimationFrame(ofdmaAnim);
+  frame();
+}
+
+// ── TRIGGER ──────────────────────────────────────────────────────────────────
+function triggerSlideAnim(n){
+  if(n===1) drawS1();
+  if(n===2){ drawFDM(); drawTDM(); drawWDM(); }
+  if(n===3){ drawFDMA3D(); drawTDMA3D(); drawCDMA3D(); }
+  if(n===4) drawOFDM();
+  if(n===5) drawOFDMA();
+}
+
+// Init
+setTimeout(()=>{
+  drawS1();
+  // Pre-init canvases after a tick to get proper sizes
+  window.addEventListener('resize', ()=>triggerSlideAnim(cur));
+}, 100);
+</script>
+</body>
+</html>
