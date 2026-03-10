@@ -1,10 +1,11 @@
 @CHARSET "UTF-8";
 
 html {
-	
+
 	min-width: 100%;
 	min-height: 100%;
 }
+
 /* html,body{ */
 
 /* 	top: 0; */
@@ -13,7 +14,7 @@ html {
 
 /* } */
 body {
-	
+
 	background: #A9A9F5;
 }
 
@@ -21,7 +22,9 @@ body {
 /* 	margin-bottom: 25%; */
 /* 	margin-top: 25%; */
 /* } */
-h1, h2,h3 {
+h1,
+h2,
+h3 {
 	color: gray;
 }
 
@@ -30,7 +33,7 @@ h1 {
 }
 
 .center {
-	padding:5%;
+	padding: 5%;
 	margin-top: 5%;
 	margin-bottom: 5%;
 }
@@ -38,17 +41,20 @@ h1 {
 .jumbotron {
 	background: transparent;
 }
+
 /* a { */
 /* 	color:black; */
 /* } */
 a {
 	margin: 2px;
-}ul.social-network {
+}
+
+ul.social-network {
 	list-style: none;
 	display: inline;
 	margin-left: 0 !important;
 	padding: 0;
-	
+
 }
 
 ul.social-network li {
@@ -80,14 +86,17 @@ ul.social-network li {
 	background-color: #007bb7;
 }
 
-.social-network a.icoMail:hover i, .social-network a.icoGithub:hover i,
-	.social-network a.icoTwitter:hover i, .social-network a.icoGoogle:hover i,
-	.social-network a.icoVimeo:hover i, .social-network a.icoLinkedin:hover i
-	{
+.social-network a.icoMail:hover i,
+.social-network a.icoGithub:hover i,
+.social-network a.icoTwitter:hover i,
+.social-network a.icoGoogle:hover i,
+.social-network a.icoVimeo:hover i,
+.social-network a.icoLinkedin:hover i {
 	color: #fff;
 }
 
-a.socialIcon:hover, .socialHoverClass {
+a.socialIcon:hover,
+.socialHoverClass {
 	color: #44BCDD;
 }
 
@@ -110,7 +119,8 @@ a.socialIcon:hover, .socialHoverClass {
 	text-align: center;
 }
 
-.social-circle li a:hover i, .triggeredHover {
+.social-circle li a:hover i,
+.triggeredHover {
 	-moz-transform: rotate(360deg);
 	-webkit-transform: rotate(360deg);
 	-ms--transform: rotate(360deg);
