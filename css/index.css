@@ -11,13 +11,14 @@ html {
 
 body {
 	
-	background: #A9A9F5;
+	background: #111111;
+	color: #eeeeee;
 	
 }
 
 
-h1, h2,h3 {
-	color: gray;
+h1, h2, h3 {
+	color: #cccccc;
 }
 
 h1 {
@@ -129,7 +130,7 @@ a.socialIcon:hover, .socialHoverClass {
 
 }
 #blog{
-	color: black;
+	color: #eeeeee;
 	font-size: 20px;
 }
 #cv{
