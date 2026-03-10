@@ -1,0 +1,1643 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HELLO Paketi — Modülasyon Teknikleri</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;600&display=swap');
+
+  :root {
+    --green: #00ff88;
+    --green-dim: #00cc66;
+    --green-dark: #003320;
+    --cyan: #00e5ff;
+    --yellow: #ffe44d;
+    --red: #ff4466;
+    --purple: #cc44ff;
+    --bg: #060c0a;
+    --panel: #0a1410;
+    --border: #1a3328;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--green);
+    font-family: 'Share Tech Mono', monospace;
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+    cursor: none;
+  }
+
+  /* Scanline overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.15) 2px,
+      rgba(0,0,0,0.15) 4px
+    );
+    pointer-events: none;
+    z-index: 1000;
+  }
+
+  /* CRT vignette */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,0.7) 100%);
+    pointer-events: none;
+    z-index: 999;
+  }
+
+  /* Custom cursor */
+  #cursor {
+    position: fixed;
+    width: 20px; height: 20px;
+    border: 2px solid var(--green);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 9999;
+    transform: translate(-50%, -50%);
+    transition: all 0.1s ease;
+    box-shadow: 0 0 10px var(--green);
+  }
+
+  /* Slides */
+  .slide {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.5s ease;
+  }
+  .slide.active {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 32px;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(90deg, var(--panel) 0%, rgba(0,255,136,0.03) 100%);
+    flex-shrink: 0;
+  }
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .logo-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 12px var(--green);
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%,100% { opacity: 1; box-shadow: 0 0 12px var(--green); }
+    50% { opacity: 0.5; box-shadow: 0 0 4px var(--green); }
+  }
+  .header-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 13px;
+    letter-spacing: 3px;
+    color: var(--green);
+    text-shadow: 0 0 20px var(--green);
+  }
+  .header-right {
+    font-size: 11px;
+    color: #446655;
+    letter-spacing: 2px;
+  }
+  .slide-counter {
+    font-family: 'Orbitron', monospace;
+    font-size: 13px;
+    color: var(--green-dim);
+  }
+
+  /* ── SLIDE 1: Title ── */
+  #slide-1 {
+    align-items: center;
+    justify-content: center;
+    background: var(--bg);
+    gap: 0;
+  }
+  .title-container {
+    text-align: center;
+    position: relative;
+    z-index: 2;
+  }
+  .title-sub {
+    font-family: 'Exo 2', sans-serif;
+    font-size: 13px;
+    font-weight: 300;
+    letter-spacing: 8px;
+    color: #446655;
+    margin-bottom: 20px;
+    text-transform: uppercase;
+  }
+  .title-main {
+    font-family: 'Orbitron', monospace;
+    font-size: clamp(36px, 5vw, 64px);
+    font-weight: 900;
+    color: var(--green);
+    text-shadow: 0 0 40px var(--green), 0 0 80px rgba(0,255,136,0.3);
+    letter-spacing: 6px;
+    line-height: 1.1;
+  }
+  .title-packet {
+    font-family: 'Orbitron', monospace;
+    font-size: clamp(24px, 3vw, 40px);
+    font-weight: 400;
+    color: var(--cyan);
+    text-shadow: 0 0 30px var(--cyan);
+    letter-spacing: 12px;
+    margin-top: 8px;
+  }
+  .title-desc {
+    margin-top: 32px;
+    font-size: 14px;
+    color: #558866;
+    letter-spacing: 2px;
+    line-height: 1.8;
+  }
+
+  /* Hello binary display */
+  .hello-binary {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    margin-top: 40px;
+    flex-wrap: wrap;
+  }
+  .char-block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    opacity: 0;
+    animation: fadeUp 0.5s ease forwards;
+  }
+  .char-letter {
+    font-family: 'Orbitron', monospace;
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--yellow);
+    text-shadow: 0 0 20px var(--yellow);
+  }
+  .char-ascii {
+    font-size: 10px;
+    color: #446655;
+    letter-spacing: 1px;
+  }
+  .char-bits {
+    display: flex;
+    gap: 3px;
+  }
+  .bit {
+    width: 14px; height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: bold;
+    border-radius: 2px;
+  }
+  .bit-1 { background: rgba(0,255,136,0.2); color: var(--green); border: 1px solid rgba(0,255,136,0.4); }
+  .bit-0 { background: rgba(0,0,0,0.4); color: #224433; border: 1px solid #1a2a22; }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Grid background for title */
+  .grid-bg {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,255,136,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,255,136,0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+  }
+
+  /* ── SLIDES 2-5: Modulation ── */
+  .mod-slide {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    overflow: hidden;
+  }
+  .mod-header {
+    display: flex;
+    align-items: flex-end;
+    gap: 20px;
+    padding: 18px 32px 16px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .mod-type-badge {
+    font-family: 'Orbitron', monospace;
+    font-size: 11px;
+    letter-spacing: 3px;
+    padding: 4px 12px;
+    border-radius: 2px;
+  }
+  .mod-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 22px;
+    font-weight: 700;
+  }
+  .mod-subtitle {
+    font-size: 12px;
+    color: #446655;
+    letter-spacing: 2px;
+    margin-left: auto;
+  }
+
+  .mod-body {
+    display: flex;
+    flex: 1;
+    gap: 0;
+    overflow: hidden;
+  }
+
+  /* Left info panel */
+  .info-panel {
+    width: 260px;
+    flex-shrink: 0;
+    border-right: 1px solid var(--border);
+    padding: 20px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    background: var(--panel);
+    overflow-y: auto;
+  }
+  .info-section-title {
+    font-size: 9px;
+    letter-spacing: 3px;
+    color: #446655;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .info-box {
+    background: rgba(0,255,136,0.03);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 12px;
+  }
+  .info-formula {
+    font-size: 12px;
+    color: var(--cyan);
+    text-shadow: 0 0 10px var(--cyan);
+    line-height: 1.8;
+  }
+  .info-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 8px;
+    font-size: 11px;
+    color: #557766;
+    line-height: 1.5;
+  }
+  .info-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-top: 4px;
+  }
+  .spec-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    padding: 5px 0;
+    border-bottom: 1px solid var(--border);
+    color: #446655;
+  }
+  .spec-val { color: var(--green); font-weight: bold; }
+
+  /* Right canvas area */
+  .canvas-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* Bit stream bar */
+  .bitstream-bar {
+    padding: 10px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+    background: rgba(0,255,136,0.02);
+  }
+  .bitstream-label {
+    font-size: 9px;
+    letter-spacing: 3px;
+    color: #446655;
+    width: 80px;
+    flex-shrink: 0;
+  }
+  .bitstream-bits {
+    display: flex;
+    gap: 2px;
+    flex: 1;
+    overflow: hidden;
+  }
+  .bs-bit {
+    height: 22px;
+    min-width: 14px;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: bold;
+    border-radius: 1px;
+    transition: all 0.2s;
+  }
+  .bs-1 { background: rgba(0,255,136,0.25); color: var(--green); }
+  .bs-0 { background: rgba(0,0,0,0.5); color: #1a3328; border: 1px solid #1a3328; }
+  .bs-active { box-shadow: 0 0 8px var(--green); transform: scaleY(1.1); }
+
+  /* Waveform canvases */
+  .waveforms {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    gap: 0;
+    overflow: hidden;
+  }
+  .wave-row {
+    flex: 1;
+    display: flex;
+    border-bottom: 1px solid var(--border);
+    min-height: 0;
+  }
+  .wave-row:last-child { border-bottom: none; }
+  .wave-label {
+    width: 110px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 8px 12px 8px 20px;
+    border-right: 1px solid var(--border);
+    background: var(--panel);
+  }
+  .wave-name {
+    font-size: 10px;
+    font-weight: bold;
+    letter-spacing: 1px;
+    margin-bottom: 3px;
+  }
+  .wave-desc {
+    font-size: 9px;
+    color: #446655;
+    line-height: 1.4;
+  }
+  .wave-canvas-wrap {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+  }
+  .wave-canvas-wrap canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  /* ── SLIDE 6: Comparison ── */
+  .comp-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    gap: 1px;
+    background: var(--border);
+    flex: 1;
+  }
+  .comp-cell {
+    background: var(--bg);
+    padding: 14px 18px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .comp-cell-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    flex-shrink: 0;
+  }
+  .comp-badge {
+    font-family: 'Orbitron', monospace;
+    font-size: 10px;
+    padding: 3px 10px;
+    border-radius: 2px;
+  }
+  .comp-title-text {
+    font-family: 'Orbitron', monospace;
+    font-size: 13px;
+  }
+  .comp-canvas-wrap {
+    flex: 1;
+    position: relative;
+    min-height: 0;
+  }
+  .comp-canvas-wrap canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+  .comp-stats {
+    display: flex;
+    gap: 14px;
+    margin-top: 8px;
+    flex-shrink: 0;
+  }
+  .comp-stat {
+    font-size: 10px;
+    color: #446655;
+  }
+  .comp-stat span { color: var(--green); }
+
+  /* ── NAV BUTTONS ── */
+  .nav-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 12px;
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .nav-btn {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 2px;
+    padding: 8px 20px;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--green-dim);
+    cursor: none;
+    border-radius: 2px;
+    transition: all 0.2s;
+  }
+  .nav-btn:hover {
+    border-color: var(--green);
+    color: var(--green);
+    background: rgba(0,255,136,0.05);
+    box-shadow: 0 0 15px rgba(0,255,136,0.2);
+  }
+  .nav-dots {
+    display: flex;
+    gap: 8px;
+  }
+  .nav-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--border);
+    border: 1px solid #1a3328;
+    cursor: none;
+    transition: all 0.3s;
+  }
+  .nav-dot.active {
+    background: var(--green);
+    box-shadow: 0 0 10px var(--green);
+  }
+
+  /* Animations */
+  @keyframes glitch {
+    0%,90%,100% { transform: none; opacity: 1; }
+    92% { transform: skewX(3deg) translateX(-4px); opacity: 0.8; }
+    94% { transform: skewX(-3deg) translateX(4px); }
+    96% { transform: none; }
+  }
+  .title-main { animation: glitch 6s ease-in-out infinite; }
+
+  /* Status bar */
+  .status-bar {
+    position: fixed;
+    bottom: 56px;
+    right: 20px;
+    font-size: 10px;
+    color: #224433;
+    letter-spacing: 2px;
+    z-index: 100;
+  }
+  .status-bar .blink {
+    animation: blink 1s step-end infinite;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  /* Modulation-specific colors */
+  .ask { --mod-color: #ffe44d; --mod-bg: rgba(255,228,77,0.1); }
+  .fsk { --mod-color: #00e5ff; --mod-bg: rgba(0,229,255,0.1); }
+  .psk { --mod-color: #cc44ff; --mod-bg: rgba(204,68,255,0.1); }
+  .qam { --mod-color: #ff4466; --mod-bg: rgba(255,68,102,0.1); }
+
+  .ask .mod-type-badge { background: rgba(255,228,77,0.15); color: #ffe44d; border: 1px solid rgba(255,228,77,0.3); }
+  .ask .mod-title { color: #ffe44d; text-shadow: 0 0 30px #ffe44d; }
+  .fsk .mod-type-badge { background: rgba(0,229,255,0.15); color: #00e5ff; border: 1px solid rgba(0,229,255,0.3); }
+  .fsk .mod-title { color: #00e5ff; text-shadow: 0 0 30px #00e5ff; }
+  .psk .mod-type-badge { background: rgba(204,68,255,0.15); color: #cc44ff; border: 1px solid rgba(204,68,255,0.3); }
+  .psk .mod-title { color: #cc44ff; text-shadow: 0 0 30px #cc44ff; }
+  .qam .mod-type-badge { background: rgba(255,68,102,0.15); color: #ff4466; border: 1px solid rgba(255,68,102,0.3); }
+  .qam .mod-title { color: #ff4466; text-shadow: 0 0 30px #ff4466; }
+
+  /* Tooltip / info */
+  .phase-indicator {
+    position: absolute;
+    top: 4px; right: 8px;
+    font-size: 10px;
+    color: #446655;
+    letter-spacing: 1px;
+  }
+</style>
+</head>
+<body>
+
+<div id="cursor"></div>
+
+<!-- ══════════════════════════════════════════
+     SLIDE 1 — Title
+═══════════════════════════════════════════ -->
+<div class="slide active" id="slide-1">
+  <div class="header">
+    <div class="header-left">
+      <div class="logo-dot"></div>
+      <div class="header-title">MODÜLASYON ANALİZÖRÜ</div>
+    </div>
+    <div class="header-right">SİNYAL İŞLEME / v2.4.1</div>
+    <div class="slide-counter">01 / 06</div>
+  </div>
+
+  <div class="grid-bg"></div>
+
+  <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; position:relative; z-index:2; padding: 20px;">
+    <div class="title-container">
+      <div class="title-sub">dijital haberleşme simülatörü</div>
+      <div class="title-main">MODÜLASYON</div>
+      <div class="title-packet">TEKNİKLERİ</div>
+      <div class="title-desc">
+        "HELLO" paketinin analog taşıyıcı üzerinden iletimi<br>
+        ASK · FSK · PSK · QAM
+      </div>
+    </div>
+
+    <div class="hello-binary" id="hello-binary">
+      <!-- Filled by JS -->
+    </div>
+  </div>
+
+  <div class="nav-bar">
+    <button class="nav-btn" onclick="prevSlide()">◀ GERİ</button>
+    <div class="nav-dots" id="nav-dots"></div>
+    <button class="nav-btn" onclick="nextSlide()">İLERİ ▶</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     SLIDE 2 — ASK
+═══════════════════════════════════════════ -->
+<div class="slide" id="slide-2">
+  <div class="header">
+    <div class="header-left">
+      <div class="logo-dot" style="background:#ffe44d; box-shadow:0 0 12px #ffe44d"></div>
+      <div class="header-title" style="color:#ffe44d; text-shadow:0 0 20px #ffe44d">MODÜLASYON ANALİZÖRÜ</div>
+    </div>
+    <div class="header-right">HELLO PAKETI</div>
+    <div class="slide-counter">02 / 06</div>
+  </div>
+
+  <div class="mod-slide ask">
+    <div class="mod-header">
+      <div class="mod-type-badge">ASK</div>
+      <div class="mod-title">Genlik Kaydırmalı Anahtarlama</div>
+      <div class="mod-subtitle">Amplitude Shift Keying</div>
+    </div>
+    <div class="mod-body">
+      <div class="info-panel">
+        <div>
+          <div class="info-section-title">Formül</div>
+          <div class="info-box">
+            <div class="info-formula">
+              s(t) = A(t)·cos(2πf<sub>c</sub>t)<br><br>
+              <span style="color:#ffe44d">A = A₁</span> → bit = 1<br>
+              <span style="color:#446655">A = A₀</span> → bit = 0
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="info-section-title">Çalışma Prensibi</div>
+          <div class="info-item"><div class="info-dot" style="background:#ffe44d"></div>Taşıyıcı sinyal sabit frekansta salınır</div>
+          <div class="info-item"><div class="info-dot" style="background:#ffe44d"></div>Bit '1' için yüksek genlik, '0' için düşük (veya sıfır) genlik kullanılır</div>
+          <div class="info-item"><div class="info-dot" style="background:#ffe44d"></div>OOK (On-Off Keying) en basit ASK türüdür</div>
+        </div>
+        <div>
+          <div class="info-section-title">Teknik Özellikler</div>
+          <div class="spec-row"><span>Bant genişliği</span><span class="spec-val">B = 2·f<sub>m</sub></span></div>
+          <div class="spec-row"><span>Gürültü bağışıklığı</span><span class="spec-val" style="color:#ff4466">Düşük</span></div>
+          <div class="spec-row"><span>Uygulama</span><span class="spec-val">Optik fiber</span></div>
+          <div class="spec-row"><span>Verimlilik</span><span class="spec-val" style="color:#ffe44d">1 bit/Hz</span></div>
+        </div>
+      </div>
+      <div class="canvas-area">
+        <div class="bitstream-bar">
+          <div class="bitstream-label">BİT AKIŞI</div>
+          <div class="bitstream-bits" id="ask-bits"></div>
+        </div>
+        <div class="waveforms">
+          <div class="wave-row">
+            <div class="wave-label">
+              <div class="wave-name" style="color:#ffe44d">VERİ</div>
+              <div class="wave-desc">Dijital bit akışı (NRZ)</div>
+            </div>
+            <div class="wave-canvas-wrap"><canvas id="ask-data"></canvas></div>
+          </div>
+          <div class="wave-row">
+            <div class="wave-label">
+              <div class="wave-name" style="color:#446655">TAŞIYICI</div>
+              <div class="wave-desc">cos(2πf<sub>c</sub>t)</div>
+            </div>
+            <div class="wave-canvas-wrap"><canvas id="ask-carrier"></canvas></div>
+          </div>
+          <div class="wave-row">
+            <div class="wave-label">
+              <div class="wave-name" style="color:#ffe44d">ASK ÇIKIŞ</div>
+              <div class="wave-desc">Modüle sinyal</div>
+            </div>
+            <div class="wave-canvas-wrap"><canvas id="ask-out"></canvas><div class="phase-indicator" id="ask-phase"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="nav-bar">
+    <button class="nav-btn" onclick="prevSlide()">◀ GERİ</button>
+    <div class="nav-dots" id="nav-dots-2"></div>
+    <button class="nav-btn" onclick="nextSlide()">İLERİ ▶</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     SLIDE 3 — FSK
+═══════════════════════════════════════════ -->
+<div class="slide" id="slide-3">
+  <div class="header">
+    <div class="header-left">
+      <div class="logo-dot" style="background:#00e5ff; box-shadow:0 0 12px #00e5ff"></div>
+      <div class="header-title" style="color:#00e5ff; text-shadow:0 0 20px #00e5ff">MODÜLASYON ANALİZÖRÜ</div>
+    </div>
+    <div class="header-right">HELLO PAKETI</div>
+    <div class="slide-counter">03 / 06</div>
+  </div>
+
+  <div class="mod-slide fsk">
+    <div class="mod-header">
+      <div class="mod-type-badge">FSK</div>
+      <div class="mod-title">Frekans Kaydırmalı Anahtarlama</div>
+      <div class="mod-subtitle">Frequency Shift Keying</div>
+    </div>
+    <div class="mod-body">
+      <div class="info-panel">
+        <div>
+          <div class="info-section-title">Formül</div>
+          <div class="info-box">
+            <div class="info-formula">
+              s(t) = A·cos(2πf(t)·t)<br><br>
+              <span style="color:#00e5ff">f = f₁</span> → bit = 1<br>
+              <span style="color:#446655">f = f₀</span> → bit = 0<br><br>
+              Δf = f₁ − f₀
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="info-section-title">Çalışma Prensibi</div>
+          <div class="info-item"><div class="info-dot" style="background:#00e5ff"></div>Genlik sabit tutulur; frekans veriyle değişir</div>
+          <div class="info-item"><div class="info-dot" style="background:#00e5ff"></div>Bit '1' için yüksek frekans, '0' için düşük frekans</div>
+          <div class="info-item"><div class="info-dot" style="background:#00e5ff"></div>Gürültüye karşı ASK'tan çok daha dayanıklıdır</div>
+        </div>
+        <div>
+          <div class="info-section-title">Teknik Özellikler</div>
+          <div class="spec-row"><span>Bant genişliği</span><span class="spec-val">B = 2(Δf + f<sub>m</sub>)</span></div>
+          <div class="spec-row"><span>Gürültü bağışıklığı</span><span class="spec-val" style="color:#ffe44d">Orta</span></div>
+          <div class="spec-row"><span>Uygulama</span><span class="spec-val">Radyo, modem</span></div>
+          <div class="spec-row"><span>Verimlilik</span><span class="spec-val" style="color:#ffe44d">1 bit/Hz</span></div>
+        </div>
+      </div>
+      <div class="canvas-area">
+        <div class="bitstream-bar">
+          <div class="bitstream-label">BİT AKIŞI</div>
+          <div class="bitstream-bits" id="fsk-bits"></div>
+        </div>
+        <div class="waveforms">
+          <div class="wave-row">
+            <div class="wave-label">
+              <div class="wave-name" style="color:#00e5ff">VERİ</div>
+              <div class="wave-desc">Dijital bit akışı</div>
+            </div>
+            <div class="wave-canvas-wrap"><canvas id="fsk-data"></canvas></div>
+          </div>
+          <div class="wave-row">
+            <div class="wave-label">
+              <div class="wave-name" style="color:#446655">f₁ / f₀</div>
+              <div class="wave-desc">Frekans bileşenleri</div>
+            </div>
+            <div class="wave-canvas-wrap"><canvas id="fsk-carrier"></canvas></div>
+          </div>
+          <div class="wave-row">
+            <div class="wave-label">
+              <div class="wave-name" style="color:#00e5ff">FSK ÇIKIŞ</div>
+              <div class="wave-desc">Modüle sinyal</div>
+            </div>
+            <div class="wave-canvas-wrap"><canvas id="fsk-out"></canvas></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="nav-bar">
+    <button class="nav-btn" onclick="prevSlide()">◀ GERİ</button>
+    <div class="nav-dots" id="nav-dots-3"></div>
+    <button class="nav-btn" onclick="nextSlide()">İLERİ ▶</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     SLIDE 4 — PSK
+═══════════════════════════════════════════ -->
+<div class="slide" id="slide-4">
+  <div class="header">
+    <div class="header-left">
+      <div class="logo-dot" style="background:#cc44ff; box-shadow:0 0 12px #cc44ff"></div>
+      <div class="header-title" style="color:#cc44ff; text-shadow:0 0 20px #cc44ff">MODÜLASYON ANALİZÖRÜ</div>
+    </div>
+    <div class="header-right">HELLO PAKETI</div>
+    <div class="slide-counter">04 / 06</div>
+  </div>
+
+  <div class="mod-slide psk">
+    <div class="mod-header">
+      <div class="mod-type-badge">PSK</div>
+      <div class="mod-title">Faz Kaydırmalı Anahtarlama</div>
+      <div class="mod-subtitle">Phase Shift Keying</div>
+    </div>
+    <div class="mod-body">
+      <div class="info-panel">
+        <div>
+          <div class="info-section-title">Formül (BPSK)</div>
+          <div class="info-box">
+            <div class="info-formula">
+              s(t) = A·cos(2πf<sub>c</sub>t + φ(t))<br><br>
+              <span style="color:#cc44ff">φ = 0°</span> → bit = 1<br>
+              <span style="color:#446655">φ = 180°</span> → bit = 0
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="info-section-title">PSK Çeşitleri</div>
+          <div class="info-item"><div class="info-dot" style="background:#cc44ff"></div>BPSK: 2 faz (0°, 180°) — 1 bit/sembol</div>
+          <div class="info-item"><div class="info-dot" style="background:#cc44ff"></div>QPSK: 4 faz (0°, 90°, 180°, 270°) — 2 bit/sembol</div>
+          <div class="info-item"><div class="info-dot" style="background:#cc44ff"></div>8-PSK: 8 faz — 3 bit/sembol</div>
+        </div>
+        <div>
+          <div class="info-section-title">Teknik Özellikler</div>
+          <div class="spec-row"><span>Gürültü bağışıklığı</span><span class="spec-val" style="color:#00ff88">Yüksek</span></div>
+          <div class="spec-row"><span>Uygulama</span><span class="spec-val">WiFi, LTE</span></div>
+          <div class="spec-row"><span>BPSK verimi</span><span class="spec-val" style="color:#cc44ff">1 bit/Hz</span></div>
+          <div class="spec-row"><span>QPSK verimi</span><span class="spec-val" style="color:#cc44ff">2 bit/Hz</span></div>
+        </div>
+      </div>
+      <div class="canvas-area">
+        <div class="bitstream-bar">
+          <div class="bitstream-label">BİT AKIŞI</div>
+          <div class="bitstream-bits" id="psk-bits"></div>
+        </div>
+        <div class="waveforms">
+          <div class="wave-row">
+            <div class="wave-label">
+              <div class="wave-name" style="color:#cc44ff">VERİ</div>
+              <div class="wave-desc">Dijital bit akışı</div>
+            </div>
+            <div class="wave-canvas-wrap"><canvas id="psk-data"></canvas></div>
+          </div>
+          <div class="wave-row">
+            <div class="wave-label">
+              <div class="wave-name" style="color:#446655">FAZ</div>
+              <div class="wave-desc">0° / 180° kaydırma</div>
+            </div>
+            <div class="wave-canvas-wrap"><canvas id="psk-carrier"></canvas></div>
+          </div>
+          <div class="wave-row">
+            <div class="wave-label">
+              <div class="wave-name" style="color:#cc44ff">PSK ÇIKIŞ</div>
+              <div class="wave-desc">Faz geçişleri</div>
+            </div>
+            <div class="wave-canvas-wrap"><canvas id="psk-out"></canvas></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="nav-bar">
+    <button class="nav-btn" onclick="prevSlide()">◀ GERİ</button>
+    <div class="nav-dots" id="nav-dots-4"></div>
+    <button class="nav-btn" onclick="nextSlide()">İLERİ ▶</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     SLIDE 5 — QAM
+═══════════════════════════════════════════ -->
+<div class="slide" id="slide-5">
+  <div class="header">
+    <div class="header-left">
+      <div class="logo-dot" style="background:#ff4466; box-shadow:0 0 12px #ff4466"></div>
+      <div class="header-title" style="color:#ff4466; text-shadow:0 0 20px #ff4466">MODÜLASYON ANALİZÖRÜ</div>
+    </div>
+    <div class="header-right">HELLO PAKETI</div>
+    <div class="slide-counter">05 / 06</div>
+  </div>
+
+  <div class="mod-slide qam" style="display:flex; flex-direction:column; flex:1; overflow:hidden;">
+    <div class="mod-header">
+      <div class="mod-type-badge">QAM</div>
+      <div class="mod-title">Kuadratür Genlik Modülasyonu</div>
+      <div class="mod-subtitle">Quadrature Amplitude Modulation</div>
+    </div>
+    <div class="mod-body" style="flex:1; overflow:hidden;">
+      <div class="info-panel">
+        <div>
+          <div class="info-section-title">Formül (16-QAM)</div>
+          <div class="info-box">
+            <div class="info-formula">
+              s(t) = I·cos(2πf<sub>c</sub>t)<br>
+              &nbsp;&nbsp;&nbsp;&nbsp;− Q·sin(2πf<sub>c</sub>t)<br><br>
+              I: In-phase bileşen<br>
+              Q: Quadrature bileşen
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="info-section-title">QAM Seviyeleri</div>
+          <div class="info-item"><div class="info-dot" style="background:#ff4466"></div>4-QAM = QPSK (2 bit/sembol)</div>
+          <div class="info-item"><div class="info-dot" style="background:#ff4466"></div>16-QAM: 16 nokta, 4 bit/sembol</div>
+          <div class="info-item"><div class="info-dot" style="background:#ff4466"></div>256-QAM: 8 bit/sembol (WiFi 6)</div>
+          <div class="info-item"><div class="info-dot" style="background:#ff4466"></div>1024-QAM: 10 bit/sembol (5G NR)</div>
+        </div>
+        <div>
+          <div class="info-section-title">Teknik Özellikler</div>
+          <div class="spec-row"><span>Spektral verimlilik</span><span class="spec-val" style="color:#00ff88">Çok Yüksek</span></div>
+          <div class="spec-row"><span>Uygulama</span><span class="spec-val">5G, WiFi, kablo</span></div>
+          <div class="spec-row"><span>SNR gereksinimi</span><span class="spec-val" style="color:#ff4466">Yüksek</span></div>
+        </div>
+      </div>
+      <div class="canvas-area" style="display:flex; flex-direction:column; flex:1; overflow:hidden;">
+        <div class="bitstream-bar">
+          <div class="bitstream-label">BİT AKIŞI</div>
+          <div class="bitstream-bits" id="qam-bits"></div>
+        </div>
+        <div style="flex:1; display:flex; gap:1px; background:var(--border); overflow:hidden;">
+          <div style="flex:1; display:flex; flex-direction:column; background:var(--bg); overflow:hidden;">
+            <div class="waveforms" style="flex:1;">
+              <div class="wave-row">
+                <div class="wave-label">
+                  <div class="wave-name" style="color:#ff4466">I (In-Phase)</div>
+                  <div class="wave-desc">cos bileşeni</div>
+                </div>
+                <div class="wave-canvas-wrap"><canvas id="qam-i"></canvas></div>
+              </div>
+              <div class="wave-row">
+                <div class="wave-label">
+                  <div class="wave-name" style="color:#ff8800">Q (Quadrature)</div>
+                  <div class="wave-desc">sin bileşeni</div>
+                </div>
+                <div class="wave-canvas-wrap"><canvas id="qam-q"></canvas></div>
+              </div>
+              <div class="wave-row">
+                <div class="wave-label">
+                  <div class="wave-name" style="color:#ff4466">QAM ÇIKIŞ</div>
+                  <div class="wave-desc">I + Q kombinasyonu</div>
+                </div>
+                <div class="wave-canvas-wrap"><canvas id="qam-out"></canvas></div>
+              </div>
+            </div>
+          </div>
+          <div style="width:200px; flex-shrink:0; background:var(--bg); display:flex; flex-direction:column; align-items:center; justify-content:center; padding:10px;">
+            <div style="font-size:9px; letter-spacing:3px; color:#446655; margin-bottom:8px;">TAKIM BURCU</div>
+            <canvas id="qam-constellation" style="width:100%; max-width:180px; aspect-ratio:1;"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="nav-bar">
+    <button class="nav-btn" onclick="prevSlide()">◀ GERİ</button>
+    <div class="nav-dots" id="nav-dots-5"></div>
+    <button class="nav-btn" onclick="nextSlide()">İLERİ ▶</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     SLIDE 6 — Comparison
+═══════════════════════════════════════════ -->
+<div class="slide" id="slide-6">
+  <div class="header">
+    <div class="header-left">
+      <div class="logo-dot"></div>
+      <div class="header-title">MODÜLASYON ANALİZÖRÜ</div>
+    </div>
+    <div class="header-right">KARŞILAŞTIRMA</div>
+    <div class="slide-counter">06 / 06</div>
+  </div>
+
+  <div style="flex:1; display:flex; flex-direction:column; overflow:hidden;">
+    <div style="padding:14px 32px 10px; border-bottom:1px solid var(--border); flex-shrink:0;">
+      <div style="font-family:'Orbitron',monospace; font-size:18px; font-weight:700; color:var(--green); text-shadow:0 0 20px var(--green); letter-spacing:3px;">
+        KARŞILAŞTIRMALI ANALİZ — HELLO PAKETİ
+      </div>
+    </div>
+
+    <div class="comp-grid">
+      <div class="comp-cell">
+        <div class="comp-cell-header">
+          <div class="comp-badge" style="background:rgba(255,228,77,0.15); color:#ffe44d; border:1px solid rgba(255,228,77,0.3); font-family:'Orbitron',monospace; font-size:10px; padding:3px 10px; border-radius:2px;">ASK</div>
+          <div class="comp-title-text" style="color:#ffe44d; font-family:'Orbitron',monospace; font-size:13px;">Genlik Modülasyonu</div>
+          <div style="margin-left:auto; font-size:10px; color:#446655;">Gürültü: ✗</div>
+        </div>
+        <div class="comp-canvas-wrap"><canvas id="comp-ask"></canvas></div>
+        <div class="comp-stats">
+          <div class="comp-stat">Bant: <span>2f<sub>m</sub></span></div>
+          <div class="comp-stat">Verim: <span>1 bit/Hz</span></div>
+          <div class="comp-stat">Uygulama: <span>Optik</span></div>
+        </div>
+      </div>
+      <div class="comp-cell">
+        <div class="comp-cell-header">
+          <div class="comp-badge" style="background:rgba(0,229,255,0.15); color:#00e5ff; border:1px solid rgba(0,229,255,0.3); font-family:'Orbitron',monospace; font-size:10px; padding:3px 10px; border-radius:2px;">FSK</div>
+          <div class="comp-title-text" style="color:#00e5ff; font-family:'Orbitron',monospace; font-size:13px;">Frekans Modülasyonu</div>
+          <div style="margin-left:auto; font-size:10px; color:#446655;">Gürültü: ~</div>
+        </div>
+        <div class="comp-canvas-wrap"><canvas id="comp-fsk"></canvas></div>
+        <div class="comp-stats">
+          <div class="comp-stat">Bant: <span>2(Δf+f<sub>m</sub>)</span></div>
+          <div class="comp-stat">Verim: <span>1 bit/Hz</span></div>
+          <div class="comp-stat">Uygulama: <span>Radyo</span></div>
+        </div>
+      </div>
+      <div class="comp-cell">
+        <div class="comp-cell-header">
+          <div class="comp-badge" style="background:rgba(204,68,255,0.15); color:#cc44ff; border:1px solid rgba(204,68,255,0.3); font-family:'Orbitron',monospace; font-size:10px; padding:3px 10px; border-radius:2px;">PSK</div>
+          <div class="comp-title-text" style="color:#cc44ff; font-family:'Orbitron',monospace; font-size:13px;">Faz Modülasyonu</div>
+          <div style="margin-left:auto; font-size:10px; color:#446655;">Gürültü: ✓</div>
+        </div>
+        <div class="comp-canvas-wrap"><canvas id="comp-psk"></canvas></div>
+        <div class="comp-stats">
+          <div class="comp-stat">Bant: <span>2f<sub>m</sub></span></div>
+          <div class="comp-stat">Verim: <span>1–3 bit/Hz</span></div>
+          <div class="comp-stat">Uygulama: <span>WiFi/LTE</span></div>
+        </div>
+      </div>
+      <div class="comp-cell">
+        <div class="comp-cell-header">
+          <div class="comp-badge" style="background:rgba(255,68,102,0.15); color:#ff4466; border:1px solid rgba(255,68,102,0.3); font-family:'Orbitron',monospace; font-size:10px; padding:3px 10px; border-radius:2px;">QAM</div>
+          <div class="comp-title-text" style="color:#ff4466; font-family:'Orbitron',monospace; font-size:13px;">Kuadratür Modülasyon</div>
+          <div style="margin-left:auto; font-size:10px; color:#446655;">Gürültü: ✓✓</div>
+        </div>
+        <div class="comp-canvas-wrap"><canvas id="comp-qam"></canvas></div>
+        <div class="comp-stats">
+          <div class="comp-stat">Bant: <span>2f<sub>m</sub></span></div>
+          <div class="comp-stat">Verim: <span>4–10 bit/Hz</span></div>
+          <div class="comp-stat">Uygulama: <span>5G/WiFi6</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="nav-bar">
+    <button class="nav-btn" onclick="prevSlide()">◀ GERİ</button>
+    <div class="nav-dots" id="nav-dots-6"></div>
+    <button class="nav-btn" onclick="nextSlide()">İLERİ ▶</button>
+  </div>
+</div>
+
+<div class="status-bar">
+  TX <span class="blink">█</span> HELLO_PKT · 40 BITS · LIVE
+</div>
+
+<script>
+// ─── HELLO bits ──────────────────────────────────────────────────────────────
+const HELLO = [
+  { ch: 'H', code: 72,  bits: [0,1,0,0,1,0,0,0] },
+  { ch: 'E', code: 69,  bits: [0,1,0,0,0,1,0,1] },
+  { ch: 'L', code: 76,  bits: [0,1,0,0,1,1,0,0] },
+  { ch: 'L', code: 76,  bits: [0,1,0,0,1,1,0,0] },
+  { ch: 'O', code: 79,  bits: [0,1,0,0,1,1,1,1] },
+];
+const ALL_BITS = HELLO.flatMap(c => c.bits); // 40 bits
+
+// ─── Cursor ──────────────────────────────────────────────────────────────────
+const cursor = document.getElementById('cursor');
+document.addEventListener('mousemove', e => {
+  cursor.style.left = e.clientX + 'px';
+  cursor.style.top = e.clientY + 'px';
+});
+
+// ─── SLIDE 1: HELLO binary ───────────────────────────────────────────────────
+const helloBinary = document.getElementById('hello-binary');
+HELLO.forEach((c, i) => {
+  const div = document.createElement('div');
+  div.className = 'char-block';
+  div.style.animationDelay = (0.3 + i * 0.2) + 's';
+  div.innerHTML = `
+    <div class="char-letter">${c.ch}</div>
+    <div class="char-ascii">ASCII ${c.code}</div>
+    <div class="char-bits">${c.bits.map(b => `<div class="bit bit-${b}">${b}</div>`).join('')}</div>
+  `;
+  helloBinary.appendChild(div);
+});
+
+// ─── Nav dots setup ──────────────────────────────────────────────────────────
+const TOTAL_SLIDES = 6;
+let currentSlide = 1;
+const dotContainers = ['nav-dots','nav-dots-2','nav-dots-3','nav-dots-4','nav-dots-5','nav-dots-6'];
+
+function buildDots() {
+  dotContainers.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.innerHTML = '';
+    for (let i = 1; i <= TOTAL_SLIDES; i++) {
+      const d = document.createElement('div');
+      d.className = 'nav-dot' + (i === currentSlide ? ' active' : '');
+      d.onclick = () => goToSlide(i);
+      el.appendChild(d);
+    }
+  });
+}
+
+function goToSlide(n) {
+  document.getElementById('slide-' + currentSlide).classList.remove('active');
+  currentSlide = Math.max(1, Math.min(TOTAL_SLIDES, n));
+  document.getElementById('slide-' + currentSlide).classList.add('active');
+  buildDots();
+  onSlideActivated(currentSlide);
+}
+function nextSlide() { goToSlide(currentSlide + 1); }
+function prevSlide() { goToSlide(currentSlide - 1); }
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === ' ') nextSlide();
+  if (e.key === 'ArrowLeft') prevSlide();
+});
+
+// ─── Canvas drawing utilities ─────────────────────────────────────────────────
+function resizeCanvas(canvas) {
+  const rect = canvas.parentElement.getBoundingClientRect();
+  canvas.width = rect.width;
+  canvas.height = rect.height;
+}
+
+function drawGrid(ctx, w, h, color='rgba(0,255,136,0.06)') {
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1;
+  const step = 40;
+  for (let x = 0; x < w; x += step) {
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+  }
+  for (let y = 0; y < h; y += step) {
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+  }
+  // Center line
+  ctx.strokeStyle = 'rgba(0,255,136,0.15)';
+  ctx.beginPath(); ctx.moveTo(0, h/2); ctx.lineTo(w, h/2); ctx.stroke();
+}
+
+// Glow effect
+function drawGlowLine(ctx, points, color, glow=true) {
+  if (points.length < 2) return;
+  if (glow) {
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 12;
+    ctx.strokeStyle = color + '44';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(points[0].x, points[0].y);
+    for (let i = 1; i < points.length; i++) ctx.lineTo(points[i].x, points[i].y);
+    ctx.stroke();
+  }
+  ctx.shadowColor = color;
+  ctx.shadowBlur = 8;
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(points[0].x, points[0].y);
+  for (let i = 1; i < points.length; i++) ctx.lineTo(points[i].x, points[i].y);
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+}
+
+// ─── Animation state ─────────────────────────────────────────────────────────
+let animOffset = 0;
+let animFrame = null;
+let activeAnimSlide = null;
+
+function stopAnim() {
+  if (animFrame) { cancelAnimationFrame(animFrame); animFrame = null; }
+}
+
+function onSlideActivated(n) {
+  stopAnim();
+  activeAnimSlide = n;
+  if (n === 2) startASKAnim();
+  if (n === 3) startFSKAnim();
+  if (n === 4) startPSKAnim();
+  if (n === 5) startQAMAnim();
+  if (n === 6) startCompAnim();
+}
+
+// ─── Bit display helper ───────────────────────────────────────────────────────
+function updateBitDisplay(containerId, bits, activeIdx) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  el.innerHTML = bits.slice(0, 32).map((b, i) =>
+    `<div class="bs-bit bs-${b}${i === activeIdx ? ' bs-active' : ''}">${b}</div>`
+  ).join('');
+}
+
+// ─── ASK Animation ────────────────────────────────────────────────────────────
+function startASKAnim() {
+  const canvases = ['ask-data', 'ask-carrier', 'ask-out'];
+  canvases.forEach(id => resizeCanvas(document.getElementById(id)));
+
+  const BITS = ALL_BITS;
+  const BIT_W_RATIO = 0.04; // fraction of canvas width per bit shown
+  let offset = 0;
+
+  function draw() {
+    canvases.forEach(id => {
+      const canvas = document.getElementById(id);
+      const ctx = canvas.getContext('2d');
+      const W = canvas.width, H = canvas.height;
+      ctx.clearRect(0, 0, W, H);
+      drawGrid(ctx, W, H);
+    });
+
+    const N = 500;
+    const fc = 8; // carrier cycles per bit
+
+    // Which bits are visible?
+    const bitsShown = 20;
+    const pxPerBit = document.getElementById('ask-data').width / bitsShown;
+
+    const dataCanvas = document.getElementById('ask-data');
+    const carrCanvas = document.getElementById('ask-carrier');
+    const outCanvas = document.getElementById('ask-out');
+    const W = dataCanvas.width, H = dataCanvas.height;
+
+    const dataCtx = dataCanvas.getContext('2d');
+    const carrCtx = carrCanvas.getContext('2d');
+    const outCtx = outCanvas.getContext('2d');
+
+    const dataPts = [], carrPts = [], outPts = [];
+
+    for (let i = 0; i <= N; i++) {
+      const xFrac = i / N;
+      const x = xFrac * W;
+      const bitPos = (xFrac * bitsShown + offset) % BITS.length;
+      const bitIdx = Math.floor(bitPos) % BITS.length;
+      const bit = BITS[bitIdx];
+
+      const t = xFrac * bitsShown + offset;
+      const dataY = H/2 - (bit ? 1 : -1) * H * 0.35;
+      const carrier = Math.cos(2 * Math.PI * fc * t);
+      const carrY = H/2 - carrier * H * 0.35;
+      const amp = bit ? 1 : 0.05;
+      const askY = H/2 - amp * carrier * H * 0.35;
+
+      dataPts.push({ x, y: dataY });
+      carrPts.push({ x, y: carrY });
+      outPts.push({ x, y: askY });
+    }
+
+    // Draw data as steps
+    const dataCtx2 = dataCanvas.getContext('2d');
+    dataCtx2.shadowColor = '#ffe44d';
+    dataCtx2.shadowBlur = 8;
+    dataCtx2.strokeStyle = '#ffe44d';
+    dataCtx2.lineWidth = 2;
+    dataCtx2.beginPath();
+    dataPts.forEach((p, i) => {
+      // Step logic
+      if (i === 0) dataCtx2.moveTo(p.x, p.y);
+      else {
+        const prev = dataPts[i-1];
+        if (Math.abs(p.y - prev.y) > 5 && Math.abs(p.x - prev.x) < 3) {
+          dataCtx2.lineTo(prev.x, p.y);
+        }
+        dataCtx2.lineTo(p.x, p.y);
+      }
+    });
+    dataCtx2.stroke();
+    dataCtx2.shadowBlur = 0;
+
+    drawGlowLine(carrCtx, carrPts, '#446655');
+    drawGlowLine(outCtx, outPts, '#ffe44d');
+
+    // Active bit indicator
+    const activeBit = Math.floor(offset) % BITS.length;
+    updateBitDisplay('ask-bits', BITS, activeBit);
+
+    offset += 0.04;
+    if (activeAnimSlide === 2) animFrame = requestAnimationFrame(draw);
+  }
+  draw();
+}
+
+// ─── FSK Animation ────────────────────────────────────────────────────────────
+function startFSKAnim() {
+  const canvases = ['fsk-data', 'fsk-carrier', 'fsk-out'];
+  canvases.forEach(id => resizeCanvas(document.getElementById(id)));
+
+  const BITS = ALL_BITS;
+  let offset = 0;
+  const f1 = 10, f0 = 5;
+  const bitsShown = 20;
+
+  function draw() {
+    canvases.forEach(id => {
+      const c = document.getElementById(id);
+      const ctx = c.getContext('2d');
+      ctx.clearRect(0, 0, c.width, c.height);
+      drawGrid(ctx, c.width, c.height, 'rgba(0,229,255,0.05)');
+    });
+
+    const N = 600;
+    const canvas = document.getElementById('fsk-data');
+    const W = canvas.width, H = canvas.height;
+
+    const dataPts = [], carrPts = [], outPts = [];
+
+    let phase = 0;
+    for (let i = 0; i <= N; i++) {
+      const xFrac = i / N;
+      const x = xFrac * W;
+      const bitFrac = xFrac * bitsShown + offset;
+      const bitIdx = Math.floor(bitFrac) % BITS.length;
+      const bit = BITS[bitIdx];
+
+      const dataY = H/2 - (bit ? 1 : -1) * H * 0.35;
+      const fc = bit ? f1 : f0;
+      const dt = (bitsShown / N);
+      phase += 2 * Math.PI * fc * dt;
+      const carrier = Math.cos(phase);
+      const carrY = H/2 - carrier * H * 0.35;
+      const f0wave = Math.cos(2 * Math.PI * f0 * (bitFrac / bitsShown * bitsShown));
+      const f1wave = Math.cos(2 * Math.PI * f1 * (bitFrac / bitsShown * bitsShown));
+      const compY = H/2 - (f1wave * 0.5 + f0wave * 0.5) * H * 0.35;
+
+      dataPts.push({ x, y: dataY });
+      carrPts.push({ x, y: compY });
+      outPts.push({ x, y: carrY });
+    }
+
+    // Draw data steps
+    const dCtx = document.getElementById('fsk-data').getContext('2d');
+    dCtx.shadowColor = '#00e5ff'; dCtx.shadowBlur = 8;
+    dCtx.strokeStyle = '#00e5ff'; dCtx.lineWidth = 2;
+    dCtx.beginPath();
+    dataPts.forEach((p, i) => {
+      if (i === 0) dCtx.moveTo(p.x, p.y);
+      else { dCtx.lineTo(p.x, p.y); }
+    });
+    dCtx.stroke(); dCtx.shadowBlur = 0;
+
+    drawGlowLine(document.getElementById('fsk-carrier').getContext('2d'), carrPts, '#336655');
+    drawGlowLine(document.getElementById('fsk-out').getContext('2d'), outPts, '#00e5ff');
+
+    const activeBit = Math.floor(offset) % BITS.length;
+    updateBitDisplay('fsk-bits', BITS, activeBit);
+
+    offset += 0.04;
+    if (activeAnimSlide === 3) animFrame = requestAnimationFrame(draw);
+  }
+  draw();
+}
+
+// ─── PSK Animation ────────────────────────────────────────────────────────────
+function startPSKAnim() {
+  const canvases = ['psk-data', 'psk-carrier', 'psk-out'];
+  canvases.forEach(id => resizeCanvas(document.getElementById(id)));
+
+  const BITS = ALL_BITS;
+  let offset = 0;
+  const fc = 8;
+  const bitsShown = 20;
+
+  function draw() {
+    canvases.forEach(id => {
+      const c = document.getElementById(id);
+      c.getContext('2d').clearRect(0, 0, c.width, c.height);
+      drawGrid(c.getContext('2d'), c.width, c.height, 'rgba(204,68,255,0.05)');
+    });
+
+    const N = 600;
+    const canvas = document.getElementById('psk-data');
+    const W = canvas.width, H = canvas.height;
+
+    const dataPts = [], phasePts = [], outPts = [];
+
+    for (let i = 0; i <= N; i++) {
+      const xFrac = i / N;
+      const x = xFrac * W;
+      const t = xFrac * bitsShown + offset;
+      const bitIdx = Math.floor(t) % BITS.length;
+      const bit = BITS[bitIdx];
+
+      const phaseShift = bit ? 0 : Math.PI;
+      const dataY = H/2 - (bit ? 1 : -1) * H * 0.35;
+      const carrier = Math.cos(2 * Math.PI * fc * t + phaseShift);
+      const phaseIndicator = Math.cos(2 * Math.PI * 1.5 * t + phaseShift);
+      const phY = H/2 - phaseIndicator * H * 0.35;
+      const outY = H/2 - carrier * H * 0.35;
+
+      dataPts.push({ x, y: dataY });
+      phasePts.push({ x, y: phY });
+      outPts.push({ x, y: outY });
+    }
+
+    const dCtx = document.getElementById('psk-data').getContext('2d');
+    dCtx.shadowColor = '#cc44ff'; dCtx.shadowBlur = 8;
+    dCtx.strokeStyle = '#cc44ff'; dCtx.lineWidth = 2;
+    dCtx.beginPath();
+    dataPts.forEach((p, i) => { i === 0 ? dCtx.moveTo(p.x, p.y) : dCtx.lineTo(p.x, p.y); });
+    dCtx.stroke(); dCtx.shadowBlur = 0;
+
+    drawGlowLine(document.getElementById('psk-carrier').getContext('2d'), phasePts, '#664488');
+    drawGlowLine(document.getElementById('psk-out').getContext('2d'), outPts, '#cc44ff');
+
+    // Highlight phase transitions
+    const outCtx = document.getElementById('psk-out').getContext('2d');
+    for (let i = 1; i <= N; i++) {
+      const t0 = ((i-1)/N) * bitsShown + offset;
+      const t1 = (i/N) * bitsShown + offset;
+      const bit0 = BITS[Math.floor(t0) % BITS.length];
+      const bit1 = BITS[Math.floor(t1) % BITS.length];
+      if (bit0 !== bit1) {
+        const x = (i/N) * W;
+        outCtx.strokeStyle = 'rgba(255,255,255,0.4)';
+        outCtx.lineWidth = 1;
+        outCtx.setLineDash([2,2]);
+        outCtx.beginPath();
+        outCtx.moveTo(x, 0); outCtx.lineTo(x, H);
+        outCtx.stroke();
+        outCtx.setLineDash([]);
+      }
+    }
+
+    const activeBit = Math.floor(offset) % BITS.length;
+    updateBitDisplay('psk-bits', BITS, activeBit);
+
+    offset += 0.04;
+    if (activeAnimSlide === 4) animFrame = requestAnimationFrame(draw);
+  }
+  draw();
+}
+
+// ─── QAM Animation ───────────────────────────────────────────────────────────
+function startQAMAnim() {
+  ['qam-i','qam-q','qam-out'].forEach(id => resizeCanvas(document.getElementById(id)));
+
+  // QAM constellation points (16-QAM)
+  const constPoints = [];
+  for (let i = -3; i <= 3; i += 2)
+    for (let j = -3; j <= 3; j += 2)
+      constPoints.push({ i, j });
+
+  const BITS = ALL_BITS;
+  let offset = 0;
+  const fc = 8;
+  const bitsShown = 20;
+  let constellationAngle = 0;
+
+  // Active constellation point
+  let activeConst = 0;
+
+  function draw() {
+    ['qam-i','qam-q','qam-out'].forEach(id => {
+      const c = document.getElementById(id);
+      c.getContext('2d').clearRect(0, 0, c.width, c.height);
+      drawGrid(c.getContext('2d'), c.width, c.height, 'rgba(255,68,102,0.05)');
+    });
+
+    const N = 600;
+    const W = document.getElementById('qam-i').width;
+    const H = document.getElementById('qam-i').height;
+
+    const iCh = [], qCh = [], outPts = [];
+
+    for (let n = 0; n <= N; n++) {
+      const xFrac = n / N;
+      const x = xFrac * W;
+      const t = xFrac * bitsShown + offset;
+      const bitIdx = Math.floor(t * 2) % (constPoints.length);
+      const pt = constPoints[bitIdx % constPoints.length];
+
+      const Ival = pt.i / 3;
+      const Qval = pt.j / 3;
+
+      const iSig = Ival * Math.cos(2 * Math.PI * fc * t);
+      const qSig = Qval * Math.sin(2 * Math.PI * fc * t);
+
+      iCh.push({ x, y: H/2 - iSig * H * 0.35 });
+      qCh.push({ x, y: H/2 - qSig * H * 0.35 });
+      outPts.push({ x, y: H/2 - (iSig + qSig) * H * 0.25 });
+    }
+
+    drawGlowLine(document.getElementById('qam-i').getContext('2d'), iCh, '#ff4466');
+    drawGlowLine(document.getElementById('qam-q').getContext('2d'), qCh, '#ff8800');
+    drawGlowLine(document.getElementById('qam-out').getContext('2d'), outPts, '#ff4466');
+
+    // Constellation diagram
+    const constCanvas = document.getElementById('qam-constellation');
+    const cCtx = constCanvas.getContext('2d');
+    const CW = constCanvas.width, CH = constCanvas.height;
+    if (CW === 0 || CH === 0) {
+      const rect = constCanvas.getBoundingClientRect();
+      constCanvas.width = rect.width || 180;
+      constCanvas.height = rect.height || 180;
+    }
+    const cw = constCanvas.width, ch = constCanvas.height;
+    cCtx.clearRect(0, 0, cw, ch);
+
+    // Grid
+    cCtx.strokeStyle = 'rgba(255,68,102,0.1)';
+    cCtx.lineWidth = 1;
+    cCtx.beginPath(); cCtx.moveTo(cw/2, 0); cCtx.lineTo(cw/2, ch); cCtx.stroke();
+    cCtx.beginPath(); cCtx.moveTo(0, ch/2); cCtx.lineTo(cw, ch/2); cCtx.stroke();
+
+    // Axis labels
+    cCtx.fillStyle = '#446655';
+    cCtx.font = '9px Share Tech Mono';
+    cCtx.fillText('I →', cw - 25, ch/2 - 4);
+    cCtx.fillText('↑', cw/2 + 4, 12);
+    cCtx.fillText('Q', cw/2 + 4, 22);
+
+    activeConst = Math.floor(offset * 0.8) % constPoints.length;
+
+    constPoints.forEach((pt, idx) => {
+      const cx = cw/2 + (pt.i / 3) * (cw * 0.36);
+      const cy = ch/2 - (pt.j / 3) * (ch * 0.36);
+      const isActive = idx === activeConst;
+
+      if (isActive) {
+        cCtx.shadowColor = '#ff4466';
+        cCtx.shadowBlur = 15;
+        cCtx.fillStyle = '#ff4466';
+        cCtx.beginPath();
+        cCtx.arc(cx, cy, 6, 0, Math.PI * 2);
+        cCtx.fill();
+        cCtx.shadowBlur = 0;
+      } else {
+        cCtx.fillStyle = 'rgba(255,68,102,0.5)';
+        cCtx.beginPath();
+        cCtx.arc(cx, cy, 3.5, 0, Math.PI * 2);
+        cCtx.fill();
+      }
+    });
+
+    // Trail line to active point
+    const activePt = constPoints[activeConst];
+    const ax = cw/2 + (activePt.i / 3) * (cw * 0.36);
+    const ay = ch/2 - (activePt.j / 3) * (ch * 0.36);
+    cCtx.strokeStyle = 'rgba(255,68,102,0.3)';
+    cCtx.lineWidth = 1;
+    cCtx.setLineDash([3,3]);
+    cCtx.beginPath();
+    cCtx.moveTo(cw/2, ch/2);
+    cCtx.lineTo(ax, ay);
+    cCtx.stroke();
+    cCtx.setLineDash([]);
+
+    updateBitDisplay('qam-bits', BITS, Math.floor(offset * 2) % BITS.length);
+
+    offset += 0.04;
+    if (activeAnimSlide === 5) animFrame = requestAnimationFrame(draw);
+  }
+
+  // Init constellation canvas size
+  const constCanvas = document.getElementById('qam-constellation');
+  const rect = constCanvas.getBoundingClientRect();
+  constCanvas.width = Math.max(rect.width, 160);
+  constCanvas.height = Math.max(rect.height, 160);
+
+  draw();
+}
+
+// ─── Comparison Animation ─────────────────────────────────────────────────────
+function startCompAnim() {
+  const configs = [
+    { id: 'comp-ask', color: '#ffe44d', type: 'ask' },
+    { id: 'comp-fsk', color: '#00e5ff', type: 'fsk' },
+    { id: 'comp-psk', color: '#cc44ff', type: 'psk' },
+    { id: 'comp-qam', color: '#ff4466', type: 'qam' },
+  ];
+  configs.forEach(c => {
+    const canvas = document.getElementById(c.id);
+    const rect = canvas.parentElement.getBoundingClientRect();
+    canvas.width = rect.width;
+    canvas.height = rect.height;
+  });
+
+  const BITS = ALL_BITS;
+  let offset = 0;
+  const fc = 8;
+  const bitsShown = 16;
+
+  function draw() {
+    configs.forEach(({ id, color, type }) => {
+      const canvas = document.getElementById(id);
+      const ctx = canvas.getContext('2d');
+      const W = canvas.width, H = canvas.height;
+      ctx.clearRect(0, 0, W, H);
+      drawGrid(ctx, W, H, color + '11');
+
+      const N = 400;
+      const pts = [];
+
+      let phase = 0;
+      for (let n = 0; n <= N; n++) {
+        const xFrac = n / N;
+        const x = xFrac * W;
+        const t = xFrac * bitsShown + offset;
+        const bitIdx = Math.floor(t) % BITS.length;
+        const bit = BITS[bitIdx];
+        let y;
+
+        if (type === 'ask') {
+          const amp = bit ? 1 : 0.05;
+          y = H/2 - amp * Math.cos(2 * Math.PI * fc * t) * H * 0.38;
+        } else if (type === 'fsk') {
+          const f = bit ? fc * 1.6 : fc * 0.6;
+          const dt = bitsShown / N;
+          phase += 2 * Math.PI * f * dt;
+          y = H/2 - Math.cos(phase) * H * 0.38;
+        } else if (type === 'psk') {
+          const ph = bit ? 0 : Math.PI;
+          y = H/2 - Math.cos(2 * Math.PI * fc * t + ph) * H * 0.38;
+        } else { // qam
+          const cpIdx = Math.floor(t * 1.5) % 16;
+          const Ival = ([-3,-1,1,3][cpIdx % 4]) / 3;
+          const Qval = ([-3,-1,1,3][Math.floor(cpIdx/4)]) / 3;
+          y = H/2 - (Ival * Math.cos(2 * Math.PI * fc * t) - Qval * Math.sin(2 * Math.PI * fc * t)) * H * 0.28;
+        }
+        pts.push({ x, y });
+      }
+      drawGlowLine(ctx, pts, color);
+    });
+
+    offset += 0.04;
+    if (activeAnimSlide === 6) animFrame = requestAnimationFrame(draw);
+  }
+  draw();
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+buildDots();
+
+// Handle resize
+window.addEventListener('resize', () => {
+  if (activeAnimSlide) onSlideActivated(activeAnimSlide);
+});
+</script>
+</body>
+</html>
