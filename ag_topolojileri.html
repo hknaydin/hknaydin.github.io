@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ağ Topolojileri</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Nunito:wght@300;400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0b0f1a; --surf:#111827; --surf2:#1a2235;
+  --border:#1f2d45; --text:#e2e8f0; --muted:#64748b;
+  --blue:#3b82f6; --cyan:#06b6d4; --red:#ef4444;
+  --node:#38bdf8; --cable:#ef4444;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;}
+
+/* SLIDES */
+.slides{position:relative;width:100vw;height:100vh;overflow:hidden;}
+.slide{position:absolute;inset:0;display:flex;flex-direction:column;opacity:0;pointer-events:none;transform:translateX(60px);transition:opacity .5s,transform .5s;}
+.slide.active{opacity:1;pointer-events:all;transform:none;}
+
+/* TOP BAR */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:12px 36px;border-bottom:1px solid var(--border);background:rgba(11,15,26,.97);flex-shrink:0;z-index:10;}
+.brand{font-family:'Syne',sans-serif;font-size:12px;letter-spacing:4px;color:var(--cyan);text-transform:uppercase;}
+.slide-title-bar{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--text);letter-spacing:1px;}
+.slide-num{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);}
+
+/* NAV */
+.nav{display:flex;align-items:center;justify-content:space-between;padding:10px 36px;border-top:1px solid var(--border);flex-shrink:0;background:rgba(11,15,26,.97);}
+.nbtn{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:2px;padding:7px 22px;background:transparent;border:1px solid var(--border);color:var(--muted);cursor:pointer;border-radius:2px;transition:all .2s;}
+.nbtn:hover{border-color:var(--cyan);color:var(--cyan);background:rgba(6,182,212,.05);}
+.dots{display:flex;gap:7px;align-items:center;}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--border);cursor:pointer;transition:all .3s;border:1px solid var(--muted);}
+.dot.on{background:var(--cyan);box-shadow:0 0 8px var(--cyan);border-color:var(--cyan);}
+
+/* SIDEBAR PROGRESS (right) */
+.side-nav{position:fixed;right:18px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:6px;z-index:100;}
+.sdot{width:6px;height:6px;border-radius:50%;background:var(--border);cursor:pointer;transition:all .3s;}
+.sdot.on{background:var(--cyan);box-shadow:0 0 8px var(--cyan);}
+
+/* ── SLIDE 1: TITLE ── */
+#s1{background:var(--bg);}
+.s1-body{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;position:relative;overflow:hidden;padding:32px;}
+.s1-kicker{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:5px;color:var(--muted);text-transform:uppercase;}
+.s1-h1{font-family:'Syne',sans-serif;font-weight:800;font-size:clamp(36px,5.5vw,72px);line-height:1.05;text-align:center;background:linear-gradient(135deg,var(--cyan),var(--blue));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.s1-desc{font-size:15px;color:var(--muted);max-width:560px;text-align:center;line-height:1.8;}
+.topo-grid{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:8px;}
+.tpill{padding:6px 16px;border-radius:100px;font-size:12px;font-weight:600;letter-spacing:1px;cursor:pointer;transition:all .2s;}
+.tp1{background:rgba(59,130,246,.15);border:1px solid rgba(59,130,246,.4);color:#60a5fa;}
+.tp2{background:rgba(6,182,212,.15);border:1px solid rgba(6,182,212,.4);color:#22d3ee;}
+.tp3{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.4);color:#f87171;}
+.tp4{background:rgba(251,191,36,.15);border:1px solid rgba(251,191,36,.4);color:#fcd34d;}
+.tp5{background:rgba(52,211,153,.15);border:1px solid rgba(52,211,153,.4);color:#6ee7b7;}
+.tp6{background:rgba(167,139,250,.15);border:1px solid rgba(167,139,250,.4);color:#c4b5fd;}
+#s1-bg{position:absolute;inset:0;pointer-events:none;}
+
+/* ── TOPOLOGY SLIDES ── */
+.topo-slide-body{flex:1;display:flex;gap:1px;background:var(--border);overflow:hidden;}
+.topo-canvas-col{display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--bg);overflow:hidden;position:relative;}
+.topo-info-col{background:var(--surf);display:flex;flex-direction:column;overflow-y:auto;padding:24px 22px;gap:16px;}
+.info-box{background:var(--surf2);border-radius:6px;padding:14px 16px;font-size:13px;color:var(--muted);line-height:1.8;border-left:3px solid;}
+.info-box strong{color:var(--text);}
+.adv-box{background:rgba(52,211,153,.05);border:1px solid rgba(52,211,153,.2);border-radius:6px;padding:12px 14px;}
+.dis-box{background:rgba(239,68,68,.05);border:1px solid rgba(239,68,68,.2);border-radius:6px;padding:12px 14px;}
+.box-title{font-family:'Syne',sans-serif;font-size:11px;font-weight:700;letter-spacing:2px;margin-bottom:8px;text-transform:uppercase;}
+.box-title.adv{color:#34d399;}
+.box-title.dis{color:#f87171;}
+.bullet{display:flex;gap:8px;font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:6px;align-items:flex-start;}
+.bdot{width:5px;height:5px;border-radius:50%;flex-shrink:0;margin-top:6px;}
+.topo-label{font-family:'Syne',sans-serif;font-size:10px;font-weight:700;letter-spacing:3px;text-transform:uppercase;margin-bottom:8px;}
+canvas.topo-cv{display:block;}
+
+/* ── SLIDE 8: OVERVIEW ── */
+#s8 .topo-slide-body{display:block;background:var(--bg);}
+.overview-grid{display:grid;grid-template-columns:1fr 1fr 1fr;grid-template-rows:1fr 1fr;gap:1px;background:var(--border);height:100%;}
+.ov-cell{background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;gap:8px;position:relative;overflow:hidden;cursor:pointer;transition:background .2s;}
+.ov-cell:hover{background:var(--surf);}
+.ov-label{font-family:'Syne',sans-serif;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;}
+</style>
+</head>
+<body>
+<div class="side-nav" id="side-nav"></div>
+<div class="slides">
+
+<!-- ══ SLIDE 1: TITLE ══════════════════════════════════════════════ -->
+<div class="slide active" id="s1">
+  <div class="topbar">
+    <div class="brand">Bilgisayar Ağları</div>
+    <div class="slide-title-bar">Ağ Topolojileri</div>
+    <div class="slide-num">01 / 08</div>
+  </div>
+  <div class="s1-body">
+    <canvas id="s1-bg" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;opacity:.25;"></canvas>
+    <div class="s1-kicker">Bilgisayar Ağlarının Oluşturulması</div>
+    <div class="s1-h1">Ağ Topolojileri</div>
+    <div class="s1-desc">Ağ topolojisi, bir ağ içerisindeki bilgisayarların ve cihazların birbirine bağlanma biçimini ifade eder. Mavi noktalar bilgisayarlar, kırmızı çizgiler kabloları temsil eder.</div>
+    <div class="topo-grid">
+      <div class="tpill tp1" onclick="goTo(2)">Bus</div>
+      <div class="tpill tp2" onclick="goTo(3)">Ring</div>
+      <div class="tpill tp3" onclick="goTo(4)">Star</div>
+      <div class="tpill tp4" onclick="goTo(5)">Ağaç (Tree)</div>
+      <div class="tpill tp5" onclick="goTo(6)">Mesh (Örgü)</div>
+      <div class="tpill tp6" onclick="goTo(7)">Hiyerarşik</div>
+    </div>
+  </div>
+  <div class="nav">
+    <button class="nbtn" onclick="prev()">← GERİ</button>
+    <div class="dots" id="dots1"></div>
+    <button class="nbtn" onclick="next()">İLERİ →</button>
+  </div>
+</div>
+
+<!-- ══ SLIDE 2: BUS ════════════════════════════════════════════════ -->
+<div class="slide" id="s2">
+  <div class="topbar">
+    <div class="brand">Bilgisayar Ağları</div>
+    <div class="slide-title-bar" style="color:#60a5fa">Ortak Yol (Bus) Topolojisi</div>
+    <div class="slide-num">02 / 08</div>
+  </div>
+  <div class="topo-slide-body">
+    <div class="topo-canvas-col" style="flex:1.2">
+      <div class="topo-label" style="color:#60a5fa">BUS TOPOLOJİSİ</div>
+      <canvas id="cv-bus" class="topo-cv"></canvas>
+    </div>
+    <div class="topo-info-col" style="width:320px;">
+      <div class="info-box" style="border-color:#3b82f6">
+        Tüm cihazlar <strong>ortak bir yol (bus)</strong> üzerinden iletişim kurar. Veriler hattın tamamına yayılır, hedef cihaz kendi adresine gelen paketi alır. Merkezi bir cihaz bulunmaz.
+      </div>
+      <div class="adv-box">
+        <div class="box-title adv">✦ Avantajlar</div>
+        <div class="bullet"><div class="bdot" style="background:#34d399"></div>Nispeten düşük maliyet</div>
+        <div class="bullet"><div class="bdot" style="background:#34d399"></div>Kurulum kolaylığı</div>
+        <div class="bullet"><div class="bdot" style="background:#34d399"></div>Tüm düğümler eşittir, merkezi cihaz gerekmez</div>
+        <div class="bullet"><div class="bdot" style="background:#34d399"></div>Tek bir düğümün kopması ağı durdurmaz</div>
+      </div>
+      <div class="dis-box">
+        <div class="box-title dis">✗ Dezavantajlar</div>
+        <div class="bullet"><div class="bdot" style="background:#f87171"></div>Veri çarpışmaları yaşanabilir</div>
+        <div class="bullet"><div class="bdot" style="background:#f87171"></div>Hatasız iletim için ek protokol kuralları gerekir</div>
+        <div class="bullet"><div class="bdot" style="background:#f87171"></div>Çok sayıda cihazda performans düşer</div>
+        <div class="bullet"><div class="bdot" style="background:#f87171"></div>Ortak hatta meydana gelen kopma tüm trafiği durdurur</div>
+      </div>
+    </div>
+  </div>
+  <div class="nav"><button class="nbtn" onclick="prev()">← GERİ</button><div class="dots" id="dots2"></div><button class="nbtn" onclick="next()">İLERİ →</button></div>
+</div>
+
+<!-- ══ SLIDE 3: RING ═══════════════════════════════════════════════ -->
+<div class="slide" id="s3">
+  <div class="topbar">
+    <div class="brand">Bilgisayar Ağları</div>
+    <div class="slide-title-bar" style="color:#22d3ee">Halka (Ring) Topolojisi</div>
+    <div class="slide-num">03 / 08</div>
+  </div>
+  <div class="topo-slide-body">
+    <div class="topo-canvas-col" style="flex:1.2">
+      <div class="topo-label" style="color:#22d3ee">RING TOPOLOJİSİ</div>
+      <canvas id="cv-ring" class="topo-cv"></canvas>
+    </div>
+    <div class="topo-info-col" style="width:320px;">
+      <div class="info-box" style="border-color:#06b6d4">
+        Tüm cihazlar <strong>halka şeklinde</strong> bağlanır. Veriler halka boyunca tek yönde iletilir. Her düğüm kendisine gelmeyen veriyi bir sonraki düğüme iletir.
+      </div>
+      <div class="adv-box">
+        <div class="box-title adv">✦ Avantajlar</div>
+        <div class="bullet"><div class="bdot" style="background:#34d399"></div>Bus'a kıyasla veri çarpışması olasılığı daha düşük</div>
+        <div class="bullet"><div class="bdot" style="background:#34d399"></div>Daha yüksek hızlarda iletişim imkânı</div>
+      </div>
+      <div class="dis-box">
+        <div class="box-title dis">✗ Dezavantajlar</div>
+        <div class="bullet"><div class="bdot" style="background:#f87171"></div>Tek yönlü halka topolojisinde yalnızca tek bilgisayar haberleşebilir</div>
+        <div class="bullet"><div class="bdot" style="background:#f87171"></div>İletişim yönündeki bir cihazın arızası iletişimi durdurur</div>
+        <div class="bullet"><div class="bdot" style="background:#f87171"></div>Çarpışmadan kaçınmak için ek kurallar gerekir</div>
+      </div>
+    </div>
+  </div>
+  <div class="nav"><button class="nbtn" onclick="prev()">← GERİ</button><div class="dots" id="dots3"></div><button class="nbtn" onclick="next()">İLERİ →</button></div>
+</div>
+
+<!-- ══ SLIDE 4: STAR ═══════════════════════════════════════════════ -->
+<div class="slide" id="s4">
+  <div class="topbar">
+    <div class="brand">Bilgisayar Ağları</div>
+    <div class="slide-title-bar" style="color:#f87171">Yıldız (Star) Topolojisi</div>
+    <div class="slide-num">04 / 08</div>
+  </div>
+  <div class="topo-slide-body">
+    <div class="topo-canvas-col" style="flex:1.2">
+      <div class="topo-label" style="color:#f87171">STAR TOPOLOJİSİ</div>
+      <canvas id="cv-star" class="topo-cv"></canvas>
+    </div>
+    <div class="topo-info-col" style="width:320px;">
+      <div class="info-box" style="border-color:#ef4444">
+        Tüm cihazlar <strong>merkezi bir düğüme</strong> (switch/hub) bağlanır. Ağ üzerindeki tüm veriler merkez tarafından dinlenebilir. Merkezi düğümün kopması tüm iletişimi durdurur.
+      </div>
+      <div class="adv-box">
+        <div class="box-title adv">✦ Avantajlar</div>
+        <div class="bullet"><div class="bdot" style="background:#34d399"></div>Veriler ortak yol kullanmaz, çarpışma olmaz</div>
+        <div class="bullet"><div class="bdot" style="background:#34d399"></div>Merkez dışı arıza ağı etkilemez</div>
+      </div>
+      <div class="dis-box">
+        <div class="box-title dis">✗ Dezavantajlar</div>
+        <div class="bullet"><div class="bdot" style="background:#f87171"></div>Merkezdeki cihazın arızalanması iletişimi durdurur</div>
+        <div class="bullet"><div class="bdot" style="background:#f87171"></div>Bus topolojisine kıyasla daha maliyetlidir</div>
+      </div>
+    </div>
+  </div>
+  <div class="nav"><button class="nbtn" onclick="prev()">← GERİ</button><div class="dots" id="dots4"></div><button class="nbtn" onclick="next()">İLERİ →</button></div>
+</div>
+
+<!-- ══ SLIDE 5: TREE ═══════════════════════════════════════════════ -->
+<div class="slide" id="s5">
+  <div class="topbar">
+    <div class="brand">Bilgisayar Ağları</div>
+    <div class="slide-title-bar" style="color:#fcd34d">Ağaç (Tree) Topolojisi</div>
+    <div class="slide-num">05 / 08</div>
+  </div>
+  <div class="topo-slide-body">
+    <div class="topo-canvas-col" style="flex:1.2">
+      <div class="topo-label" style="color:#fcd34d">TREE TOPOLOJİSİ</div>
+      <canvas id="cv-tree" class="topo-cv"></canvas>
+    </div>
+    <div class="topo-info-col" style="width:320px;">
+      <div class="info-box" style="border-color:#f59e0b">
+        <strong>Genişletilmiş Yıldız</strong> topolojisi; yıldız topolojisindeki merkez dağılımın alt dallar içermesiyle oluşur. Ağaç topolojisi <strong>hiyerarşik</strong> bir yapı içerir. Kök düğüm ağdan geçen tüm verileri denetleyebilir.
+      </div>
+      <div class="adv-box">
+        <div class="box-title adv">✦ Avantajlar</div>
+        <div class="bullet"><div class="bdot" style="background:#34d399"></div>Büyük ağlarda hiyerarşik yönetim kolaylığı</div>
+        <div class="bullet"><div class="bdot" style="background:#34d399"></div>Alt ağlar birbirinden bağımsız çalışabilir</div>
+        <div class="bullet"><div class="bdot" style="background:#34d399"></div>Ölçeklenebilir yapı</div>
+      </div>
+      <div class="dis-box">
+        <div class="box-title dis">✗ Dezavantajlar</div>
+        <div class="bullet"><div class="bdot" style="background:#f87171"></div>Kök düğümün arızası tüm ağı etkiler</div>
+        <div class="bullet"><div class="bdot" style="background:#f87171"></div>Kablo maliyeti yüksektir</div>
+        <div class="bullet"><div class="bdot" style="background:#f87171"></div>Bakım ve yönetim karmaşık olabilir</div>
+      </div>
+    </div>
+  </div>
+  <div class="nav"><button class="nbtn" onclick="prev()">← GERİ</button><div class="dots" id="dots5"></div><button class="nbtn" onclick="next()">İLERİ →</button></div>
+</div>
+
+<!-- ══ SLIDE 6: MESH ═══════════════════════════════════════════════ -->
+<div class="slide" id="s6">
+  <div class="topbar">
+    <div class="brand">Bilgisayar Ağları</div>
+    <div class="slide-title-bar" style="color:#6ee7b7">Örgü (Mesh) Topolojisi</div>
+    <div class="slide-num">06 / 08</div>
+  </div>
+  <div class="topo-slide-body">
+    <div class="topo-canvas-col" style="flex:1.2">
+      <div class="topo-label" style="color:#6ee7b7">MESH TOPOLOJİSİ</div>
+      <canvas id="cv-mesh" class="topo-cv"></canvas>
+    </div>
+    <div class="topo-info-col" style="width:320px;">
+      <div class="info-box" style="border-color:#34d399">
+        Tüm cihazlar <strong>birbirleriyle doğrudan bağlantı</strong> kurar. N düğüm için N×(N−1)/2 bağlantı gerekir. En yüksek hata toleransına sahip topolojidir.
+      </div>
+      <div class="adv-box">
+        <div class="box-title adv">✦ Avantajlar</div>
+        <div class="bullet"><div class="bdot" style="background:#34d399"></div>Tüm düğümler arasında direkt erişim</div>
+        <div class="bullet"><div class="bdot" style="background:#34d399"></div>Herhangi bir yerdeki bozulma geniş ağı etkilemez</div>
+        <div class="bullet"><div class="bdot" style="background:#34d399"></div>Mesajlar diğer kullanıcılar tarafından dinlenemez</div>
+        <div class="bullet"><div class="bdot" style="background:#34d399"></div>Ağa yeni bilgisayar eklenmesi oldukça kolay</div>
+      </div>
+      <div class="dis-box">
+        <div class="box-title dis">✗ Dezavantajlar</div>
+        <div class="bullet"><div class="bdot" style="background:#f87171"></div>Direkt bağlantıların maliyeti çok yüksek</div>
+        <div class="bullet"><div class="bdot" style="background:#f87171"></div>Güç tüketimi fazladır</div>
+      </div>
+    </div>
+  </div>
+  <div class="nav"><button class="nbtn" onclick="prev()">← GERİ</button><div class="dots" id="dots6"></div><button class="nbtn" onclick="next()">İLERİ →</button></div>
+</div>
+
+<!-- ══ SLIDE 7: HIERARCHICAL ═══════════════════════════════════════ -->
+<div class="slide" id="s7">
+  <div class="topbar">
+    <div class="brand">Bilgisayar Ağları</div>
+    <div class="slide-title-bar" style="color:#c4b5fd">Hiyerarşik (Hierarchical) Topoloji</div>
+    <div class="slide-num">07 / 08</div>
+  </div>
+  <div class="topo-slide-body">
+    <div class="topo-canvas-col" style="flex:1.2">
+      <div class="topo-label" style="color:#c4b5fd">HİYERARŞİK TOPOLOJİ</div>
+      <canvas id="cv-hier" class="topo-cv"></canvas>
+    </div>
+    <div class="topo-info-col" style="width:320px;">
+      <div class="info-box" style="border-color:#a78bfa">
+        Ağ cihazları <strong>katmanlı ve ağaç benzeri</strong> bir yapıda düzenlenir. <strong>Çekirdek (Core) → Dağıtım (Distribution) → Erişim (Access)</strong> katmanları şeklinde organize edilir. Büyük kurumsal ağlarda kontrol, güvenlik ve yönetilebilirlik sağlar.
+      </div>
+      <div class="adv-box">
+        <div class="box-title adv">✦ Avantajlar</div>
+        <div class="bullet"><div class="bdot" style="background:#34d399"></div>Büyük ölçekli ağlarda düzenli ve kontrollü yönetim</div>
+        <div class="bullet"><div class="bdot" style="background:#34d399"></div>Ağ trafiği katmanlar arasında dengeli dağıtılır</div>
+        <div class="bullet"><div class="bdot" style="background:#34d399"></div>Güvenlik ve erişim politikaları katman bazlı uygulanabilir</div>
+        <div class="bullet"><div class="bdot" style="background:#34d399"></div>Arıza tespiti ve yönetimi kolaydır</div>
+      </div>
+      <div class="dis-box">
+        <div class="box-title dis">✗ Dezavantajlar</div>
+        <div class="bullet"><div class="bdot" style="background:#f87171"></div>Kurulum ve bakım maliyeti yüksek</div>
+        <div class="bullet"><div class="bdot" style="background:#f87171"></div>Üst katmanlardaki arıza alt katmanları da etkiler</div>
+        <div class="bullet"><div class="bdot" style="background:#f87171"></div>Küçük ağlar için gereksiz karmaşıklık</div>
+      </div>
+    </div>
+  </div>
+  <div class="nav"><button class="nbtn" onclick="prev()">← GERİ</button><div class="dots" id="dots7"></div><button class="nbtn" onclick="next()">İLERİ →</button></div>
+</div>
+
+<!-- ══ SLIDE 8: OVERVIEW ═══════════════════════════════════════════ -->
+<div class="slide" id="s8">
+  <div class="topbar">
+    <div class="brand">Bilgisayar Ağları</div>
+    <div class="slide-title-bar">Genel Bakış — Tüm Topolojiler</div>
+    <div class="slide-num">08 / 08</div>
+  </div>
+  <div class="topo-slide-body" style="background:var(--bg);">
+    <div class="overview-grid">
+      <div class="ov-cell" onclick="goTo(2)"><canvas id="ov-bus" style="width:140px;height:90px;"></canvas><div class="ov-label" style="color:#60a5fa">Bus</div></div>
+      <div class="ov-cell" onclick="goTo(3)"><canvas id="ov-ring" style="width:110px;height:90px;"></canvas><div class="ov-label" style="color:#22d3ee">Ring</div></div>
+      <div class="ov-cell" onclick="goTo(4)"><canvas id="ov-star" style="width:110px;height:90px;"></canvas><div class="ov-label" style="color:#f87171">Star</div></div>
+      <div class="ov-cell" onclick="goTo(5)"><canvas id="ov-tree" style="width:120px;height:90px;"></canvas><div class="ov-label" style="color:#fcd34d">Tree</div></div>
+      <div class="ov-cell" onclick="goTo(6)"><canvas id="ov-mesh" style="width:110px;height:90px;"></canvas><div class="ov-label" style="color:#6ee7b7">Mesh</div></div>
+      <div class="ov-cell" onclick="goTo(7)"><canvas id="ov-hier" style="width:120px;height:90px;"></canvas><div class="ov-label" style="color:#c4b5fd">Hiyerarşik</div></div>
+    </div>
+  </div>
+  <div class="nav"><button class="nbtn" onclick="prev()">← GERİ</button><div class="dots" id="dots8"></div><button class="nbtn" onclick="next()">İLERİ →</button></div>
+</div>
+
+</div><!-- .slides -->
+
+<script>
+// ── SLIDE MANAGEMENT ──────────────────────────────────────────────────────────
+const TOTAL=8; let cur=1;
+const anims={};
+
+function buildNav(){
+  const sn=document.getElementById('side-nav'); sn.innerHTML='';
+  for(let i=1;i<=TOTAL;i++){const d=document.createElement('div');d.className='sdot'+(i===cur?' on':'');d.onclick=()=>goTo(i);sn.appendChild(d);}
+  ['dots1','dots2','dots3','dots4','dots5','dots6','dots7','dots8'].forEach(id=>{
+    const el=document.getElementById(id); if(!el)return;
+    el.innerHTML='';
+    for(let i=1;i<=TOTAL;i++){const d=document.createElement('div');d.className='dot'+(i===cur?' on':'');d.onclick=()=>goTo(i);el.appendChild(d);}
+  });
+}
+function goTo(n){
+  document.getElementById('s'+cur).classList.remove('active');
+  cur=Math.max(1,Math.min(TOTAL,n));
+  document.getElementById('s'+cur).classList.add('active');
+  buildNav();
+  setTimeout(()=>triggerSlide(cur),50);
+}
+function next(){goTo(cur+1);}
+function prev(){goTo(cur-1);}
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'||e.key===' ')next();
+  if(e.key==='ArrowLeft')prev();
+});
+buildNav();
+
+// ── CANVAS HELPERS ────────────────────────────────────────────────────────────
+function sz(id){
+  const el=document.getElementById(id); if(!el)return null;
+  const r=el.parentElement.getBoundingClientRect();
+  el.width=r.width||el.offsetWidth||300;
+  el.height=r.height||el.offsetHeight||200;
+  return el;
+}
+function node(ctx,x,y,r=9,col='#38bdf8',glow=true){
+  if(glow){ctx.shadowColor=col;ctx.shadowBlur=14;}
+  ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);
+  ctx.fillStyle=col;ctx.fill();
+  ctx.strokeStyle='rgba(255,255,255,0.3)';ctx.lineWidth=1.5;ctx.stroke();
+  if(glow)ctx.shadowBlur=0;
+}
+function cable(ctx,x1,y1,x2,y2,col='#ef4444',w=2.5,glow=true){
+  if(glow){ctx.shadowColor=col;ctx.shadowBlur=8;}
+  ctx.strokeStyle=col;ctx.lineWidth=w;
+  ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
+  if(glow)ctx.shadowBlur=0;
+}
+
+// ── TITLE BG ─────────────────────────────────────────────────────────────────
+let s1t=0;
+function drawS1bg(){
+  const el=document.getElementById('s1-bg');if(!el)return;
+  const r=el.parentElement.getBoundingClientRect();
+  el.width=r.width;el.height=r.height;
+  const ctx=el.getContext('2d');const W=el.width,H=el.height;
+  ctx.clearRect(0,0,W,H);
+  // Draw a slowly rotating mesh of nodes
+  const pts=[{x:.15,y:.3},{x:.35,y:.15},{x:.55,y:.25},{x:.7,y:.5},{x:.85,y:.3},
+             {x:.25,y:.6},{x:.5,y:.7},{x:.75,y:.75},{x:.1,y:.75},{x:.9,y:.65}];
+  const links=[[0,1],[1,2],[2,3],[3,4],[0,5],[1,2],[5,6],[6,7],[7,3],[5,8],[2,6],[3,7],[4,7],[8,5],[9,7]];
+  const off=Math.sin(s1t*0.3)*0.02;
+  links.forEach(([a,b])=>{
+    const A=pts[a],B=pts[b];
+    cable(ctx,A.x*W,A.y*H+off*H,B.x*W,B.y*H+off*H,'rgba(239,68,68,0.35)',1.5,false);
+  });
+  pts.forEach((p,i)=>{
+    const pulse=(Math.sin(s1t+i*0.8)+1)/2;
+    node(ctx,p.x*W,p.y*H+off*H,7+pulse*3,'rgba(56,189,248,0.6)',false);
+  });
+  s1t+=0.01;
+  if(cur===1) requestAnimationFrame(drawS1bg);
+}
+
+// ── BUS ───────────────────────────────────────────────────────────────────────
+let busT=0,busAnim=null;
+function drawBus(){
+  const el=sz('cv-bus');if(!el)return;
+  const ctx=el.getContext('2d');const W=el.width,H=el.height;
+  const N=6;
+  function frame(){
+    ctx.clearRect(0,0,W,H);
+    const y=H/2,x0=W*0.08,x1=W*0.92;
+    // Bus cable
+    cable(ctx,x0,y,x1,y,'#ef4444',3);
+    // Terminators
+    ctx.fillStyle='#ef4444';
+    ctx.fillRect(x0-5,y-6,10,12);ctx.fillRect(x1-5,y-6,10,12);
+    const spacing=(x1-x0)/(N+1);
+    // Data packet animation
+    const px=x0+(((busT*0.8)%(x1-x0)));
+    ctx.fillStyle='rgba(250,204,21,0.9)';
+    ctx.beginPath();ctx.arc(px,y,5,0,Math.PI*2);ctx.fill();
+    ctx.shadowColor='#facc15';ctx.shadowBlur=12;ctx.fill();ctx.shadowBlur=0;
+    for(let i=0;i<N;i++){
+      const x=x0+spacing*(i+1);
+      cable(ctx,x,y,x,y-40,'#ef4444',2.5);
+      const active=Math.abs(px-x)<18;
+      node(ctx,x,y-52,10,active?'#facc15':'#38bdf8');
+    }
+    busT+=0.5;
+    if(cur===2) busAnim=requestAnimationFrame(frame);
+  }
+  if(busAnim)cancelAnimationFrame(busAnim);frame();
+}
+
+// ── RING ─────────────────────────────────────────────────────────────────────
+let ringT=0,ringAnim=null;
+function drawRing(){
+  const el=sz('cv-ring');if(!el)return;
+  const ctx=el.getContext('2d');const W=el.width,H=el.height;
+  const N=8,R=Math.min(W,H)*0.34;
+  const cx=W/2,cy=H/2;
+  function frame(){
+    ctx.clearRect(0,0,W,H);
+    const pts=[];
+    for(let i=0;i<N;i++){const a=i/N*Math.PI*2-Math.PI/2;pts.push({x:cx+Math.cos(a)*R,y:cy+Math.sin(a)*R});}
+    // draw cables
+    pts.forEach((p,i)=>{const q=pts[(i+1)%N];cable(ctx,p.x,p.y,q.x,q.y,'#ef4444',2.5);});
+    // data packet traveling ring
+    const progress=(ringT*0.012)%1;
+    const fi=Math.floor(progress*N);const frac=(progress*N)%1;
+    const A=pts[fi],B=pts[(fi+1)%N];
+    const px=A.x+(B.x-A.x)*frac,py=A.y+(B.y-A.y)*frac;
+    // direction arrow glow
+    ctx.shadowColor='#facc15';ctx.shadowBlur=16;
+    ctx.fillStyle='#facc15';ctx.beginPath();ctx.arc(px,py,6,0,Math.PI*2);ctx.fill();
+    ctx.shadowBlur=0;
+    // nodes
+    pts.forEach((p,i)=>{
+      const dist=Math.abs(progress*N-i);const active=dist<0.8||dist>N-0.8;
+      node(ctx,p.x,p.y,10,active?'#facc15':'#38bdf8');
+    });
+    ringT+=0.4;
+    if(cur===3) ringAnim=requestAnimationFrame(frame);
+  }
+  if(ringAnim)cancelAnimationFrame(ringAnim);frame();
+}
+
+// ── STAR ─────────────────────────────────────────────────────────────────────
+let starT=0,starAnim=null;
+function drawStar(){
+  const el=sz('cv-star');if(!el)return;
+  const ctx=el.getContext('2d');const W=el.width,H=el.height;
+  const N=8,R=Math.min(W,H)*0.36;
+  const cx=W/2,cy=H/2;
+  function frame(){
+    ctx.clearRect(0,0,W,H);
+    const pts=[];
+    for(let i=0;i<N;i++){const a=i/N*Math.PI*2-Math.PI/2;pts.push({x:cx+Math.cos(a)*R,y:cy+Math.sin(a)*R});}
+    const activeIdx=Math.floor((starT/60)%N);
+    pts.forEach((p,i)=>{
+      cable(ctx,cx,cy,p.x,p.y,'#ef4444',2.5);
+      // pulse along active cable
+      if(i===activeIdx){
+        const pf=(starT%60)/60;
+        const px2=cx+(p.x-cx)*pf,py2=cy+(p.y-cy)*pf;
+        ctx.shadowColor='#facc15';ctx.shadowBlur=14;
+        ctx.fillStyle='#facc15';ctx.beginPath();ctx.arc(px2,py2,5,0,Math.PI*2);ctx.fill();
+        ctx.shadowBlur=0;
+      }
+      node(ctx,p.x,p.y,10,i===activeIdx?'#facc15':'#38bdf8');
+    });
+    // center (hub)
+    ctx.shadowColor='#ef4444';ctx.shadowBlur=20;
+    node(ctx,cx,cy,14,'#ef4444');ctx.shadowBlur=0;
+    ctx.fillStyle='rgba(255,255,255,0.6)';ctx.font='bold 10px Nunito';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText('HUB',cx,cy);
+    starT+=0.5;
+    if(cur===4) starAnim=requestAnimationFrame(frame);
+  }
+  if(starAnim)cancelAnimationFrame(starAnim);frame();
+}
+
+// ── TREE ─────────────────────────────────────────────────────────────────────
+let treeT=0,treeAnim=null;
+function drawTree(){
+  const el=sz('cv-tree');if(!el)return;
+  const ctx=el.getContext('2d');const W=el.width,H=el.height;
+  function frame(){
+    ctx.clearRect(0,0,W,H);
+    const root={x:W/2,y:H*0.1};
+    const mid=[{x:W*0.25,y:H*0.38},{x:W*0.5,y:H*0.38},{x:W*0.75,y:H*0.38}];
+    const leaves=[[{x:W*.12,y:H*.68},{x:W*.25,y:H*.68}],[{x:W*.4,y:H*.68},{x:W*.5,y:H*.68},{x:W*.6,y:H*.68}],[{x:W*.72,y:H*.68},{x:W*.85,y:H*.68}]];
+    // cables root→mid
+    mid.forEach((m,i)=>cable(ctx,root.x,root.y,m.x,m.y,'#ef4444',2.5));
+    // cables mid→leaves
+    leaves.forEach((group,gi)=>group.forEach(l=>cable(ctx,mid[gi].x,mid[gi].y,l.x,l.y,'#ef4444',2)));
+    // pulse along tree
+    const p=((treeT*0.01)%1);
+    const pulseY=root.y+(H*0.68-root.y)*p;
+    ctx.shadowColor='#facc15';ctx.shadowBlur=14;
+    ctx.fillStyle='#facc15';ctx.beginPath();ctx.arc(root.x+W*(p<0.3?0:(p-0.3)),pulseY,5,0,Math.PI*2);ctx.fill();
+    ctx.shadowBlur=0;
+    // nodes
+    node(ctx,root.x,root.y,13,'#ef4444');
+    ctx.fillStyle='#fff';ctx.font='8px Nunito';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('ROOT',root.x,root.y);
+    mid.forEach(m=>node(ctx,m.x,m.y,10,'#f59e0b'));
+    leaves.forEach(g=>g.forEach(l=>node(ctx,l.x,l.y,9,'#38bdf8')));
+    treeT+=0.4;
+    if(cur===5) treeAnim=requestAnimationFrame(frame);
+  }
+  if(treeAnim)cancelAnimationFrame(treeAnim);frame();
+}
+
+// ── MESH ─────────────────────────────────────────────────────────────────────
+let meshT=0,meshAnim=null;
+function drawMesh(){
+  const el=sz('cv-mesh');if(!el)return;
+  const ctx=el.getContext('2d');const W=el.width,H=el.height;
+  const N=6,R=Math.min(W,H)*0.34;
+  const cx=W/2,cy=H/2;
+  function frame(){
+    ctx.clearRect(0,0,W,H);
+    const pts=[];
+    for(let i=0;i<N;i++){const a=i/N*Math.PI*2-Math.PI/2;pts.push({x:cx+Math.cos(a)*R,y:cy+Math.sin(a)*R});}
+    // all connections
+    for(let i=0;i<N;i++)for(let j=i+1;j<N;j++){
+      cable(ctx,pts[i].x,pts[i].y,pts[j].x,pts[j].y,'#ef4444',1.8);
+    }
+    // animated data
+    const idx=Math.floor((meshT*0.01)%(N*(N-1)/2));
+    let cnt=0;
+    outer:for(let i=0;i<N;i++)for(let j=i+1;j<N;j++){
+      if(cnt++===idx){
+        const pf=(meshT*0.015)%1;
+        const px2=pts[i].x+(pts[j].x-pts[i].x)*pf;
+        const py2=pts[i].y+(pts[j].y-pts[i].y)*pf;
+        ctx.shadowColor='#facc15';ctx.shadowBlur=14;
+        ctx.fillStyle='#facc15';ctx.beginPath();ctx.arc(px2,py2,6,0,Math.PI*2);ctx.fill();
+        ctx.shadowBlur=0;
+        break outer;
+      }
+    }
+    pts.forEach(p=>node(ctx,p.x,p.y,10,'#38bdf8'));
+    meshT+=0.4;
+    if(cur===6) meshAnim=requestAnimationFrame(frame);
+  }
+  if(meshAnim)cancelAnimationFrame(meshAnim);frame();
+}
+
+// ── HIERARCHICAL ─────────────────────────────────────────────────────────────
+let hierT=0,hierAnim=null;
+function drawHier(){
+  const el=sz('cv-hier');if(!el)return;
+  const ctx=el.getContext('2d');const W=el.width,H=el.height;
+  function frame(){
+    ctx.clearRect(0,0,W,H);
+    // Core layer
+    const core={x:W/2,y:H*0.1};
+    // Distribution layer
+    const dist=[{x:W*0.28,y:H*0.35},{x:W*0.72,y:H*0.35}];
+    // Access layer
+    const acc=[[{x:W*0.12,y:H*0.62},{x:W*0.28,y:H*0.62},{x:W*0.44,y:H*0.62}],[{x:W*0.56,y:H*0.62},{x:W*0.72,y:H*0.62},{x:W*0.88,y:H*0.62}]];
+    // End devices
+    const dev=acc.map(group=>group.map(a=>[{x:a.x-0.07*W,y:H*0.87},{x:a.x+0.07*W,y:H*0.87}]));
+    // draw cables
+    dist.forEach(d=>cable(ctx,core.x,core.y,d.x,d.y,'#ef4444',3));
+    acc.forEach((group,gi)=>group.forEach(a=>cable(ctx,dist[gi].x,dist[gi].y,a.x,a.y,'#ef4444',2.5)));
+    dev.forEach((group,gi)=>group.forEach((pair,pi)=>pair.forEach(d=>cable(ctx,acc[gi][pi].x,acc[gi][pi].y,d.x,d.y,'#ef4444',1.5))));
+    // pulse
+    const p=(hierT*0.01)%1;
+    if(p<0.33){
+      const pp=p/0.33;
+      const px2=core.x+(dist[0].x-core.x)*pp;
+      const py2=core.y+(dist[0].y-core.y)*pp;
+      ctx.shadowColor='#facc15';ctx.shadowBlur=14;ctx.fillStyle='#facc15';ctx.beginPath();ctx.arc(px2,py2,5,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;
+    }
+    // Layer labels
+    ctx.fillStyle='rgba(239,68,68,0.5)';ctx.font='9px JetBrains Mono';ctx.textAlign='left';
+    ctx.fillText('CORE',core.x+18,core.y+4);
+    ctx.fillText('DISTRIBUTION',dist[0].x-30,dist[0].y-14);
+    ctx.fillText('ACCESS',acc[0][0].x-8,acc[0][0].y-14);
+    // draw nodes
+    node(ctx,core.x,core.y,14,'#ef4444');
+    dist.forEach(d=>node(ctx,d.x,d.y,11,'#f59e0b'));
+    acc.forEach(g=>g.forEach(a=>node(ctx,a.x,a.y,9,'#a78bfa')));
+    dev.forEach(g=>g.forEach(pair=>pair.forEach(d=>node(ctx,d.x,d.y,7,'#38bdf8'))));
+    hierT+=0.4;
+    if(cur===7) hierAnim=requestAnimationFrame(frame);
+  }
+  if(hierAnim)cancelAnimationFrame(hierAnim);frame();
+}
+
+// ── OVERVIEW SMALL CANVASES ───────────────────────────────────────────────────
+function drawSmall(id,fn){ const el=document.getElementById(id); if(!el){return;} el.width=140;el.height=90; fn(el); }
+
+function drawSmallBus(el){
+  const ctx=el.getContext('2d');const W=el.width,H=el.height;
+  const y=H/2,x0=10,x1=W-10,N=5,sp=(x1-x0)/(N+1);
+  cable(ctx,x0,y,x1,y,'#ef4444',2,false);
+  for(let i=0;i<N;i++){const x=x0+sp*(i+1);cable(ctx,x,y,x,y-22,'#ef4444',1.5,false);node(ctx,x,y-28,6,'#38bdf8',false);}
+}
+function drawSmallRing(el){
+  const ctx=el.getContext('2d');const W=el.width,H=el.height;const N=7,R=Math.min(W,H)*0.34,cx=W/2,cy=H/2;
+  const pts=[];for(let i=0;i<N;i++){const a=i/N*Math.PI*2-Math.PI/2;pts.push({x:cx+Math.cos(a)*R,y:cy+Math.sin(a)*R});}
+  pts.forEach((p,i)=>{const q=pts[(i+1)%N];cable(ctx,p.x,p.y,q.x,q.y,'#ef4444',1.5,false);});
+  pts.forEach(p=>node(ctx,p.x,p.y,6,'#38bdf8',false));
+}
+function drawSmallStar(el){
+  const ctx=el.getContext('2d');const W=el.width,H=el.height;const N=7,R=Math.min(W,H)*0.36,cx=W/2,cy=H/2;
+  const pts=[];for(let i=0;i<N;i++){const a=i/N*Math.PI*2-Math.PI/2;pts.push({x:cx+Math.cos(a)*R,y:cy+Math.sin(a)*R});}
+  pts.forEach(p=>{cable(ctx,cx,cy,p.x,p.y,'#ef4444',1.5,false);node(ctx,p.x,p.y,6,'#38bdf8',false);});
+  node(ctx,cx,cy,9,'#ef4444',false);
+}
+function drawSmallTree(el){
+  const ctx=el.getContext('2d');const W=el.width,H=el.height;
+  const root={x:W/2,y:H*0.1};const mid=[{x:W*0.28,y:H*0.42},{x:W*0.72,y:H*0.42}];
+  const leaves=[[{x:W*.15,y:H*.76},{x:W*.28,y:H*.76}],[{x:W*.6,y:H*.76},{x:W*.75,y:H*.76}]];
+  mid.forEach(m=>cable(ctx,root.x,root.y,m.x,m.y,'#ef4444',1.5,false));
+  leaves.forEach((g,gi)=>g.forEach(l=>cable(ctx,mid[gi].x,mid[gi].y,l.x,l.y,'#ef4444',1,false)));
+  node(ctx,root.x,root.y,8,'#ef4444',false);mid.forEach(m=>node(ctx,m.x,m.y,6,'#f59e0b',false));leaves.forEach(g=>g.forEach(l=>node(ctx,l.x,l.y,5,'#38bdf8',false)));
+}
+function drawSmallMesh(el){
+  const ctx=el.getContext('2d');const W=el.width,H=el.height;const N=5,R=Math.min(W,H)*0.34,cx=W/2,cy=H/2;
+  const pts=[];for(let i=0;i<N;i++){const a=i/N*Math.PI*2-Math.PI/2;pts.push({x:cx+Math.cos(a)*R,y:cy+Math.sin(a)*R});}
+  for(let i=0;i<N;i++)for(let j=i+1;j<N;j++)cable(ctx,pts[i].x,pts[i].y,pts[j].x,pts[j].y,'#ef4444',1,false);
+  pts.forEach(p=>node(ctx,p.x,p.y,6,'#38bdf8',false));
+}
+function drawSmallHier(el){
+  const ctx=el.getContext('2d');const W=el.width,H=el.height;
+  const core={x:W/2,y:H*0.1};const dist=[{x:W*0.28,y:H*0.4},{x:W*0.72,y:H*0.4}];
+  const acc=[[{x:W*0.15,y:H*0.7},{x:W*0.3,y:H*0.7}],[{x:W*0.58,y:H*0.7},{x:W*0.75,y:H*0.7}]];
+  dist.forEach(d=>cable(ctx,core.x,core.y,d.x,d.y,'#ef4444',1.5,false));
+  acc.forEach((g,gi)=>g.forEach(a=>cable(ctx,dist[gi].x,dist[gi].y,a.x,a.y,'#ef4444',1,false)));
+  node(ctx,core.x,core.y,8,'#ef4444',false);dist.forEach(d=>node(ctx,d.x,d.y,6,'#f59e0b',false));acc.forEach(g=>g.forEach(a=>node(ctx,a.x,a.y,5,'#a78bfa',false)));
+}
+
+// ── TRIGGER ───────────────────────────────────────────────────────────────────
+function triggerSlide(n){
+  if(n===1)drawS1bg();
+  if(n===2)setTimeout(drawBus,80);
+  if(n===3)setTimeout(drawRing,80);
+  if(n===4)setTimeout(drawStar,80);
+  if(n===5)setTimeout(drawTree,80);
+  if(n===6)setTimeout(drawMesh,80);
+  if(n===7)setTimeout(drawHier,80);
+  if(n===8){
+    setTimeout(()=>{
+      drawSmall('ov-bus',drawSmallBus);drawSmall('ov-ring',drawSmallRing);
+      drawSmall('ov-star',drawSmallStar);drawSmall('ov-tree',drawSmallTree);
+      drawSmall('ov-mesh',drawSmallMesh);drawSmall('ov-hier',drawSmallHier);
+    },80);
+  }
+}
+
+// Init
+setTimeout(()=>{drawS1bg();},100);
+window.addEventListener('resize',()=>triggerSlide(cur));
+</script>
+</body>
+</html>
