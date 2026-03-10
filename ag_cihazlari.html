@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ağ Cihazları</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Nunito:wght@300;400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#080c14;--surf:#0f1623;--surf2:#161e2e;
+  --border:#1c2840;--text:#dde6f0;--muted:#5a6a80;
+  --node:#38bdf8;--cable:#3b82f6;
+  --hub:#f59e0b;--sw:#06b6d4;--rep:#10b981;
+  --rtr:#ef4444;--br:#a78bfa;--cl:#60a5fa;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;}
+
+/* SLIDE ENGINE */
+.slides{width:100vw;height:100vh;position:relative;overflow:hidden;}
+.slide{position:absolute;inset:0;display:flex;flex-direction:column;opacity:0;pointer-events:none;transform:translateX(50px);transition:opacity .5s,transform .5s;}
+.slide.active{opacity:1;pointer-events:all;transform:none;}
+
+/* TOP BAR */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:11px 34px;border-bottom:1px solid var(--border);background:rgba(8,12,20,.97);flex-shrink:0;z-index:10;}
+.brand{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:4px;color:var(--muted);text-transform:uppercase;}
+.slide-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;letter-spacing:1px;}
+.slide-num{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);}
+
+/* NAV */
+.nav{display:flex;align-items:center;justify-content:space-between;padding:9px 34px;border-top:1px solid var(--border);flex-shrink:0;background:rgba(8,12,20,.97);}
+.nbtn{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:2px;padding:7px 20px;background:transparent;border:1px solid var(--border);color:var(--muted);cursor:pointer;border-radius:2px;transition:all .2s;}
+.nbtn:hover{border-color:currentColor;}
+.dots{display:flex;gap:6px;align-items:center;}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--border);cursor:pointer;transition:all .3s;border:1px solid var(--muted);}
+.dot.on{box-shadow:0 0 8px currentColor;}
+
+/* SIDE NAV */
+.sidenav{position:fixed;right:16px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:6px;z-index:200;}
+.sndot{width:6px;height:6px;border-radius:50%;background:var(--border);cursor:pointer;transition:all .3s;}
+.sndot.on{box-shadow:0 0 8px currentColor;}
+
+/* DEVICE LAYOUT */
+.dev-body{flex:1;display:flex;gap:1px;background:var(--border);overflow:hidden;}
+.dev-canvas-col{flex:1.3;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;overflow:hidden;}
+.dev-info-col{width:310px;flex-shrink:0;background:var(--surf);display:flex;flex-direction:column;overflow-y:auto;padding:22px 20px;gap:14px;}
+
+/* OSI badge strip */
+.osi-strip{display:flex;gap:4px;flex-wrap:wrap;}
+.osi-badge{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:1px;padding:3px 9px;border-radius:2px;border:1px solid;}
+.layer-ph{background:rgba(16,185,129,.12);color:#34d399;border-color:rgba(16,185,129,.3);}
+.layer-dl{background:rgba(245,158,11,.12);color:#fcd34d;border-color:rgba(245,158,11,.3);}
+.layer-nw{background:rgba(239,68,68,.12);color:#f87171;border-color:rgba(239,68,68,.3);}
+.layer-tr{background:rgba(167,139,250,.12);color:#c4b5fd;border-color:rgba(167,139,250,.3);}
+
+.dev-desc{font-size:13px;color:var(--muted);line-height:1.8;background:var(--surf2);border-radius:6px;padding:14px;border-left:3px solid;}
+.dev-desc strong{color:var(--text);}
+
+.feat-list{display:flex;flex-direction:column;gap:6px;}
+.feat-item{display:flex;gap:9px;font-size:12px;color:var(--muted);line-height:1.6;align-items:flex-start;}
+.feat-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0;margin-top:6px;}
+.adv-box{background:rgba(52,211,153,.05);border:1px solid rgba(52,211,153,.2);border-radius:6px;padding:11px 13px;}
+.dis-box{background:rgba(239,68,68,.05);border:1px solid rgba(239,68,68,.2);border-radius:6px;padding:11px 13px;}
+.box-title{font-family:'Syne',sans-serif;font-size:10px;font-weight:700;letter-spacing:2px;margin-bottom:7px;text-transform:uppercase;}
+.box-title.adv{color:#34d399;}.box-title.dis{color:#f87171;}
+.bullet{display:flex;gap:8px;font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:5px;align-items:flex-start;}
+.bdot{width:5px;height:5px;border-radius:50%;flex-shrink:0;margin-top:6px;}
+
+.section-label{font-family:'Syne',sans-serif;font-size:10px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;}
+.dev-badge{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;letter-spacing:2px;margin-bottom:6px;}
+
+/* TITLE SLIDE */
+#s1{background:var(--bg);}
+.s1-body{flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:22px;position:relative;padding:32px;overflow:hidden;}
+.s1-kicker{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:6px;color:var(--muted);text-transform:uppercase;}
+.s1-h1{font-family:'Syne',sans-serif;font-weight:800;font-size:clamp(32px,5vw,68px);text-align:center;line-height:1.05;}
+.s1-sub{font-size:14px;color:var(--muted);max-width:580px;text-align:center;line-height:1.8;}
+.dev-pills{display:flex;gap:9px;flex-wrap:wrap;justify-content:center;margin-top:4px;}
+.dpill{padding:6px 16px;border-radius:100px;font-size:12px;font-weight:600;letter-spacing:1px;cursor:pointer;transition:all .2s;border:1px solid;}
+.dpill:hover{transform:translateY(-2px);}
+
+/* OVERVIEW */
+.ov-grid{display:grid;grid-template-columns:1fr 1fr 1fr;grid-template-rows:1fr 1fr;gap:1px;background:var(--border);height:100%;}
+.ov-cell{background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;cursor:pointer;transition:background .2s;padding:12px;position:relative;overflow:hidden;}
+.ov-cell:hover{background:var(--surf);}
+.ov-cell-label{font-family:'Syne',sans-serif;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;}
+
+/* Packet label */
+.packet-info{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--muted);white-space:nowrap;}
+</style>
+</head>
+<body>
+<div class="sidenav" id="sidenav"></div>
+<div class="slides">
+
+<!-- ══════════ SLIDE 1: TITLE ══════════════════════════════════════ -->
+<div class="slide active" id="s1">
+  <div class="topbar">
+    <div class="brand">Bilgisayar Ağları</div>
+    <div class="slide-title">Ağ Cihazları</div>
+    <div class="slide-num">01 / 08</div>
+  </div>
+  <div class="s1-body">
+    <canvas id="s1bg" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;opacity:.2;"></canvas>
+    <div class="s1-kicker">Ağ Donanımları — Detaylı Rehber</div>
+    <div class="s1-h1" style="background:linear-gradient(135deg,#38bdf8,#818cf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Ağ Cihazları</div>
+    <div class="s1-sub">Repeater, Hub, Switch, Router, Bridge ve Network Cloud — her cihazın çalışma prensibi, OSI katmanı ve animasyonlu görselleştirme.</div>
+    <div class="dev-pills">
+      <div class="dpill" style="background:rgba(16,185,129,.12);color:#34d399;border-color:rgba(16,185,129,.3);" onclick="goTo(2)">Tekrarlayıcı</div>
+      <div class="dpill" style="background:rgba(245,158,11,.12);color:#fcd34d;border-color:rgba(245,158,11,.3);" onclick="goTo(3)">Hub</div>
+      <div class="dpill" style="background:rgba(6,182,212,.12);color:#22d3ee;border-color:rgba(6,182,212,.3);" onclick="goTo(4)">Switch</div>
+      <div class="dpill" style="background:rgba(239,68,68,.12);color:#f87171;border-color:rgba(239,68,68,.3);" onclick="goTo(5)">Router</div>
+      <div class="dpill" style="background:rgba(167,139,250,.12);color:#c4b5fd;border-color:rgba(167,139,250,.3);" onclick="goTo(6)">Bridge</div>
+      <div class="dpill" style="background:rgba(96,165,250,.12);color:#93c5fd;border-color:rgba(96,165,250,.3);" onclick="goTo(7)">Network Cloud</div>
+    </div>
+  </div>
+  <div class="nav">
+    <button class="nbtn" style="--c:#38bdf8" onclick="prev()">← GERİ</button>
+    <div class="dots" id="d1"></div>
+    <button class="nbtn" style="--c:#38bdf8" onclick="next()">İLERİ →</button>
+  </div>
+</div>
+
+<!-- ══════════ SLIDE 2: REPEATER ══════════════════════════════════ -->
+<div class="slide" id="s2">
+  <div class="topbar">
+    <div class="brand">Ağ Cihazları</div>
+    <div class="slide-title" style="color:#34d399">Tekrarlayıcı (Repeater)</div>
+    <div class="slide-num">02 / 08</div>
+  </div>
+  <div class="dev-body">
+    <div class="dev-canvas-col">
+      <canvas id="cv-rep"></canvas>
+      <div class="packet-info" id="pi-rep">SİNYAL GÜÇLENDİRİLİYOR…</div>
+    </div>
+    <div class="dev-info-col">
+      <div>
+        <div class="section-label">OSI Katmanı</div>
+        <div class="osi-strip"><span class="osi-badge layer-ph">Katman 1 — Fiziksel</span></div>
+      </div>
+      <div class="dev-desc" style="border-color:#10b981">
+        Tekrarlayıcı, <strong>zayıflayan elektrik sinyalini</strong> alıp yeniden üreterek daha uzak mesafelere iletir. Veriye dokunmaz; sadece fiziksel sinyali güçlendirir. <strong>İki ağ segmentini</strong> tek bir segment gibi birleştirir.
+      </div>
+      <div>
+        <div class="section-label">Teknik Detaylar</div>
+        <div class="feat-list">
+          <div class="feat-item"><div class="feat-dot" style="background:#34d399"></div>Gelen sinyali bozulmadan yeniden üretir (regenerate)</div>
+          <div class="feat-item"><div class="feat-dot" style="background:#34d399"></div>MAC adresi veya IP adresi bilgisi kullanmaz</div>
+          <div class="feat-item"><div class="feat-dot" style="background:#34d399"></div>Ethernet'te maksimum 4 tekrarlayıcı zincir (5-4-3 kuralı)</div>
+          <div class="feat-item"><div class="feat-dot" style="background:#34d399"></div>Günümüzde fiber amplifier ve Wi-Fi extender olarak evrilmiştir</div>
+        </div>
+      </div>
+      <div class="adv-box">
+        <div class="box-title adv">✦ Avantajlar</div>
+        <div class="bullet"><div class="bdot" style="background:#34d399"></div>Çok düşük maliyet ve basit kurulum</div>
+        <div class="bullet"><div class="bdot" style="background:#34d399"></div>Kablo mesafesini uzatır</div>
+        <div class="bullet"><div class="bdot" style="background:#34d399"></div>Gürültü ve zayıflama sorununu çözer</div>
+      </div>
+      <div class="dis-box">
+        <div class="box-title dis">✗ Dezavantajlar</div>
+        <div class="bullet"><div class="bdot" style="background:#f87171"></div>Tüm veriyi körce iletir, trafik filtrelemez</div>
+        <div class="bullet"><div class="bdot" style="background:#f87171"></div>Çarpışmaları (collision) iletir ve büyütür</div>
+        <div class="bullet"><div class="bdot" style="background:#f87171"></div>Bant genişliğini artırmaz</div>
+      </div>
+    </div>
+  </div>
+  <div class="nav"><button class="nbtn" onclick="prev()">← GERİ</button><div class="dots" id="d2"></div><button class="nbtn" onclick="next()">İLERİ →</button></div>
+</div>
+
+<!-- ══════════ SLIDE 3: HUB ════════════════════════════════════════ -->
+<div class="slide" id="s3">
+  <div class="topbar">
+    <div class="brand">Ağ Cihazları</div>
+    <div class="slide-title" style="color:#fcd34d">Hub (Merkez Cihaz)</div>
+    <div class="slide-num">03 / 08</div>
+  </div>
+  <div class="dev-body">
+    <div class="dev-canvas-col">
+      <canvas id="cv-hub"></canvas>
+      <div class="packet-info" id="pi-hub">TÜM PORTLARA YAYILIYOR…</div>
+    </div>
+    <div class="dev-info-col">
+      <div>
+        <div class="section-label">OSI Katmanı</div>
+        <div class="osi-strip"><span class="osi-badge layer-ph">Katman 1 — Fiziksel</span></div>
+      </div>
+      <div class="dev-desc" style="border-color:#f59e0b">
+        Hub, bağlı tüm cihazlara <strong>gelen paketi körce yayınlar (broadcast)</strong>. Hangi cihazın nerede olduğunu bilmez; hedefi fark etmeksizin tüm portlara kopyalar. Tüm cihazlar <strong>tek çarpışma alanı (collision domain)</strong> paylaşır.
+      </div>
+      <div>
+        <div class="section-label">Çalışma Prensibi</div>
+        <div class="feat-list">
+          <div class="feat-item"><div class="feat-dot" style="background:#fcd34d"></div>Aktif Hub: Sinyali güçlendirir + tüm portlara iletir</div>
+          <div class="feat-item"><div class="feat-dot" style="background:#fcd34d"></div>Pasif Hub: Yalnızca sinyal dağıtır, güçlendirmez</div>
+          <div class="feat-item"><div class="feat-dot" style="background:#fcd34d"></div>Yarı-çift yönlü (half-duplex) iletişim</div>
+          <div class="feat-item"><div class="feat-dot" style="background:#fcd34d"></div>CSMA/CD protokolüne dayanır</div>
+        </div>
+      </div>
+      <div class="adv-box">
+        <div class="box-title adv">✦ Avantajlar</div>
+        <div class="bullet"><div class="bdot" style="background:#34d399"></div>Ucuz ve basit</div>
+        <div class="bullet"><div class="bdot" style="background:#34d399"></div>Küçük ağlarda hızlıca kurulabilir</div>
+      </div>
+      <div class="dis-box">
+        <div class="box-title dis">✗ Dezavantajlar</div>
+        <div class="bullet"><div class="bdot" style="background:#f87171"></div>Tüm portlar tek çarpışma alanındadır</div>
+        <div class="bullet"><div class="bdot" style="background:#f87171"></div>Veri gizliliği yok — tüm cihazlar paketi görür</div>
+        <div class="bullet"><div class="bdot" style="background:#f87171"></div>Bant genişliği cihaz sayısıyla bölünür</div>
+        <div class="bullet"><div class="bdot" style="background:#f87171"></div>Günümüzde switch tarafından tamamen ikame edilmiştir</div>
+      </div>
+    </div>
+  </div>
+  <div class="nav"><button class="nbtn" onclick="prev()">← GERİ</button><div class="dots" id="d3"></div><button class="nbtn" onclick="next()">İLERİ →</button></div>
+</div>
+
+<!-- ══════════ SLIDE 4: SWITCH ════════════════════════════════════ -->
+<div class="slide" id="s4">
+  <div class="topbar">
+    <div class="brand">Ağ Cihazları</div>
+    <div class="slide-title" style="color:#22d3ee">Switch (Anahtarlayıcı)</div>
+    <div class="slide-num">04 / 08</div>
+  </div>
+  <div class="dev-body">
+    <div class="dev-canvas-col">
+      <canvas id="cv-sw"></canvas>
+      <div class="packet-info" id="pi-sw">MAC TABLOSU ÖĞRENME…</div>
+    </div>
+    <div class="dev-info-col">
+      <div>
+        <div class="section-label">OSI Katmanı</div>
+        <div class="osi-strip">
+          <span class="osi-badge layer-ph">Katman 1 — Fiziksel</span>
+          <span class="osi-badge layer-dl">Katman 2 — Veri Bağlantı</span>
+        </div>
+      </div>
+      <div class="dev-desc" style="border-color:#06b6d4">
+        Switch, <strong>MAC adres tablosu (CAM table)</strong> tutarak gelen paketi yalnızca hedef cihazın bağlı olduğu porta iletir. Hub'ın aksine her port <strong>ayrı bir çarpışma alanıdır</strong>. L3 Switch'ler routing de yapabilir.
+      </div>
+      <div>
+        <div class="section-label">MAC Tablosu Öğrenmesi</div>
+        <div class="feat-list">
+          <div class="feat-item"><div class="feat-dot" style="background:#22d3ee"></div>Gelen paketten kaynak MAC → Port eşleştirmesini öğrenir</div>
+          <div class="feat-item"><div class="feat-dot" style="background:#22d3ee"></div>Bilinmeyen hedefe Unicast Flooding uygular</div>
+          <div class="feat-item"><div class="feat-dot" style="background:#22d3ee"></div>Full-duplex iletişim — aynı anda gönderip alabilir</div>
+          <div class="feat-item"><div class="feat-dot" style="background:#22d3ee"></div>VLAN desteği ile ağ segmentasyonu sağlar</div>
+          <div class="feat-item"><div class="feat-dot" style="background:#22d3ee"></div>STP (Spanning Tree Protocol) ile döngü önleme</div>
+        </div>
+      </div>
+      <div class="adv-box">
+        <div class="box-title adv">✦ Avantajlar</div>
+        <div class="bullet"><div class="bdot" style="background:#34d399"></div>Her port ayrı çarpışma alanı — yüksek verimlilik</div>
+        <div class="bullet"><div class="bdot" style="background:#34d399"></div>Veri gizliliği — paket yalnızca hedefe gider</div>
+        <div class="bullet"><div class="bdot" style="background:#34d399"></div>Full-duplex ile hat kapasitesi iki katına çıkar</div>
+      </div>
+      <div class="dis-box">
+        <div class="box-title dis">✗ Dezavantajlar</div>
+        <div class="bullet"><div class="bdot" style="background:#f87171"></div>Hub'dan daha pahalı</div>
+        <div class="bullet"><div class="bdot" style="background:#f87171"></div>MAC flooding saldırılarına karşı korunma gerekir</div>
+      </div>
+    </div>
+  </div>
+  <div class="nav"><button class="nbtn" onclick="prev()">← GERİ</button><div class="dots" id="d4"></div><button class="nbtn" onclick="next()">İLERİ →</button></div>
+</div>
+
+<!-- ══════════ SLIDE 5: ROUTER ════════════════════════════════════ -->
+<div class="slide" id="s5">
+  <div class="topbar">
+    <div class="brand">Ağ Cihazları</div>
+    <div class="slide-title" style="color:#f87171">Router (Yönlendirici)</div>
+    <div class="slide-num">05 / 08</div>
+  </div>
+  <div class="dev-body">
+    <div class="dev-canvas-col">
+      <canvas id="cv-rtr"></canvas>
+      <div class="packet-info" id="pi-rtr">YÖNLENDIRME TABLOSU SORGULANIYOR…</div>
+    </div>
+    <div class="dev-info-col">
+      <div>
+        <div class="section-label">OSI Katmanı</div>
+        <div class="osi-strip">
+          <span class="osi-badge layer-ph">Katman 1</span>
+          <span class="osi-badge layer-dl">Katman 2</span>
+          <span class="osi-badge layer-nw">Katman 3 — Ağ</span>
+        </div>
+      </div>
+      <div class="dev-desc" style="border-color:#ef4444">
+        Router, <strong>IP adresi tabanlı yönlendirme tablosu</strong> kullanarak paketleri farklı ağlar arasında iletir. İnternete çıkış noktasıdır. <strong>NAT, DHCP, Firewall</strong> gibi servisleri de çalıştırabilir.
+      </div>
+      <div>
+        <div class="section-label">Yönlendirme Protokolleri</div>
+        <div class="feat-list">
+          <div class="feat-item"><div class="feat-dot" style="background:#f87171"></div>Statik yönlendirme: Elle tanımlı rotalar</div>
+          <div class="feat-item"><div class="feat-dot" style="background:#f87171"></div>RIP — Hop sayısı tabanlı dinamik protokol</div>
+          <div class="feat-item"><div class="feat-dot" style="background:#f87171"></div>OSPF — Link-state, büyük ağlar için</div>
+          <div class="feat-item"><div class="feat-dot" style="background:#f87171"></div>BGP — İnternet yönlendirmesinin omurgası</div>
+          <div class="feat-item"><div class="feat-dot" style="background:#f87171"></div>NAT ile iç ağı dış dünyadan maskeler</div>
+        </div>
+      </div>
+      <div class="adv-box">
+        <div class="box-title adv">✦ Avantajlar</div>
+        <div class="bullet"><div class="bdot" style="background:#34d399"></div>Farklı ağları birbirine bağlar (LAN ↔ WAN)</div>
+        <div class="bullet"><div class="bdot" style="background:#34d399"></div>Broadcast alanlarını ayırır — trafiği izole eder</div>
+        <div class="bullet"><div class="bdot" style="background:#34d399"></div>Güvenlik, NAT, QoS özellikleri</div>
+      </div>
+      <div class="dis-box">
+        <div class="box-title dis">✗ Dezavantajlar</div>
+        <div class="bullet"><div class="bdot" style="background:#f87171"></div>Switch'e göre daha yüksek gecikme (latency)</div>
+        <div class="bullet"><div class="bdot" style="background:#f87171"></div>Yapılandırma karmaşıklığı yüksektir</div>
+        <div class="bullet"><div class="bdot" style="background:#f87171"></div>Maliyeti yüksektir</div>
+      </div>
+    </div>
+  </div>
+  <div class="nav"><button class="nbtn" onclick="prev()">← GERİ</button><div class="dots" id="d5"></div><button class="nbtn" onclick="next()">İLERİ →</button></div>
+</div>
+
+<!-- ══════════ SLIDE 6: BRIDGE ════════════════════════════════════ -->
+<div class="slide" id="s6">
+  <div class="topbar">
+    <div class="brand">Ağ Cihazları</div>
+    <div class="slide-title" style="color:#c4b5fd">Bridge (Köprü)</div>
+    <div class="slide-num">06 / 08</div>
+  </div>
+  <div class="dev-body">
+    <div class="dev-canvas-col">
+      <canvas id="cv-br"></canvas>
+      <div class="packet-info" id="pi-br">SEGMENT FİLTRELEME YAPILIYOR…</div>
+    </div>
+    <div class="dev-info-col">
+      <div>
+        <div class="section-label">OSI Katmanı</div>
+        <div class="osi-strip">
+          <span class="osi-badge layer-ph">Katman 1 — Fiziksel</span>
+          <span class="osi-badge layer-dl">Katman 2 — Veri Bağlantı</span>
+        </div>
+      </div>
+      <div class="dev-desc" style="border-color:#a78bfa">
+        Bridge, <strong>iki ağ segmentini</strong> birbirine bağlar. MAC adresi öğrenerek aynı segment içindeki trafiği <strong>karşı tarafa geçirmez</strong> (filtreleme). Switch'in 2 portlu halidir; modern ağlarda switch tarafından ikame edilmiştir.
+      </div>
+      <div>
+        <div class="section-label">Çalışma Prensibi</div>
+        <div class="feat-list">
+          <div class="feat-item"><div class="feat-dot" style="background:#c4b5fd"></div>Her iki tarafın MAC adreslerini öğrenir</div>
+          <div class="feat-item"><div class="feat-dot" style="background:#c4b5fd"></div>Aynı segmentteki trafik karşı segmente geçmez (filtering)</div>
+          <div class="feat-item"><div class="feat-dot" style="background:#c4b5fd"></div>Farklı medya türlerini birleştirebilir (Ethernet ↔ Wi-Fi)</div>
+          <div class="feat-item"><div class="feat-dot" style="background:#c4b5fd"></div>Çarpışma alanlarını (collision domain) ayırır</div>
+          <div class="feat-item"><div class="feat-dot" style="background:#c4b5fd"></div>Broadcast domain'i ayırmaz (router yapar)</div>
+        </div>
+      </div>
+      <div class="adv-box">
+        <div class="box-title adv">✦ Avantajlar</div>
+        <div class="bullet"><div class="bdot" style="background:#34d399"></div>Gereksiz trafiği filtreler, performansı artırır</div>
+        <div class="bullet"><div class="bdot" style="background:#34d399"></div>Farklı fiziksel medyaları birleştirir</div>
+        <div class="bullet"><div class="bdot" style="background:#34d399"></div>Basit ve güvenilir</div>
+      </div>
+      <div class="dis-box">
+        <div class="box-title dis">✗ Dezavantajlar</div>
+        <div class="bullet"><div class="bdot" style="background:#f87171"></div>Broadcast trafiği her iki segmente de iletir</div>
+        <div class="bullet"><div class="bdot" style="background:#f87171"></div>Büyük ağlarda switch daha iyi performans verir</div>
+        <div class="bullet"><div class="bdot" style="background:#f87171"></div>Sadece 2 port — sınırlı ölçeklenebilirlik</div>
+      </div>
+    </div>
+  </div>
+  <div class="nav"><button class="nbtn" onclick="prev()">← GERİ</button><div class="dots" id="d6"></div><button class="nbtn" onclick="next()">İLERİ →</button></div>
+</div>
+
+<!-- ══════════ SLIDE 7: NETWORK CLOUD ════════════════════════════ -->
+<div class="slide" id="s7">
+  <div class="topbar">
+    <div class="brand">Ağ Cihazları</div>
+    <div class="slide-title" style="color:#93c5fd">Network Cloud (Ağ Bulutu)</div>
+    <div class="slide-num">07 / 08</div>
+  </div>
+  <div class="dev-body">
+    <div class="dev-canvas-col">
+      <canvas id="cv-cl"></canvas>
+      <div class="packet-info" id="pi-cl">BULUT ALTYAPISI ÜZERİNDEN İLETİLİYOR…</div>
+    </div>
+    <div class="dev-info-col">
+      <div>
+        <div class="section-label">OSI Katmanı</div>
+        <div class="osi-strip">
+          <span class="osi-badge layer-ph">L1</span>
+          <span class="osi-badge layer-dl">L2</span>
+          <span class="osi-badge layer-nw">L3</span>
+          <span class="osi-badge layer-tr">L4–L7</span>
+        </div>
+      </div>
+      <div class="dev-desc" style="border-color:#60a5fa">
+        Network Cloud, diyagramlarda <strong>ayrıntıları gizlenen bir ağ bölgesini</strong> temsil eder — çoğunlukla <strong>İnternet veya ISP omurgasıdır</strong>. Gerçekte router, switch, fiber ve veri merkezlerinden oluşan karmaşık altyapıyı sembolik olarak gösterir.
+      </div>
+      <div>
+        <div class="section-label">Bulut Bileşenleri</div>
+        <div class="feat-list">
+          <div class="feat-item"><div class="feat-dot" style="background:#93c5fd"></div>ISP (İnternet Servis Sağlayıcı) altyapısı</div>
+          <div class="feat-item"><div class="feat-dot" style="background:#93c5fd"></div>IaaS: Sanal sunucu, depolama, ağ kaynakları</div>
+          <div class="feat-item"><div class="feat-dot" style="background:#93c5fd"></div>PaaS: Uygulama geliştirme platformları</div>
+          <div class="feat-item"><div class="feat-dot" style="background:#93c5fd"></div>SaaS: Bulut üzerinden yazılım servisleri</div>
+          <div class="feat-item"><div class="feat-dot" style="background:#93c5fd"></div>CDN, load balancer, DNS hizmetleri</div>
+        </div>
+      </div>
+      <div class="adv-box">
+        <div class="box-title adv">✦ Avantajlar</div>
+        <div class="bullet"><div class="bdot" style="background:#34d399"></div>Sonsuz ölçeklenebilirlik (on-demand)</div>
+        <div class="bullet"><div class="bdot" style="background:#34d399"></div>Yüksek erişilebilirlik ve yedekleme</div>
+        <div class="bullet"><div class="bdot" style="background:#34d399"></div>Coğrafi dağılım — küresel erişim</div>
+        <div class="bullet"><div class="bdot" style="background:#34d399"></div>Fiziksel altyapı yatırımı gerekmez</div>
+      </div>
+      <div class="dis-box">
+        <div class="box-title dis">✗ Dezavantajlar</div>
+        <div class="bullet"><div class="bdot" style="background:#f87171"></div>İnternet bağlantısına bağımlılık</div>
+        <div class="bullet"><div class="bdot" style="background:#f87171"></div>Veri gizliliği ve güvenlik kaygıları</div>
+        <div class="bullet"><div class="bdot" style="background:#f87171"></div>Uzun vadede maliyet artabilir</div>
+      </div>
+    </div>
+  </div>
+  <div class="nav"><button class="nbtn" onclick="prev()">← GERİ</button><div class="dots" id="d7"></div><button class="nbtn" onclick="next()">İLERİ →</button></div>
+</div>
+
+<!-- ══════════ SLIDE 8: OVERVIEW ══════════════════════════════════ -->
+<div class="slide" id="s8">
+  <div class="topbar">
+    <div class="brand">Ağ Cihazları</div>
+    <div class="slide-title">Genel Bakış — Tüm Cihazlar</div>
+    <div class="slide-num">08 / 08</div>
+  </div>
+  <div class="dev-body" style="background:var(--bg);">
+    <div class="ov-grid">
+      <div class="ov-cell" onclick="goTo(2)"><canvas id="ov-rep" width="160" height="80"></canvas><div class="ov-cell-label" style="color:#34d399">Tekrarlayıcı</div><div style="font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace">L1 · Sinyal Güçlendirme</div></div>
+      <div class="ov-cell" onclick="goTo(3)"><canvas id="ov-hub" width="120" height="80"></canvas><div class="ov-cell-label" style="color:#fcd34d">Hub</div><div style="font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace">L1 · Broadcast</div></div>
+      <div class="ov-cell" onclick="goTo(4)"><canvas id="ov-sw" width="120" height="80"></canvas><div class="ov-cell-label" style="color:#22d3ee">Switch</div><div style="font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace">L2 · MAC Tablosu</div></div>
+      <div class="ov-cell" onclick="goTo(5)"><canvas id="ov-rtr" width="140" height="80"></canvas><div class="ov-cell-label" style="color:#f87171">Router</div><div style="font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace">L3 · IP Yönlendirme</div></div>
+      <div class="ov-cell" onclick="goTo(6)"><canvas id="ov-br" width="140" height="80"></canvas><div class="ov-cell-label" style="color:#c4b5fd">Bridge</div><div style="font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace">L2 · Segment Filtresi</div></div>
+      <div class="ov-cell" onclick="goTo(7)"><canvas id="ov-cl" width="140" height="80"></canvas><div class="ov-cell-label" style="color:#93c5fd">Network Cloud</div><div style="font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace">L1–L7 · İnternet/ISP</div></div>
+    </div>
+  </div>
+  <div class="nav"><button class="nbtn" onclick="prev()">← GERİ</button><div class="dots" id="d8"></div><button class="nbtn" onclick="next()">İLERİ →</button></div>
+</div>
+
+</div><!-- .slides -->
+<script>
+// ── SLIDE ENGINE ────────────────────────────────────────────────────────────
+const TOTAL=8; let cur=1;
+const COLORS={2:'#34d399',3:'#fcd34d',4:'#22d3ee',5:'#f87171',6:'#c4b5fd',7:'#93c5fd',8:'#38bdf8'};
+
+function buildNav(){
+  const sn=document.getElementById('sidenav'); sn.innerHTML='';
+  for(let i=1;i<=TOTAL;i++){
+    const d=document.createElement('div'); d.className='sndot'+(i===cur?' on':'');
+    d.style.background=i===cur?(COLORS[i]||'#38bdf8'):'';
+    d.style.color=COLORS[i]||'#38bdf8';
+    d.onclick=()=>goTo(i); sn.appendChild(d);
+  }
+  for(let n=1;n<=TOTAL;n++){
+    const el=document.getElementById('d'+n); if(!el)continue;
+    el.innerHTML='';
+    for(let i=1;i<=TOTAL;i++){
+      const d=document.createElement('div'); d.className='dot'+(i===cur?' on':'');
+      d.style.background=i===cur?(COLORS[i]||'#38bdf8'):'';
+      d.style.color=COLORS[i]||'#38bdf8';
+      d.onclick=()=>goTo(i); el.appendChild(d);
+    }
+  }
+}
+function goTo(n){
+  document.getElementById('s'+cur).classList.remove('active');
+  cur=Math.max(1,Math.min(TOTAL,n));
+  document.getElementById('s'+cur).classList.add('active');
+  buildNav();
+  setTimeout(()=>triggerSlide(cur),60);
+}
+function next(){goTo(cur+1);} function prev(){goTo(cur-1);}
+document.addEventListener('keydown',e=>{if(e.key==='ArrowRight'||e.key===' ')next();if(e.key==='ArrowLeft')prev();});
+buildNav();
+
+// ── CANVAS HELPERS ───────────────────────────────────────────────────────────
+function sc(id){
+  const el=document.getElementById(id); if(!el)return null;
+  const r=el.parentElement.getBoundingClientRect();
+  el.width=r.width||300; el.height=r.height||200; return el;
+}
+function node(ctx,x,y,r,col,glow=12){
+  if(glow){ctx.shadowColor=col;ctx.shadowBlur=glow;}
+  ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);
+  ctx.fillStyle=col; ctx.fill();
+  ctx.strokeStyle='rgba(255,255,255,0.25)';ctx.lineWidth=1.5;ctx.stroke();
+  ctx.shadowBlur=0;
+}
+function line(ctx,x1,y1,x2,y2,col,w=2.5,glow=6){
+  if(glow){ctx.shadowColor=col;ctx.shadowBlur=glow;}
+  ctx.strokeStyle=col;ctx.lineWidth=w;ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
+  ctx.shadowBlur=0;
+}
+function packet(ctx,x,y,col='#facc15',r=6){
+  ctx.shadowColor=col;ctx.shadowBlur=16;
+  ctx.fillStyle=col;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();
+  ctx.shadowBlur=0;
+}
+function deviceBox(ctx,x,y,w,h,col,label,sublabel){
+  ctx.fillStyle=col+'22'; ctx.strokeStyle=col;ctx.lineWidth=2;
+  ctx.shadowColor=col;ctx.shadowBlur=20;
+  ctx.beginPath();ctx.roundRect(x,y,w,h,6);ctx.fill();ctx.stroke();
+  ctx.shadowBlur=0;
+  ctx.fillStyle=col;ctx.font='bold 13px Syne,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText(label,x+w/2,y+h/2-(sublabel?6:0));
+  if(sublabel){ctx.fillStyle='rgba(255,255,255,0.4)';ctx.font='9px JetBrains Mono,monospace';ctx.fillText(sublabel,x+w/2,y+h/2+10);}
+}
+
+// ── TITLE BG ─────────────────────────────────────────────────────────────────
+let s1t=0;
+function drawS1bg(){
+  const el=document.getElementById('s1bg'); if(!el)return;
+  const r=el.parentElement.getBoundingClientRect();
+  el.width=r.width;el.height=r.height;
+  const ctx=el.getContext('2d');const W=el.width,H=el.height;
+  ctx.clearRect(0,0,W,H);
+  const devices=[{x:.12,y:.22,c:'#34d399'},{x:.35,y:.55,c:'#fcd34d'},{x:.6,y:.2,c:'#22d3ee'},
+                 {x:.8,y:.5,c:'#f87171'},{x:.18,y:.75,c:'#c4b5fd'},{x:.72,y:.8,c:'#93c5fd'},
+                 {x:.45,y:.38,c:'#38bdf8'},{x:.9,y:.22,c:'#34d399'}];
+  const links=[[0,1],[1,2],[2,3],[0,4],[4,5],[3,5],[6,2],[6,1],[7,3]];
+  links.forEach(([a,b])=>{
+    const A=devices[a],B=devices[b];
+    const pulse=((s1t*0.8)%1);
+    line(ctx,A.x*W,A.y*H,B.x*W,B.y*H,'rgba(255,255,255,0.06)',1,0);
+    const px2=A.x*W+(B.x-A.x)*W*pulse,py2=A.y*H+(B.y-A.y)*H*pulse;
+    packet(ctx,px2,py2,'rgba(250,204,21,0.5)',3);
+  });
+  devices.forEach(d=>{
+    const p=(Math.sin(s1t+devices.indexOf(d))+1)/2;
+    node(ctx,d.x*W,d.y*H,7+p*3,d.c+'99',8);
+  });
+  s1t+=0.008;
+  if(cur===1)requestAnimationFrame(drawS1bg);
+}
+
+// ── REPEATER ANIMATION ───────────────────────────────────────────────────────
+let repT=0,repAnim=null;
+function drawRepeater(){
+  const el=sc('cv-rep'); if(!el)return;
+  const ctx=el.getContext('2d');const W=el.width,H=el.height;
+  function frame(){
+    ctx.clearRect(0,0,W,H);
+    const y=H/2;
+    const col='#10b981';
+    // Segment A
+    const segAx0=W*0.04,segAx1=W*0.38;
+    // Segment B
+    const segBx0=W*0.62,segBx1=W*0.96;
+    // Nodes A
+    const nodesA=[{x:W*0.09},{x:W*0.18},{x:W*0.27},{x:W*0.36}];
+    // Nodes B
+    const nodesB=[{x:W*0.64},{x:W*0.73},{x:W*0.82},{x:W*0.91}];
+    // cables
+    line(ctx,segAx0,y,segAx1,y,'#3b82f6',3);
+    line(ctx,segBx0,y,segBx1,y,'#3b82f6',3);
+    nodesA.forEach(n=>{line(ctx,n.x,y,n.x,y-30,'#3b82f6',2);node(ctx,n.x,y-38,8,'#38bdf8');});
+    nodesB.forEach(n=>{line(ctx,n.x,y,n.x,y-30,'#3b82f6',2);node(ctx,n.x,y-38,8,'#38bdf8');});
+    // Repeater device
+    deviceBox(ctx,W*0.42,y-24,W*0.16,48,col,'REP','Katman 1');
+    // Signal decay A side
+    const decay=Math.exp(-((repT*0.012)%1)*3);
+    ctx.globalAlpha=Math.max(0.05,decay);
+    line(ctx,segAx0,y,W*0.42,y,'rgba(250,204,21,0.8)',2.5*decay+0.5);
+    ctx.globalAlpha=1;
+    // Amplified signal B side
+    const phase2=((repT*0.012)%1);
+    if(phase2>0.5){
+      const pp=(phase2-0.5)/0.5;
+      line(ctx,W*0.58,y,segBx1,y*pp+segBx0*(1-pp),'rgba(16,185,129,0.6)',2.5);
+    }
+    // Traveling packet
+    const t=(repT*0.6)%100;
+    if(t<45){const px2=segAx0+(segAx1-segAx0)*t/45;packet(ctx,px2,y,'rgba(250,204,21,0.7)',5);}
+    else if(t<55){// inside repeater — amplify flash
+      const flash=(t-45)/10;
+      ctx.shadowColor=col;ctx.shadowBlur=40*flash;
+      deviceBox(ctx,W*0.42,y-24,W*0.16,48,col,'REP','Güçlendiriliyor…');
+      ctx.shadowBlur=0;
+    }
+    else{const px2=segBx0+(segBx1-segBx0)*(t-55)/45;packet(ctx,px2,y,col,6);}
+    // amplitude bars
+    for(let i=0;i<6;i++){
+      const bx=segAx0+i*(segAx1-segAx0)/6;
+      const amp=(6-i)/6*Math.sin(repT*0.08+i)*30;
+      ctx.strokeStyle=`rgba(59,130,246,${0.2+(6-i)*0.06})`;ctx.lineWidth=1.5;
+      ctx.beginPath();ctx.moveTo(bx,y-Math.abs(amp));ctx.lineTo(bx,y+Math.abs(amp));ctx.stroke();
+    }
+    for(let i=0;i<6;i++){
+      const bx=segBx0+i*(segBx1-segBx0)/6;
+      const amp=(i+1)/6*Math.sin(repT*0.08+i+6)*35;
+      ctx.strokeStyle=`rgba(16,185,129,${0.2+i*0.06})`;ctx.lineWidth=1.5;
+      ctx.beginPath();ctx.moveTo(bx,y-Math.abs(amp));ctx.lineTo(bx,y+Math.abs(amp));ctx.stroke();
+    }
+    repT++;
+    if(cur===2)repAnim=requestAnimationFrame(frame);
+  }
+  if(repAnim)cancelAnimationFrame(repAnim);frame();
+}
+
+// ── HUB ANIMATION ────────────────────────────────────────────────────────────
+let hubT=0,hubAnim=null;
+function drawHub(){
+  const el=sc('cv-hub'); if(!el)return;
+  const ctx=el.getContext('2d');const W=el.width,H=el.height;
+  const N=6,col='#f59e0b';
+  const cx=W/2,cy=H/2+10;
+  const R=Math.min(W,H)*0.36;
+  function frame(){
+    ctx.clearRect(0,0,W,H);
+    const pts=[];
+    for(let i=0;i<N;i++){const a=i/N*Math.PI*2-Math.PI/2;pts.push({x:cx+Math.cos(a)*R,y:cy+Math.sin(a)*R});}
+    pts.forEach(p=>line(ctx,cx,cy,p.x,p.y,'#3b82f6',2.5));
+    // Broadcast wave
+    const bph=(hubT*0.015)%1;
+    const bR=bph*R;
+    ctx.strokeStyle=`rgba(245,158,11,${(1-bph)*0.6})`;ctx.lineWidth=2;
+    ctx.shadowColor=col;ctx.shadowBlur=10*(1-bph);
+    ctx.beginPath();ctx.arc(cx,cy,bR,0,Math.PI*2);ctx.stroke();ctx.shadowBlur=0;
+    // Packets flying to all nodes
+    if(bph>0.1){
+      pts.forEach((p,i)=>{
+        const px2=cx+(p.x-cx)*bph;
+        const py2=cy+(p.y-cy)*bph;
+        packet(ctx,px2,py2,'rgba(245,158,11,0.8)',4);
+      });
+    }
+    pts.forEach((p,i)=>node(ctx,p.x,p.y,10,'#38bdf8'));
+    deviceBox(ctx,cx-32,cy-18,64,36,col,'HUB','Broadcast');
+    // label "ALL PORTS"
+    if(bph>0.6){
+      ctx.fillStyle='rgba(245,158,11,0.7)';ctx.font='10px JetBrains Mono';ctx.textAlign='center';
+      ctx.fillText('TÜM PORTLAR →',cx,cy-R*0.6);
+    }
+    hubT++;
+    if(cur===3)hubAnim=requestAnimationFrame(frame);
+  }
+  if(hubAnim)cancelAnimationFrame(hubAnim);frame();
+}
+
+// ── SWITCH ANIMATION ─────────────────────────────────────────────────────────
+let swT=0,swAnim=null;
+const macTable={};
+function drawSwitch(){
+  const el=sc('cv-sw'); if(!el)return;
+  const ctx=el.getContext('2d');const W=el.width,H=el.height;
+  const col='#06b6d4';
+  const N=5;
+  const cx=W/2,cy=H/2;
+  const pts=[
+    {x:cx-W*0.32,y:cy-H*0.25,name:'PC-A',mac:'AA:11'},
+    {x:cx+W*0.32,y:cy-H*0.25,name:'PC-B',mac:'BB:22'},
+    {x:cx-W*0.32,y:cy+H*0.25,name:'PC-C',mac:'CC:33'},
+    {x:cx+W*0.32,y:cy+H*0.25,name:'PC-D',mac:'DD:44'},
+    {x:cx,y:cy-H*0.38,name:'SRV',mac:'EE:55'},
+  ];
+  const sessions=[[0,1],[2,3],[0,4],[1,3]];
+  function frame(){
+    ctx.clearRect(0,0,W,H);
+    pts.forEach(p=>line(ctx,cx,cy,p.x,p.y,'#1e3a5f',2.5,0));
+    const sIdx=Math.floor(swT/120)%sessions.length;
+    const [src,dst]=sessions[sIdx];
+    const tph=(swT%120)/120;
+    // targeted packet — only to dest
+    if(tph<0.5){
+      const px2=pts[src].x+(cx-pts[src].x)*tph*2;
+      const py2=pts[src].y+(cy-pts[src].y)*tph*2;
+      packet(ctx,px2,py2,'rgba(250,204,21,0.9)',5);
+    }else{
+      const tph2=(tph-0.5)*2;
+      const px2=cx+(pts[dst].x-cx)*tph2;
+      const py2=cy+(pts[dst].y-cy)*tph2;
+      packet(ctx,px2,py2,col,5);
+    }
+    // highlight active ports
+    [pts[src],pts[dst]].forEach((p,i)=>{
+      ctx.strokeStyle=i===0?'#facc15':col;ctx.lineWidth=2.5;
+      ctx.shadowColor=i===0?'#facc15':col;ctx.shadowBlur=12;
+      ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(p.x,p.y);ctx.stroke();
+      ctx.shadowBlur=0;
+    });
+    // device boxes
+    pts.forEach((p,i)=>{
+      const isActive=i===src||i===dst;
+      deviceBox(ctx,p.x-28,p.y-16,56,32,isActive?(i===src?'#facc15':col):'#334155',p.name,p.mac);
+    });
+    deviceBox(ctx,cx-38,cy-20,76,40,col,'SWITCH','MAC Table');
+    // MAC table display
+    ctx.fillStyle='rgba(6,182,212,0.6)';ctx.font='9px JetBrains Mono';ctx.textAlign='left';
+    pts.forEach((p,i)=>{ctx.fillText(`${p.mac}→P${i+1}`,W*0.72,H*0.22+i*14);});
+    ctx.fillStyle='rgba(255,255,255,0.25)';ctx.font='8px JetBrains Mono';ctx.textAlign='left';ctx.fillText('CAM TABLE',W*0.72,H*0.12);
+    swT++;
+    if(cur===4)swAnim=requestAnimationFrame(frame);
+  }
+  if(swAnim)cancelAnimationFrame(swAnim);frame();
+}
+
+// ── ROUTER ANIMATION ─────────────────────────────────────────────────────────
+let rtrT=0,rtrAnim=null;
+function drawRouter(){
+  const el=sc('cv-rtr'); if(!el)return;
+  const ctx=el.getContext('2d');const W=el.width,H=el.height;
+  const col='#ef4444';
+  const cx=W/2,cy=H/2;
+  // Two networks
+  const netA={cx:W*0.2,cy:cy,color:'#3b82f6',label:'192.168.1.0/24'};
+  const netB={cx:W*0.8,cy:cy,color:'#10b981',label:'10.0.0.0/24'};
+  const nodesA=[{x:W*0.07,y:cy-40},{x:W*0.07,y:cy+40},{x:W*0.2,y:cy-55}];
+  const nodesB=[{x:W*0.93,y:cy-40},{x:W*0.93,y:cy+40},{x:W*0.8,y:cy-55}];
+  function frame(){
+    ctx.clearRect(0,0,W,H);
+    // Network A subnet cloud
+    ctx.fillStyle='rgba(59,130,246,0.06)';ctx.strokeStyle='rgba(59,130,246,0.2)';ctx.lineWidth=1.5;
+    ctx.setLineDash([4,4]);ctx.beginPath();ctx.arc(netA.cx,netA.cy,W*0.17,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.setLineDash([]);
+    // Network B subnet cloud
+    ctx.fillStyle='rgba(16,185,129,0.06)';ctx.strokeStyle='rgba(16,185,129,0.2)';
+    ctx.setLineDash([4,4]);ctx.beginPath();ctx.arc(netB.cx,netB.cy,W*0.17,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.setLineDash([]);
+    // Labels
+    ctx.fillStyle='rgba(59,130,246,0.6)';ctx.font='10px JetBrains Mono';ctx.textAlign='center';ctx.fillText(netA.label,netA.cx,cy+H*0.36);
+    ctx.fillStyle='rgba(16,185,129,0.6)';ctx.fillText(netB.label,netB.cx,cy+H*0.36);
+    // Local cables
+    nodesA.forEach(n=>line(ctx,netA.cx,netA.cy,n.x,n.y,'#3b82f6',2));
+    nodesB.forEach(n=>line(ctx,netB.cx,netB.cy,n.x,n.y,'#10b981',2));
+    // Router ↔ networks
+    line(ctx,netA.cx,netA.cy,cx,cy,'#ef4444',3);
+    line(ctx,netB.cx,netB.cy,cx,cy,'#ef4444',3);
+    // Packet travel
+    const phase=(rtrT*0.01)%1;
+    if(phase<0.4){
+      const p=phase/0.4;
+      packet(ctx,nodesA[0].x+(netA.cx-nodesA[0].x)*p,nodesA[0].y+(netA.cy-nodesA[0].y)*p,'#facc15',5);
+    }else if(phase<0.6){
+      const p=(phase-0.4)/0.2;
+      packet(ctx,netA.cx+(cx-netA.cx)*p,netA.cy+(cy-netA.cy)*p,col,6);
+      // routing table flash
+      ctx.fillStyle='rgba(239,68,68,0.8)';ctx.font='9px JetBrains Mono';ctx.textAlign='center';
+      ctx.fillText('IP LOOKUP…',cx,cy-50);
+    }else{
+      const p=(phase-0.6)/0.4;
+      packet(ctx,cx+(netB.cx-cx)*p,cy+(netB.cy-cy)*p,'#10b981',6);
+    }
+    nodesA.forEach(n=>node(ctx,n.x,n.y,8,'#38bdf8'));
+    nodesB.forEach(n=>node(ctx,n.x,n.y,8,'#34d399'));
+    node(ctx,netA.cx,netA.cy,6,'#3b82f6');
+    node(ctx,netB.cx,netB.cy,6,'#10b981');
+    deviceBox(ctx,cx-36,cy-22,72,44,col,'ROUTER','L3 — IP');
+    // routing table
+    ctx.fillStyle='rgba(255,255,255,0.25)';ctx.font='8px JetBrains Mono';ctx.textAlign='right';ctx.fillText('ROUTING TABLE',W*0.98,H*0.1);
+    ctx.fillStyle='rgba(239,68,68,0.5)';ctx.font='9px JetBrains Mono';
+    ctx.fillText('192.168.1.0 → eth0',W*0.98,H*0.2);ctx.fillText('10.0.0.0 → eth1',W*0.98,H*0.3);ctx.fillText('0.0.0.0 → WAN',W*0.98,H*0.4);
+    rtrT++;
+    if(cur===5)rtrAnim=requestAnimationFrame(frame);
+  }
+  if(rtrAnim)cancelAnimationFrame(rtrAnim);frame();
+}
+
+// ── BRIDGE ANIMATION ─────────────────────────────────────────────────────────
+let brT=0,brAnim=null;
+function drawBridge(){
+  const el=sc('cv-br'); if(!el)return;
+  const ctx=el.getContext('2d');const W=el.width,H=el.height;
+  const col='#a78bfa';
+  const bx=W/2,by=H/2;
+  const segANodes=[{x:W*.1,y:H*.28},{x:W*.1,y:H*.72},{x:W*.26,y:H*.18},{x:W*.26,y:H*.82}];
+  const segBNodes=[{x:W*.9,y:H*.28},{x:W*.9,y:H*.72},{x:W*.74,y:H*.18},{x:W*.74,y:H*.82}];
+  const hubA={x:W*.38,y:by};const hubB={x:W*.62,y:by};
+  function frame(){
+    ctx.clearRect(0,0,W,H);
+    // segments background
+    ctx.fillStyle='rgba(59,130,246,0.05)';ctx.strokeStyle='rgba(59,130,246,0.12)';ctx.lineWidth=1;ctx.setLineDash([3,4]);
+    ctx.beginPath();ctx.ellipse(W*0.22,by,W*0.2,H*0.38,0,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle='rgba(167,139,250,0.05)';ctx.strokeStyle='rgba(167,139,250,0.12)';ctx.setLineDash([3,4]);
+    ctx.beginPath();ctx.ellipse(W*0.78,by,W*0.2,H*0.38,0,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.setLineDash([]);
+    // cables
+    segANodes.forEach(n=>line(ctx,hubA.x,hubA.y,n.x,n.y,'#3b82f6',2));
+    segBNodes.forEach(n=>line(ctx,hubB.x,hubB.y,n.x,n.y,'#a78bfa',2));
+    line(ctx,hubA.x,hubA.y,bx,by,'#a78bfa',3);
+    line(ctx,hubB.x,hubB.y,bx,by,'#a78bfa',3);
+    // Packet — same segment stays, cross segment passes through bridge
+    const phase=(brT*0.01)%1;
+    const crossSegment=Math.floor(brT/150)%2===0;
+    if(phase<0.35){const p=phase/0.35;packet(ctx,segANodes[0].x+(hubA.x-segANodes[0].x)*p,segANodes[0].y+(hubA.y-segANodes[0].y)*p,'#facc15',5);}
+    else if(phase<0.5&&crossSegment){const p=(phase-0.35)/0.15;packet(ctx,hubA.x+(bx-hubA.x)*p,hubA.y+(by-hubA.y)*p,col,6);}
+    else if(phase<0.65&&crossSegment){const p=(phase-0.5)/0.15;packet(ctx,bx+(hubB.x-bx)*p,by+(hubB.y-by)*p,col,6);}
+    else if(phase<1&&crossSegment){const p=(phase-0.65)/0.35;packet(ctx,hubB.x+(segBNodes[0].x-hubB.x)*p,hubB.y+(segBNodes[0].y-hubB.y)*p,'#34d399',5);}
+    if(!crossSegment&&phase<0.5){// Same segment — blocked
+      const p=phase/0.5;packet(ctx,segANodes[0].x+(segANodes[1].x-segANodes[0].x)*p*0.6+hubA.x*0.4*p,segANodes[0].y+(segANodes[1].y-segANodes[0].y)*p*0.6+hubA.y*0.4*p,'#f87171',5);
+      ctx.fillStyle='rgba(239,68,68,0.7)';ctx.font='10px JetBrains Mono';ctx.textAlign='center';ctx.fillText('FİLTRELENDİ',bx,by-60);
+    }
+    // filter indicator
+    deviceBox(ctx,bx-36,by-22,72,44,col,'BRIDGE','MAC Filter');
+    segANodes.forEach(n=>node(ctx,n.x,n.y,8,'#38bdf8'));
+    segBNodes.forEach(n=>node(ctx,n.x,n.y,8,'#a78bfa'));
+    deviceBox(ctx,hubA.x-28,hubA.y-15,56,30,'#3b82f6','Hub-A','Seg A');
+    deviceBox(ctx,hubB.x-28,hubB.y-15,56,30,'#a78bfa','Hub-B','Seg B');
+    ctx.fillStyle='rgba(59,130,246,0.5)';ctx.font='10px JetBrains Mono';ctx.textAlign='center';ctx.fillText('SEGMENT A',W*.22,H*.06);
+    ctx.fillStyle='rgba(167,139,250,0.5)';ctx.fillText('SEGMENT B',W*.78,H*.06);
+    brT++;
+    if(cur===6)brAnim=requestAnimationFrame(frame);
+  }
+  if(brAnim)cancelAnimationFrame(brAnim);frame();
+}
+
+// ── CLOUD ANIMATION ──────────────────────────────────────────────────────────
+let clT=0,clAnim=null;
+function drawCloud(){
+  const el=sc('cv-cl'); if(!el)return;
+  const ctx=el.getContext('2d');const W=el.width,H=el.height;
+  const col='#60a5fa';
+  const cx=W/2,cy=H/2;
+  const R=Math.min(W,H)*0.24;
+  // cloud shape helper
+  function cloudShape(ctx,x,y,w,h,col2){
+    ctx.save();ctx.translate(x,y);
+    ctx.fillStyle=col2;ctx.beginPath();
+    const blobs=[{dx:0,dy:0,r:h*.42},{dx:-w*.2,dy:h*.1,r:h*.3},{dx:w*.2,dy:h*.1,r:h*.3},
+                 {dx:-w*.35,dy:h*.28,r:h*.22},{dx:w*.35,dy:h*.28,r:h*.22},{dx:0,dy:h*.32,r:h*.32}];
+    blobs.forEach(b=>{ctx.beginPath();ctx.arc(b.dx,b.dy,b.r,0,Math.PI*2);ctx.fill();});
+    ctx.restore();
+  }
+  // Edge devices around cloud
+  const edges=[
+    {x:W*.1,y:H*.2,label:'LAN-A',col2:'#3b82f6'},{x:W*.9,y:H*.2,label:'LAN-B',col2:'#10b981'},
+    {x:W*.1,y:H*.8,label:'LAN-C',col2:'#f59e0b'},{x:W*.9,y:H*.8,label:'LAN-D',col2:'#a78bfa'},
+    {x:W*.5,y:H*.06,label:'ISP',col2:'#ef4444'},{x:W*.5,y:H*.94,label:'Client',col2:'#34d399'},
+  ];
+  function frame(){
+    ctx.clearRect(0,0,W,H);
+    // draw connections to cloud
+    edges.forEach(e=>{
+      const angle=Math.atan2(cy-e.y,cx-e.x);
+      const ex2=cx-Math.cos(angle)*R*1.1,ey2=cy-Math.sin(angle)*R*1.1;
+      line(ctx,e.x,e.y,ex2,ey2,e.col2+'66',2,0);
+    });
+    // cloud body glow
+    ctx.shadowColor=col;ctx.shadowBlur=30+Math.sin(clT*0.05)*10;
+    cloudShape(ctx,cx,cy-10,W*.38,H*.28,'rgba(96,165,250,0.12)');
+    ctx.shadowBlur=0;
+    ctx.strokeStyle='rgba(96,165,250,0.35)';ctx.lineWidth=1.5;
+    // cloud outline
+    const blobs2=[{dx:0,dy:0,r:H*.14},{dx:-W*.08,dy:H*.04,r:H*.1},{dx:W*.08,dy:H*.04,r:H*.1},
+                  {dx:-W*.14,dy:H*.1,r:H*.08},{dx:W*.14,dy:H*.1,r:H*.08},{dx:0,dy:H*.11,r:H*.11}];
+    blobs2.forEach(b=>{ctx.beginPath();ctx.arc(cx+b.dx,cy-10+b.dy,b.r,0,Math.PI*2);ctx.stroke();});
+    // Internal routers/nodes inside cloud
+    const internalNodes=[{dx:-W*.1,dy:-H*.04},{dx:W*.1,dy:-H*.04},{dx:0,dy:H*.06},{dx:-W*.06,dy:H*.09},{dx:W*.06,dy:H*.09}];
+    internalNodes.forEach((n,i)=>{
+      const jitter=Math.sin(clT*0.04+i)*3;
+      node(ctx,cx+n.dx+jitter,cy-10+n.dy,5,col+'cc',6);
+    });
+    for(let i=0;i<internalNodes.length;i++)for(let j=i+1;j<internalNodes.length;j++){
+      if((i+j)%3===0)line(ctx,cx+internalNodes[i].dx,cy-10+internalNodes[i].dy,cx+internalNodes[j].dx,cy-10+internalNodes[j].dy,'rgba(96,165,250,0.2)',1,0);
+    }
+    // packets flying
+    const pIdx=Math.floor(clT/90)%edges.length;
+    const pph=(clT%90)/90;
+    const e=edges[pIdx];const angle=Math.atan2(cy-e.y,cx-e.x);
+    const ex2=cx-Math.cos(angle)*R*1.1,ey2=cy-Math.sin(angle)*R*1.1;
+    if(pph<0.5){const p=pph*2;packet(ctx,e.x+(ex2-e.x)*p,e.y+(ey2-e.y)*p,'#facc15',5);}
+    else{
+      const p=(pph-0.5)*2;const dst=edges[(pIdx+3)%edges.length];
+      const a2=Math.atan2(cy-dst.y,cx-dst.x);
+      const ex3=cx-Math.cos(a2)*R*1.1,ey3=cy-Math.sin(a2)*R*1.1;
+      packet(ctx,ex3+(dst.x-ex3)*p,ey3+(dst.y-ey3)*p,col,5);
+    }
+    edges.forEach(e=>deviceBox(ctx,e.x-26,e.y-14,52,28,e.col2,e.label,''));
+    ctx.fillStyle='rgba(96,165,250,0.6)';ctx.font='bold 12px Syne,sans-serif';ctx.textAlign='center';ctx.fillText('NETWORK CLOUD',cx,cy+H*.22);
+    ctx.fillStyle='rgba(96,165,250,0.3)';ctx.font='9px JetBrains Mono';ctx.fillText('İnternet / ISP Altyapısı',cx,cy+H*.28);
+    clT++;
+    if(cur===7)clAnim=requestAnimationFrame(frame);
+  }
+  if(clAnim)cancelAnimationFrame(clAnim);frame();
+}
+
+// ── OVERVIEW THUMBNAILS ────────────────────────────────────────────────────────
+function drawOvThumbs(){
+  function th(id,fn){const el=document.getElementById(id);if(!el)return;el.width=160;el.height=80;fn(el);}
+  th('ov-rep',el=>{const ctx=el.getContext('2d');const W=el.width,H=el.height;const y=H/2;line(ctx,5,y,W-5,y,'#3b82f6',2,0);deviceBox(ctx,W/2-22,y-12,44,24,'#10b981','REP','');[W*.12,W*.25,W*.38,W*.75,W*.88].forEach(x=>{line(ctx,x,y,x,y-18,'#3b82f6',1.5,0);node(ctx,x,y-24,5,'#38bdf8',0);});});
+  th('ov-hub',el=>{const ctx=el.getContext('2d');const W=el.width,H=el.height;const pts=[];for(let i=0;i<5;i++){const a=i/5*Math.PI*2-Math.PI/2;pts.push({x:W/2+Math.cos(a)*30,y:H/2+Math.sin(a)*28});}pts.forEach(p=>{line(ctx,W/2,H/2,p.x,p.y,'#f59e0b',2,0);node(ctx,p.x,p.y,5,'#38bdf8',0);});deviceBox(ctx,W/2-20,H/2-12,40,24,'#f59e0b','HUB','');});
+  th('ov-sw',el=>{const ctx=el.getContext('2d');const W=el.width,H=el.height;const pts=[];for(let i=0;i<4;i++){const a=i/4*Math.PI*2-Math.PI/4;pts.push({x:W/2+Math.cos(a)*32,y:H/2+Math.sin(a)*28});}pts.forEach(p=>{line(ctx,W/2,H/2,p.x,p.y,'#0891b2',2,0);node(ctx,p.x,p.y,5,'#38bdf8',0);});deviceBox(ctx,W/2-22,H/2-12,44,24,'#06b6d4','SW','');});
+  th('ov-rtr',el=>{const ctx=el.getContext('2d');const W=el.width,H=el.height;line(ctx,W*.05,H/2,W*.42,H/2,'#3b82f6',2,0);line(ctx,W*.58,H/2,W*.95,H/2,'#10b981',2,0);deviceBox(ctx,W*.42,H/2-14,W*.16,28,'#ef4444','RTR','');[W*.1,W*.2].forEach(x=>node(ctx,x,H/2,4,'#38bdf8',0));[W*.8,W*.9].forEach(x=>node(ctx,x,H/2,4,'#34d399',0));});
+  th('ov-br',el=>{const ctx=el.getContext('2d');const W=el.width,H=el.height;line(ctx,5,H/2,W-5,H/2,'#a78bfa',2,0);deviceBox(ctx,W/2-22,H/2-12,44,24,'#a78bfa','BRG','');[W*.12,W*.25].forEach(x=>{line(ctx,x,H/2,x,H/2-18,'#3b82f6',1.5,0);node(ctx,x,H/2-24,5,'#38bdf8',0);});[W*.75,W*.88].forEach(x=>{line(ctx,x,H/2,x,H/2-18,'#a78bfa',1.5,0);node(ctx,x,H/2-24,5,'#c4b5fd',0);});});
+  th('ov-cl',el=>{const ctx=el.getContext('2d');const W=el.width,H=el.height;const cx=W/2,cy=H/2;const blbs=[{dx:0,dy:0,r:20},{dx:-12,dy:6,r:14},{dx:12,dy:6,r:14},{dx:0,dy:15,r:15}];blbs.forEach(b=>{ctx.fillStyle='rgba(96,165,250,0.15)';ctx.beginPath();ctx.arc(cx+b.dx,cy+b.dy,b.r,0,Math.PI*2);ctx.fill();ctx.strokeStyle='rgba(96,165,250,0.35)';ctx.lineWidth=1;ctx.stroke();});[{x:W*.05,y:H*.25},{x:W*.95,y:H*.25},{x:W*.05,y:H*.75},{x:W*.95,y:H*.75}].forEach(n=>{line(ctx,n.x,n.y,cx,cy,'#60a5fa55',1.5,0);node(ctx,n.x,n.y,4,'#38bdf8',0);});});
+}
+
+// ── TRIGGER ───────────────────────────────────────────────────────────────────
+function triggerSlide(n){
+  if(n===1)drawS1bg();
+  if(n===2)drawRepeater();
+  if(n===3)drawHub();
+  if(n===4)drawSwitch();
+  if(n===5)drawRouter();
+  if(n===6)drawBridge();
+  if(n===7)drawCloud();
+  if(n===8)setTimeout(drawOvThumbs,80);
+}
+
+setTimeout(()=>{drawS1bg();},100);
+window.addEventListener('resize',()=>triggerSlide(cur));
+</script>
+</body>
+</html>
