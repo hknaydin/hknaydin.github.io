@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ağ Cihazları – İnteraktif Sunum</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f1117;
+  --surface: #171b26;
+  --surface2: #1e2436;
+  --amber: #f5a623;
+  --amber-dim: #c4831a;
+  --teal: #2dd4bf;
+  --coral: #f87171;
+  --blue: #60a5fa;
+  --violet: #a78bfa;
+  --green: #4ade80;
+  --orange: #fb923c;
+  --cyan: #22d3ee;
+  --text: #e8eaf0;
+  --muted: #6b7280;
+  --border: #2a3045;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { height:100%; overflow:hidden; background:var(--bg); color:var(--text); font-family:'DM Sans', sans-serif; }
+
+/* ── SLIDE ENGINE ── */
+.slides { width:100vw; height:100vh; position:relative; overflow:hidden; }
+.slide {
+  position:absolute; inset:0;
+  display:flex; flex-direction:column;
+  opacity:0; pointer-events:none;
+  transition:opacity .6s ease, transform .6s ease;
+  transform:translateY(30px);
+}
+.slide.active { opacity:1; pointer-events:all; transform:translateY(0); }
+
+/* ── HEADER ── */
+.top-bar {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:14px 40px;
+  border-bottom:1px solid var(--border);
+  background:rgba(15,17,23,.95);
+  backdrop-filter:blur(10px);
+  flex-shrink:0; z-index:10; position:relative;
+}
+.brand {
+  font-family:'Playfair Display', serif;
+  font-size:13px; letter-spacing:3px; color:var(--amber);
+  text-transform:uppercase;
+}
+.slide-label {
+  font-family:'JetBrains Mono', monospace;
+  font-size:11px; color:var(--muted); letter-spacing:2px;
+}
+.slide-num {
+  font-family:'JetBrains Mono', monospace;
+  font-size:12px; color:var(--amber);
+}
+
+/* ── CONTENT ── */
+.content { flex:1; overflow:hidden; position:relative; }
+
+/* ── PROGRESS DOTS ── */
+.prog-dots {
+  position:fixed; right:24px; top:50%; transform:translateY(-50%);
+  display:flex; flex-direction:column; gap:8px; z-index:100;
+}
+.pdot {
+  width:8px; height:8px; border-radius:50%;
+  background:var(--border); border:1px solid var(--muted);
+  cursor:pointer; transition:all .3s;
+}
+.pdot.on { background:var(--amber); box-shadow:0 0 10px var(--amber); border-color:var(--amber); height:24px; border-radius:4px; }
+
+/* ── NAV ── */
+.nav-row {
+  display:flex; align-items:center; justify-content:center; gap:16px;
+  padding:12px; border-top:1px solid var(--border); flex-shrink:0;
+  background:rgba(15,17,23,.95);
+}
+.nbtn {
+  font-family:'JetBrains Mono', monospace; font-size:11px; letter-spacing:2px;
+  padding:8px 24px; background:transparent; border:1px solid var(--border);
+  color:var(--muted); cursor:pointer; border-radius:2px; transition:all .2s;
+}
+.nbtn:hover { border-color:var(--amber); color:var(--amber); background:rgba(245,166,35,.06); }
+
+/* ═══ SLIDE 1 — TITLE ═══ */
+.s1-inner {
+  height:100%; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; gap:28px;
+  padding:40px; text-align:center; position:relative; overflow:hidden;
+}
+.s1-bg { position:absolute; inset:0; overflow:hidden; pointer-events:none; }
+.s1-line {
+  position:absolute; height:1px; background:linear-gradient(90deg, transparent, var(--amber), transparent);
+  animation:lineSweep 4s ease-in-out infinite;
+}
+@keyframes lineSweep { 0%,100%{transform:scaleX(0);opacity:0} 50%{transform:scaleX(1);opacity:.6} }
+.s1-tagline {
+  font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:5px;
+  color:var(--muted); text-transform:uppercase; animation:fadeIn .8s ease .2s both;
+}
+.s1-title {
+  font-family:'Playfair Display', serif; font-weight:900;
+  font-size:clamp(40px, 6vw, 80px); line-height:1.05;
+  background:linear-gradient(135deg, #f5a623 0%, #f8d57a 40%, #f5a623 80%);
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+  animation:fadeIn .8s ease .4s both;
+}
+.s1-sub {
+  font-size:16px; color:var(--muted); max-width:600px; line-height:1.7;
+  animation:fadeIn .8s ease .6s both;
+}
+@keyframes fadeIn { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:none} }
+.topic-pills {
+  display:flex; gap:10px; flex-wrap:wrap; justify-content:center;
+  animation:fadeIn .8s ease .8s both;
+}
+.pill {
+  padding:6px 18px; border-radius:100px; font-size:12px; font-weight:500; letter-spacing:1px;
+}
+.pill-r  { background:rgba(248,113,113,.15); border:1px solid rgba(248,113,113,.4); color:var(--coral); }
+.pill-h  { background:rgba(248,113,113,.15); border:1px solid rgba(248,113,113,.4); color:var(--coral); }
+.pill-b  { background:rgba(251,146,60,.15); border:1px solid rgba(251,146,60,.4); color:var(--orange); }
+.pill-sw { background:rgba(251,146,60,.15); border:1px solid rgba(251,146,60,.4); color:var(--orange); }
+.pill-ro { background:rgba(96,165,250,.15); border:1px solid rgba(96,165,250,.4); color:var(--blue); }
+.pill-gw { background:rgba(167,139,250,.15); border:1px solid rgba(167,139,250,.4); color:var(--violet); }
+.pill-cl { background:rgba(34,211,238,.15); border:1px solid rgba(34,211,238,.4); color:var(--cyan); }
+
+/* ═══ SLIDE 2 — OSI + REPEATER + HUB ═══ */
+#s2 .content { display:flex; gap:1px; background:var(--border); overflow:hidden; }
+.osi-left {
+  width:260px; flex-shrink:0; background:var(--bg); padding:20px; display:flex; flex-direction:column; gap:6px; overflow-y:auto;
+}
+.osi-row {
+  display:flex; align-items:center; gap:8px; padding:8px 10px; border-radius:4px;
+  border:1px solid var(--border); transition:all .3s; cursor:default;
+}
+.osi-row:hover { border-color:var(--layer-c); background:rgba(255,255,255,.03); }
+.osi-n {
+  width:28px; height:28px; border-radius:6px; display:flex; align-items:center; justify-content:center;
+  font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:600; color:#fff; flex-shrink:0;
+}
+.osi-info { flex:1; }
+.osi-name { font-size:12px; font-weight:600; }
+.osi-dev { font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--muted); }
+
+.right-panels { flex:1; display:flex; flex-direction:column; gap:1px; background:var(--border); overflow:hidden; }
+.device-panel { flex:1; background:var(--bg); display:flex; overflow:hidden; }
+.dp-info { width:260px; flex-shrink:0; padding:20px; display:flex; flex-direction:column; gap:10px; overflow-y:auto; }
+.dp-canvas { flex:1; position:relative; min-width:0; }
+.dp-canvas canvas { position:absolute; inset:0; width:100%; height:100%; }
+
+.sec-title { font-family:'Playfair Display',serif; font-size:22px; font-weight:700; }
+.sec-sub { font-size:12px; color:var(--muted); line-height:1.7; }
+.sec-sub strong { color:var(--text); }
+.analogy-box {
+  background:var(--surface); border-left:3px solid; border-radius:0 4px 4px 0;
+  padding:10px 12px; font-size:11px; color:var(--muted); line-height:1.7;
+}
+.analogy-box strong { color:var(--text); }
+
+.spec-row { display:flex; gap:1px; background:var(--border); flex-shrink:0; }
+.spec-cell { flex:1; background:var(--bg); padding:10px; text-align:center; }
+.spec-val { font-family:'Playfair Display',serif; font-size:22px; font-weight:700; }
+.spec-lbl { font-size:10px; color:var(--muted); letter-spacing:1px; margin-top:2px; }
+
+/* ═══ SLIDE 3 — BRIDGE + SWITCH ═══ */
+#s3 .content { display:flex; flex-direction:column; gap:1px; background:var(--border); overflow:hidden; }
+.s3-row { flex:1; display:flex; gap:1px; background:var(--border); overflow:hidden; }
+.s3-info { width:280px; flex-shrink:0; background:var(--bg); padding:20px; display:flex; flex-direction:column; gap:10px; overflow-y:auto; }
+.s3-canvas { flex:1; background:var(--bg); position:relative; }
+.s3-canvas canvas { position:absolute; inset:0; width:100%; height:100%; }
+
+/* ═══ SLIDE 4 — ROUTER ═══ */
+#s4 .content { display:flex; gap:1px; background:var(--border); overflow:hidden; }
+.r-left { width:280px; flex-shrink:0; background:var(--bg); padding:24px; display:flex; flex-direction:column; gap:14px; overflow-y:auto; }
+.r-right { flex:1; background:var(--bg); display:flex; flex-direction:column; overflow:hidden; }
+.r-canvas { flex:1; position:relative; }
+.r-canvas canvas { position:absolute; inset:0; width:100%; height:100%; }
+.r-bottom { height:90px; flex-shrink:0; border-top:1px solid var(--border); display:flex; align-items:stretch; }
+.r-stat { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; border-right:1px solid var(--border); gap:2px; }
+.r-stat:last-child { border-right:none; }
+.r-stat-num { font-family:'Playfair Display',serif; font-size:24px; font-weight:700; }
+.r-stat-lbl { font-size:10px; color:var(--muted); letter-spacing:1px; text-align:center; padding:0 6px; }
+
+.proto-box {
+  background:var(--surface); border-left:3px solid var(--blue); border-radius:0 4px 4px 0;
+  padding:10px 12px; font-size:11px; line-height:1.8; color:var(--muted);
+}
+.proto-box strong { color:var(--blue); }
+
+/* ═══ SLIDE 5 — GATEWAY + CLOUD ═══ */
+#s5 .content { display:flex; flex-direction:column; gap:1px; background:var(--border); overflow:hidden; }
+
+/* ═══ SLIDE 6 — COMPARISON ═══ */
+#s6 .content { padding:20px 36px; overflow-y:auto; }
+.comp-title { font-family:'Playfair Display',serif; font-size:24px; font-weight:700; color:var(--amber); margin-bottom:16px; }
+.comp-table { width:100%; border-collapse:collapse; font-size:13px; }
+.comp-table thead tr { border-bottom:2px solid var(--amber); }
+.comp-table th { padding:10px 14px; text-align:left; font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:2px; color:var(--muted); font-weight:400; }
+.comp-table td { padding:10px 14px; border-bottom:1px solid var(--border); vertical-align:middle; }
+.comp-table tr:hover td { background:var(--surface); }
+.tech-badge {
+  font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:600;
+  padding:4px 10px; border-radius:3px; display:inline-block;
+}
+.tag-good { color:var(--green); font-size:11px; }
+.tag-med  { color:var(--amber); font-size:11px; }
+.tag-bad  { color:var(--coral); font-size:11px; }
+
+/* ═══ SLIDE 7 — ANALOGIES ═══ */
+#s7 .content { padding:28px 40px; overflow-y:auto; }
+.analogy-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:16px; }
+.ag-card {
+  background:var(--surface); border:1px solid var(--border); border-radius:6px;
+  padding:16px 18px; transition:all .3s; border-left:3px solid var(--ac);
+}
+.ag-card:hover { border-color:var(--ac); background:var(--surface2); }
+.ag-title { font-family:'Playfair Display',serif; font-size:16px; font-weight:700; margin-bottom:6px; }
+.ag-desc { font-size:12px; color:var(--muted); line-height:1.7; }
+</style>
+</head>
+<body>
+
+<div class="prog-dots" id="prog-dots"></div>
+
+<div class="slides">
+
+<!-- ═══════════ SLIDE 1 — TITLE ═══════════ -->
+<div class="slide active" id="s1">
+  <div class="top-bar">
+    <div class="brand">Bilgisayar Ağları</div>
+    <div class="slide-label">AĞ CİHAZLARI</div>
+    <div class="slide-num">01 / 07</div>
+  </div>
+  <div class="content">
+    <div class="s1-inner">
+      <div class="s1-bg">
+        <div class="s1-line" style="top:20%;width:60%;left:20%;animation-delay:0s"></div>
+        <div class="s1-line" style="top:50%;width:80%;left:10%;animation-delay:1.3s"></div>
+        <div class="s1-line" style="top:75%;width:50%;left:25%;animation-delay:2.6s"></div>
+      </div>
+      <div class="s1-tagline">Bilgisayar Ağları Serisi</div>
+      <div class="s1-title">Ağın Yapı Taşları</div>
+      <div class="s1-sub">Repeater'dan Router'a, Hub'dan Gateway'e — bir ağı ayakta tutan tüm cihazlar ve OSI katmanlarındaki rolleri.</div>
+      <div class="topic-pills">
+        <div class="pill pill-r">Repeater</div>
+        <div class="pill pill-h">Hub</div>
+        <div class="pill pill-b">Bridge</div>
+        <div class="pill pill-sw">Switch</div>
+        <div class="pill pill-ro">Router</div>
+        <div class="pill pill-gw">Gateway</div>
+        <div class="pill pill-cl">Cloud</div>
+      </div>
+      <canvas id="s1-canvas" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;opacity:.3;"></canvas>
+    </div>
+  </div>
+  <div class="nav-row">
+    <button class="nbtn" onclick="prev()">← GERİ</button>
+    <button class="nbtn" onclick="next()">İLERİ →</button>
+  </div>
+</div>
+
+<!-- ═══════════ SLIDE 2 — OSI + REPEATER + HUB ═══════════ -->
+<div class="slide" id="s2">
+  <div class="top-bar">
+    <div class="brand">Bilgisayar Ağları</div>
+    <div class="slide-label">FİZİKSEL KATMAN CİHAZLARI</div>
+    <div class="slide-num">02 / 07</div>
+  </div>
+  <div class="content">
+    <div class="osi-left">
+      <div style="font-family:'Playfair Display',serif;font-size:14px;color:var(--amber);margin-bottom:4px">OSI Modeli</div>
+      <div class="osi-row" style="--layer-c:#a78bfa"><div class="osi-n" style="background:#a78bfa">7</div><div class="osi-info"><div class="osi-name">Uygulama</div><div class="osi-dev">Gateway</div></div></div>
+      <div class="osi-row" style="--layer-c:#a78bfa"><div class="osi-n" style="background:#8b7fd4">6</div><div class="osi-info"><div class="osi-name">Sunum</div><div class="osi-dev">Gateway</div></div></div>
+      <div class="osi-row" style="--layer-c:#c084fc"><div class="osi-n" style="background:#c084fc">5</div><div class="osi-info"><div class="osi-name">Oturum</div><div class="osi-dev">Gateway</div></div></div>
+      <div class="osi-row" style="--layer-c:#22d3ee"><div class="osi-n" style="background:#22d3ee">4</div><div class="osi-info"><div class="osi-name">Taşıma</div><div class="osi-dev">Gateway</div></div></div>
+      <div class="osi-row" style="--layer-c:#60a5fa"><div class="osi-n" style="background:#60a5fa">3</div><div class="osi-info"><div class="osi-name">Ağ</div><div class="osi-dev">Router</div></div></div>
+      <div class="osi-row" style="--layer-c:#fb923c"><div class="osi-n" style="background:#fb923c">2</div><div class="osi-info"><div class="osi-name">Veri Bağlantı</div><div class="osi-dev">Switch, Bridge</div></div></div>
+      <div class="osi-row" style="--layer-c:#f87171;border-color:#f87171;background:rgba(248,113,113,.06)"><div class="osi-n" style="background:#f87171">1</div><div class="osi-info"><div class="osi-name" style="color:#f87171">Fiziksel</div><div class="osi-dev" style="color:#fca5a5">Repeater, Hub</div></div></div>
+    </div>
+    <div class="right-panels">
+      <!-- REPEATER -->
+      <div class="device-panel">
+        <div class="dp-info">
+          <div class="sec-title" style="color:var(--coral)">Repeater</div>
+          <div class="sec-sub">Zayıflayan elektrik sinyalini alır, <strong>güçlendirir</strong> ve yeniden iletir. Veriyi anlamaz — sadece fiziksel sinyali tekrarlar. 2 portlu, Ethernet mesafesini <strong>100m → 200m</strong>'ye uzatır.</div>
+          <div class="analogy-box" style="border-color:var(--coral)">
+            <strong style="color:var(--coral)">Analoji:</strong> Megafon gibi — sesinizi güçlendirir ama ne söylediğinizi anlamaz.
+          </div>
+        </div>
+        <div class="dp-canvas"><canvas id="rep-canvas"></canvas></div>
+      </div>
+      <!-- HUB -->
+      <div class="device-panel">
+        <div class="dp-info">
+          <div class="sec-title" style="color:var(--coral)">Hub</div>
+          <div class="sec-sub"><strong>Çok portlu repeater</strong>. Bir porttan gelen veriyi <strong>TÜM portlara</strong> gönderir. MAC/IP bilmez, gereksiz trafik + çarpışma oluşturur. <strong>Günümüzde kullanılmıyor</strong> — yerini switch aldı.</div>
+          <div class="analogy-box" style="border-color:var(--coral)">
+            <strong style="color:var(--coral)">Analoji:</strong> Hoparlör — bir kişi konuşuyor, odadaki herkes duyuyor.
+          </div>
+        </div>
+        <div class="dp-canvas"><canvas id="hub-canvas"></canvas></div>
+      </div>
+    </div>
+  </div>
+  <div class="nav-row"><button class="nbtn" onclick="prev()">← GERİ</button><button class="nbtn" onclick="next()">İLERİ →</button></div>
+</div>
+
+<!-- ═══════════ SLIDE 3 — BRIDGE + SWITCH ═══════════ -->
+<div class="slide" id="s3">
+  <div class="top-bar">
+    <div class="brand">Bilgisayar Ağları</div>
+    <div class="slide-label">VERİ BAĞLANTI KATMANI</div>
+    <div class="slide-num">03 / 07</div>
+  </div>
+  <div class="content">
+    <!-- BRIDGE -->
+    <div class="s3-row">
+      <div class="s3-info">
+        <div class="sec-title" style="color:var(--orange)">Bridge</div>
+        <div class="sec-sub">İki ağ segmentini bağlayan <strong>akıllı</strong> cihaz. <strong>MAC adres tablosu</strong> tutar, gereksiz trafiği filtreler, <strong>collision domain böler</strong>. 2 portlu. Günümüzde switch'in atası sayılır.</div>
+        <div class="analogy-box" style="border-color:var(--orange)">
+          <strong style="color:var(--orange)">Analoji:</strong> Kapıcı — iki bina arasında durur, postayı doğru binaya yönlendirir.
+        </div>
+      </div>
+      <div class="s3-canvas"><canvas id="bridge-canvas"></canvas></div>
+    </div>
+    <!-- SWITCH -->
+    <div class="s3-row">
+      <div class="s3-info">
+        <div class="sec-title" style="color:var(--orange)">Switch</div>
+        <div class="sec-sub"><strong>Çok portlu bridge</strong> — modern ağların temeli. MAC tablosu ile veriyi <strong>sadece hedef porta</strong> yönlendirir. Her port ayrı collision domain. Full-duplex. <strong>VLAN, QoS</strong> desteği (managed). L3 switch IP yönlendirme de yapar.</div>
+        <div class="analogy-box" style="border-color:var(--orange)">
+          <strong style="color:var(--orange)">Analoji:</strong> Akıllı santral — arayanı doğrudan aranan kişiye bağlar.
+        </div>
+      </div>
+      <div class="s3-canvas"><canvas id="switch-canvas"></canvas></div>
+    </div>
+  </div>
+  <div class="nav-row"><button class="nbtn" onclick="prev()">← GERİ</button><button class="nbtn" onclick="next()">İLERİ →</button></div>
+</div>
+
+<!-- ═══════════ SLIDE 4 — ROUTER ═══════════ -->
+<div class="slide" id="s4">
+  <div class="top-bar">
+    <div class="brand">Bilgisayar Ağları</div>
+    <div class="slide-label">AĞ KATMANI — YÖNLENDİRİCİ</div>
+    <div class="slide-num">04 / 07</div>
+  </div>
+  <div class="content">
+    <div class="r-left">
+      <div class="sec-title" style="color:var(--blue)">Router</div>
+      <div class="sec-sub"><strong>IP adresi</strong> kullanarak farklı ağları birbirine bağlar. Routing tablosu ve protokolleri (RIP, OSPF, BGP) ile <strong>en uygun yolu</strong> hesaplar. Hem collision hem <strong>broadcast domain böler</strong>.</div>
+      <div class="proto-box">
+        <strong>RIP:</strong> Mesafe vektörü, max 15 hop<br>
+        <strong>OSPF:</strong> Link-state, büyük ağlar<br>
+        <strong>BGP:</strong> İnternet omurgası<br>
+        <strong>NAT/DHCP:</strong> Adres çevirisi, otomatik IP
+      </div>
+      <div class="analogy-box" style="border-color:var(--blue)">
+        <strong style="color:var(--blue)">Analoji:</strong> GPS Navigasyon — paketin gideceği en iyi yolu hesaplar. Evdeki internet modeminiz bir router'dır!
+      </div>
+    </div>
+    <div class="r-right">
+      <div class="r-canvas"><canvas id="router-canvas"></canvas></div>
+      <div class="r-bottom">
+        <div class="r-stat"><div class="r-stat-num" style="color:var(--blue)">3</div><div class="r-stat-lbl">OSI Katmanı</div></div>
+        <div class="r-stat"><div class="r-stat-num" style="color:var(--green)">IP</div><div class="r-stat-lbl">Adres Türü</div></div>
+        <div class="r-stat"><div class="r-stat-num" style="color:var(--teal)">Böler</div><div class="r-stat-lbl">Broadcast D.</div></div>
+        <div class="r-stat"><div class="r-stat-num" style="color:var(--violet)">Böler</div><div class="r-stat-lbl">Collision D.</div></div>
+        <div class="r-stat"><div class="r-stat-num" style="color:var(--amber)">OSPF</div><div class="r-stat-lbl">Routing Protokolü</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="nav-row"><button class="nbtn" onclick="prev()">← GERİ</button><button class="nbtn" onclick="next()">İLERİ →</button></div>
+</div>
+
+<!-- ═══════════ SLIDE 5 — GATEWAY + CLOUD ═══════════ -->
+<div class="slide" id="s5">
+  <div class="top-bar">
+    <div class="brand">Bilgisayar Ağları</div>
+    <div class="slide-label">GATEWAY & NETWORK CLOUD</div>
+    <div class="slide-num">05 / 07</div>
+  </div>
+  <div class="content">
+    <div class="s3-row">
+      <div class="s3-info">
+        <div class="sec-title" style="color:var(--violet)">Gateway</div>
+        <div class="sec-sub"><strong>Farklı protokol</strong> kullanan ağları bağlar. Veri paketini tamamen çözümler (tüm katmanları işler) ve yeni protokole uygun <strong>yeniden paketler</strong>. En karmaşık ve en yavaş cihaz.</div>
+        <div class="sec-sub" style="color:var(--text);font-size:11px;line-height:1.8">
+          ✦ VoIP: Analog telefon ↔ İnternet<br>
+          ✦ IoT: Zigbee/BLE ↔ Wi-Fi<br>
+          ✦ E-posta: Farklı posta sistemleri arası<br>
+          ✦ Cloud: Yerel ağ ↔ Bulut servisleri
+        </div>
+        <div class="analogy-box" style="border-color:var(--violet)">
+          <strong style="color:var(--violet)">Analoji:</strong> Tercüman — iki farklı dil konuşan grubu birbirine bağlar, mesajı çevirir.
+        </div>
+      </div>
+      <div class="s3-canvas"><canvas id="gw-canvas"></canvas></div>
+    </div>
+    <div class="s3-row">
+      <div class="s3-info">
+        <div class="sec-title" style="color:var(--cyan)">Network Cloud</div>
+        <div class="sec-sub">Bir cihaz değil, bir <strong>soyutlama sembolü</strong>. İç yapısı bilinmeyen karmaşık ağ altyapısını temsil eder. İçinde yüzlerce router, switch, fiber olabilir — önemli olan <strong>giriş/çıkış noktalarıdır</strong>.</div>
+        <div class="sec-sub" style="color:var(--text);font-size:11px;line-height:1.8">
+          ✦ İnternet: Milyonlarca cihazdan oluşan dev ağ<br>
+          ✦ WAN: Şubeler arası özel ağ<br>
+          ✦ MPLS: Servis sağlayıcı omurgası<br>
+          ✦ VPN: Şifreli sanal özel ağ
+        </div>
+      </div>
+      <div class="s3-canvas"><canvas id="cloud-canvas"></canvas></div>
+    </div>
+  </div>
+  <div class="nav-row"><button class="nbtn" onclick="prev()">← GERİ</button><button class="nbtn" onclick="next()">İLERİ →</button></div>
+</div>
+
+<!-- ═══════════ SLIDE 6 — COMPARISON ═══════════ -->
+<div class="slide" id="s6">
+  <div class="top-bar">
+    <div class="brand">Bilgisayar Ağları</div>
+    <div class="slide-label">KARŞILAŞTIRMALI ANALİZ</div>
+    <div class="slide-num">06 / 07</div>
+  </div>
+  <div class="content" style="padding:20px 36px; overflow-y:auto;">
+    <div class="comp-title">Cihaz Karşılaştırması</div>
+    <table class="comp-table">
+      <thead><tr><th>CİHAZ</th><th>OSI</th><th>ADRES</th><th>AKILLI</th><th>COLLİSİON D.</th><th>BROADCAST D.</th><th>GÖREV</th></tr></thead>
+      <tbody>
+        <tr><td><span class="tech-badge" style="background:rgba(248,113,113,.15);color:var(--coral);border:1px solid rgba(248,113,113,.3)">Repeater</span></td><td>1</td><td>—</td><td><span class="tag-bad">Hayır</span></td><td>Genişletir</td><td>Genişletir</td><td style="color:var(--muted)">Sinyal güçlendirme</td></tr>
+        <tr><td><span class="tech-badge" style="background:rgba(248,113,113,.15);color:var(--coral);border:1px solid rgba(248,113,113,.3)">Hub</span></td><td>1</td><td>—</td><td><span class="tag-bad">Hayır</span></td><td>1 (Tek)</td><td>1 (Tek)</td><td style="color:var(--muted)">Çok portlu repeater</td></tr>
+        <tr><td><span class="tech-badge" style="background:rgba(251,146,60,.15);color:var(--orange);border:1px solid rgba(251,146,60,.3)">Bridge</span></td><td>2</td><td>MAC</td><td><span class="tag-good">Evet</span></td><td>Böler</td><td>Genişletir</td><td style="color:var(--muted)">Segmentleri bağlar</td></tr>
+        <tr><td><span class="tech-badge" style="background:rgba(251,146,60,.15);color:var(--orange);border:1px solid rgba(251,146,60,.3)">Switch</span></td><td>2/3</td><td>MAC</td><td><span class="tag-good">Evet</span></td><td><span class="tag-good">Her port ayrı</span></td><td>1 (Tek)</td><td style="color:var(--muted)">Akıllı yönlendirme</td></tr>
+        <tr><td><span class="tech-badge" style="background:rgba(96,165,250,.15);color:var(--blue);border:1px solid rgba(96,165,250,.3)">Router</span></td><td>3</td><td>IP</td><td><span class="tag-good">Evet</span></td><td>Böler</td><td><span class="tag-good">Böler</span></td><td style="color:var(--muted)">Ağları bağlar, yol seçer</td></tr>
+        <tr><td><span class="tech-badge" style="background:rgba(167,139,250,.15);color:var(--violet);border:1px solid rgba(167,139,250,.3)">Gateway</span></td><td>4–7</td><td>Tümü</td><td><span class="tag-good">Evet</span></td><td>Böler</td><td><span class="tag-good">Böler</span></td><td style="color:var(--muted)">Protokol çevirisi</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="nav-row"><button class="nbtn" onclick="prev()">← GERİ</button><button class="nbtn" onclick="next()">İLERİ →</button></div>
+</div>
+
+<!-- ═══════════ SLIDE 7 — ANALOGIES SUMMARY ═══════════ -->
+<div class="slide" id="s7">
+  <div class="top-bar">
+    <div class="brand">Bilgisayar Ağları</div>
+    <div class="slide-label">ÖZET & ANALOJİLER</div>
+    <div class="slide-num">07 / 07</div>
+  </div>
+  <div class="content" style="padding:28px 40px; overflow-y:auto;">
+    <div class="comp-title">Hatırla: Katman ↑ Akıl ↑ Hız ↓</div>
+    <div class="analogy-grid">
+      <div class="ag-card" style="--ac:var(--coral)"><div class="ag-title" style="color:var(--coral)">📡 Repeater = Megafon</div><div class="ag-desc">Sesi güçlendirir ama ne söylendiğini anlamaz. Sinyal güçlendirme, 100m → 200m. OSI 1, 2 port, akıllı değil.</div></div>
+      <div class="ag-card" style="--ac:var(--coral)"><div class="ag-title" style="color:var(--coral)">🔌 Hub = Hoparlör</div><div class="ag-desc">Herkes duyuyor, kime söylendiği önemli değil. Broadcast, tek collision domain. Artık kullanılmıyor.</div></div>
+      <div class="ag-card" style="--ac:var(--orange)"><div class="ag-title" style="color:var(--orange)">🌉 Bridge = Kapıcı</div><div class="ag-desc">İki bina arasında durur, postayı doğru binaya yönlendirir. MAC tablosu, 2 port, collision domain böler.</div></div>
+      <div class="ag-card" style="--ac:var(--orange)"><div class="ag-title" style="color:var(--orange)">🔀 Switch = Akıllı Santral</div><div class="ag-desc">Arayanı doğrudan aranan kişiye bağlar. Her port ayrı collision domain, full-duplex, VLAN. Modern ağın temeli.</div></div>
+      <div class="ag-card" style="--ac:var(--blue)"><div class="ag-title" style="color:var(--blue)">🌐 Router = GPS Navigasyon</div><div class="ag-desc">En iyi yolu hesaplar, farklı ağları bağlar. IP adresi, broadcast domain böler. NAT, DHCP, firewall.</div></div>
+      <div class="ag-card" style="--ac:var(--violet)"><div class="ag-title" style="color:var(--violet)">🚪 Gateway = Tercüman</div><div class="ag-desc">İki farklı dili çevirir. Protokol dönüşümü, tüm katmanları işler. VoIP, IoT, e-posta gateway.</div></div>
+    </div>
+  </div>
+  <div class="nav-row"><button class="nbtn" onclick="prev()">← GERİ</button><button class="nbtn" onclick="next()">İLERİ →</button></div>
+</div>
+
+</div><!-- .slides -->
+
+<script>
+// ── SLIDE MANAGEMENT ──
+const TOTAL = 7;
+let cur = 1;
+function buildDots() {
+  const c = document.getElementById('prog-dots'); c.innerHTML = '';
+  for (let i = 1; i <= TOTAL; i++) {
+    const d = document.createElement('div');
+    d.className = 'pdot' + (i === cur ? ' on' : '');
+    d.onclick = () => goTo(i);
+    c.appendChild(d);
+  }
+}
+function goTo(n) {
+  document.getElementById('s'+cur).classList.remove('active');
+  cur = Math.max(1, Math.min(TOTAL, n));
+  document.getElementById('s'+cur).classList.add('active');
+  buildDots();
+  triggerSlideAnim(cur);
+}
+function next() { goTo(cur+1); }
+function prev() { goTo(cur-1); }
+document.addEventListener('keydown', e => {
+  if (e.key==='ArrowRight'||e.key===' ') next();
+  if (e.key==='ArrowLeft') prev();
+});
+// Touch swipe
+let touchStartX = 0;
+document.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; });
+document.addEventListener('touchend', e => {
+  const diff = e.changedTouches[0].screenX - touchStartX;
+  if (diff < -50) next();
+  if (diff > 50) prev();
+});
+buildDots();
+
+// ── HELPERS ──
+function initCanvas(id) {
+  const el = document.getElementById(id); if (!el) return null;
+  const r = el.parentElement.getBoundingClientRect();
+  el.width = r.width || el.offsetWidth;
+  el.height = r.height || el.offsetHeight;
+  return el;
+}
+function grid(ctx,w,h,col='rgba(255,255,255,0.04)') {
+  ctx.strokeStyle=col; ctx.lineWidth=1;
+  for(let x=0;x<w;x+=40){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,h);ctx.stroke();}
+  for(let y=0;y<h;y+=40){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke();}
+}
+
+// ═══ SLIDE 1: Animated network nodes ═══
+let s1Anim=null;
+function drawS1() {
+  const el = document.getElementById('s1-canvas'); if(!el) return;
+  const r = el.parentElement.getBoundingClientRect();
+  el.width = r.width; el.height = r.height;
+  const ctx = el.getContext('2d');
+  const W=el.width, H=el.height;
+  const nodes = [];
+  for(let i=0;i<30;i++) nodes.push({x:Math.random()*W, y:Math.random()*H, vx:(Math.random()-0.5)*0.5, vy:(Math.random()-0.5)*0.5, r:2+Math.random()*2});
+  const colors=['#f87171','#fb923c','#60a5fa','#a78bfa','#22d3ee','#f5a623'];
+  let t=0;
+  function frame(){
+    ctx.clearRect(0,0,W,H);
+    // Move nodes
+    nodes.forEach(n=>{
+      n.x+=n.vx; n.y+=n.vy;
+      if(n.x<0||n.x>W) n.vx*=-1;
+      if(n.y<0||n.y>H) n.vy*=-1;
+    });
+    // Draw connections
+    ctx.lineWidth=0.5;
+    for(let i=0;i<nodes.length;i++){
+      for(let j=i+1;j<nodes.length;j++){
+        const dx=nodes[i].x-nodes[j].x, dy=nodes[i].y-nodes[j].y;
+        const dist=Math.sqrt(dx*dx+dy*dy);
+        if(dist<150){
+          ctx.strokeStyle=`rgba(245,166,35,${(1-dist/150)*0.15})`;
+          ctx.beginPath(); ctx.moveTo(nodes[i].x,nodes[i].y); ctx.lineTo(nodes[j].x,nodes[j].y); ctx.stroke();
+        }
+      }
+    }
+    // Draw nodes
+    nodes.forEach((n,i)=>{
+      ctx.fillStyle=colors[i%colors.length];
+      ctx.globalAlpha=0.5;
+      ctx.beginPath(); ctx.arc(n.x,n.y,n.r,0,Math.PI*2); ctx.fill();
+      ctx.globalAlpha=1;
+    });
+    t+=0.01;
+    if(document.getElementById('s1').classList.contains('active')) s1Anim=requestAnimationFrame(frame);
+  }
+  if(s1Anim) cancelAnimationFrame(s1Anim);
+  frame();
+}
+
+// ═══ SLIDE 2: Repeater signal animation ═══
+let repAnim=null;
+function drawRepeater(){
+  const el=initCanvas('rep-canvas'); if(!el) return;
+  const ctx=el.getContext('2d'), W=el.width, H=el.height;
+  let t=0;
+  function frame(){
+    ctx.clearRect(0,0,W,H); grid(ctx,W,H,'rgba(248,113,113,0.04)');
+    const cy=H/2;
+    // Weak signal (left)
+    ctx.beginPath();
+    for(let x=0;x<W*0.35;x+=2){
+      const decay=1-(x/(W*0.35))*0.7;
+      const y=cy+Math.sin(x*0.06+t*2)*25*decay;
+      x===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    }
+    ctx.strokeStyle='#f87171'; ctx.lineWidth=2; ctx.globalAlpha=0.6;
+    ctx.shadowColor='#f87171'; ctx.shadowBlur=6; ctx.stroke(); ctx.shadowBlur=0; ctx.globalAlpha=1;
+    // Repeater box
+    const rx=W*0.38, rw=W*0.24, ry=cy-30, rh=60;
+    ctx.fillStyle='rgba(248,113,113,0.1)'; ctx.strokeStyle='#f87171'; ctx.lineWidth=2;
+    ctx.fillRect(rx,ry,rw,rh); ctx.strokeRect(rx,ry,rw,rh);
+    ctx.fillStyle='#f87171'; ctx.font='bold 14px JetBrains Mono'; ctx.textAlign='center';
+    ctx.fillText('REPEATER', rx+rw/2, cy+5);
+    // Strong signal (right)
+    ctx.beginPath();
+    for(let x=W*0.65;x<W;x+=2){
+      const grow=((x-W*0.65)/(W*0.35));
+      const y=cy+Math.sin(x*0.06+t*2)*30*(0.3+grow*0.7);
+      x===Math.ceil(W*0.65)?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    }
+    ctx.strokeStyle='#4ade80'; ctx.lineWidth=2; ctx.globalAlpha=0.8;
+    ctx.shadowColor='#4ade80'; ctx.shadowBlur=6; ctx.stroke(); ctx.shadowBlur=0; ctx.globalAlpha=1;
+    // Labels
+    ctx.font='11px JetBrains Mono'; ctx.textAlign='center';
+    ctx.fillStyle='#f87171'; ctx.fillText('Zayıf Sinyal', W*0.17, H*0.15);
+    ctx.fillStyle='#4ade80'; ctx.fillText('Güçlü Sinyal', W*0.82, H*0.15);
+    t+=0.03;
+    if(document.getElementById('s2').classList.contains('active')) repAnim=requestAnimationFrame(frame);
+  }
+  if(repAnim) cancelAnimationFrame(repAnim);
+  frame();
+}
+
+// ═══ SLIDE 2: Hub broadcast animation ═══
+let hubAnim=null;
+function drawHub(){
+  const el=initCanvas('hub-canvas'); if(!el) return;
+  const ctx=el.getContext('2d'), W=el.width, H=el.height;
+  const cx=W/2, cy=H/2;
+  const pcs=[{a:0},{a:Math.PI/2},{a:Math.PI},{a:Math.PI*1.5},{a:Math.PI/4},{a:Math.PI*3/4}];
+  let t=0;
+  function frame(){
+    ctx.clearRect(0,0,W,H); grid(ctx,W,H,'rgba(248,113,113,0.04)');
+    const radius=Math.min(W,H)*0.35;
+    // Hub center
+    ctx.fillStyle='rgba(248,113,113,0.15)'; ctx.strokeStyle='#f87171'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.arc(cx,cy,28,0,Math.PI*2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#f87171'; ctx.font='bold 11px JetBrains Mono'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('HUB',cx,cy); ctx.textBaseline='alphabetic';
+    // PCs and broadcast lines
+    pcs.forEach((pc,i)=>{
+      const px=cx+Math.cos(pc.a)*radius, py=cy+Math.sin(pc.a)*radius;
+      // Broadcast pulse
+      const pulse=(t*2+i*0.5)%2;
+      if(pulse<1){
+        const px2=cx+Math.cos(pc.a)*radius*pulse, py2=cy+Math.sin(pc.a)*radius*pulse;
+        ctx.beginPath(); ctx.arc(px2,py2,4,0,Math.PI*2);
+        ctx.fillStyle=`rgba(248,113,113,${1-pulse})`; ctx.fill();
+      }
+      // Line
+      ctx.strokeStyle='rgba(248,113,113,0.2)'; ctx.lineWidth=1;
+      ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(px,py); ctx.stroke();
+      // PC box
+      ctx.fillStyle='rgba(96,165,250,0.15)'; ctx.strokeStyle='#60a5fa'; ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.arc(px,py,16,0,Math.PI*2); ctx.fill(); ctx.stroke();
+      ctx.fillStyle='#60a5fa'; ctx.font='9px JetBrains Mono'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText('PC'+(i+1),px,py); ctx.textBaseline='alphabetic';
+    });
+    ctx.fillStyle='rgba(248,113,113,0.7)'; ctx.font='10px JetBrains Mono'; ctx.textAlign='center';
+    ctx.fillText('⚠ Veri HERKESE gider', cx, H-14);
+    t+=0.02;
+    if(document.getElementById('s2').classList.contains('active')) hubAnim=requestAnimationFrame(frame);
+  }
+  if(hubAnim) cancelAnimationFrame(hubAnim);
+  frame();
+}
+
+// ═══ SLIDE 3: Bridge ═══
+let bridgeAnim=null;
+function drawBridge(){
+  const el=initCanvas('bridge-canvas'); if(!el) return;
+  const ctx=el.getContext('2d'), W=el.width, H=el.height;
+  let t=0;
+  function frame(){
+    ctx.clearRect(0,0,W,H); grid(ctx,W,H,'rgba(251,146,60,0.04)');
+    const cy=H/2;
+    // Segment A
+    ctx.fillStyle='rgba(251,146,60,0.06)'; ctx.fillRect(20,30,W*0.35-20,H-60);
+    ctx.strokeStyle='rgba(251,146,60,0.3)'; ctx.lineWidth=1; ctx.strokeRect(20,30,W*0.35-20,H-60);
+    ctx.fillStyle='#fb923c'; ctx.font='11px JetBrains Mono'; ctx.textAlign='center';
+    ctx.fillText('Segment A', W*0.19, 24);
+    for(let i=0;i<3;i++){
+      const py=cy-50+i*50;
+      ctx.fillStyle='rgba(251,146,60,0.15)'; ctx.strokeStyle='#fb923c'; ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.arc(W*0.19, py, 16, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+      ctx.fillStyle='#fb923c'; ctx.font='9px JetBrains Mono'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText('A'+(i+1), W*0.19, py); ctx.textBaseline='alphabetic';
+    }
+    // Bridge
+    const bx=W*0.42, bw=W*0.16;
+    ctx.fillStyle='rgba(251,146,60,0.1)'; ctx.strokeStyle='#fb923c'; ctx.lineWidth=2;
+    ctx.fillRect(bx,cy-25,bw,50); ctx.strokeRect(bx,cy-25,bw,50);
+    ctx.fillStyle='#fb923c'; ctx.font='bold 12px JetBrains Mono'; ctx.textAlign='center';
+    ctx.fillText('BRIDGE', bx+bw/2, cy+4);
+    // Segment B
+    ctx.fillStyle='rgba(96,165,250,0.06)'; ctx.fillRect(W*0.65,30,W*0.35-20,H-60);
+    ctx.strokeStyle='rgba(96,165,250,0.3)'; ctx.lineWidth=1; ctx.strokeRect(W*0.65,30,W*0.35-20,H-60);
+    ctx.fillStyle='#60a5fa'; ctx.font='11px JetBrains Mono'; ctx.textAlign='center';
+    ctx.fillText('Segment B', W*0.81, 24);
+    for(let i=0;i<3;i++){
+      const py=cy-50+i*50;
+      ctx.fillStyle='rgba(96,165,250,0.15)'; ctx.strokeStyle='#60a5fa'; ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.arc(W*0.81, py, 16, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+      ctx.fillStyle='#60a5fa'; ctx.font='9px JetBrains Mono'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText('B'+(i+1), W*0.81, py); ctx.textBaseline='alphabetic';
+    }
+    // Animated packet
+    const packetPos = (t*0.8)%2;
+    if(packetPos<1){
+      const px = W*0.35 + (W*0.30)*packetPos;
+      ctx.fillStyle='#4ade80'; ctx.shadowColor='#4ade80'; ctx.shadowBlur=10;
+      ctx.beginPath(); ctx.arc(px, cy, 6, 0, Math.PI*2); ctx.fill();
+      ctx.shadowBlur=0;
+    }
+    // Connection lines
+    ctx.strokeStyle='rgba(251,146,60,0.3)'; ctx.setLineDash([4,4]); ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(W*0.35,cy); ctx.lineTo(bx,cy); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(bx+bw,cy); ctx.lineTo(W*0.65,cy); ctx.stroke();
+    ctx.setLineDash([]);
+    t+=0.02;
+    if(document.getElementById('s3').classList.contains('active')) bridgeAnim=requestAnimationFrame(frame);
+  }
+  if(bridgeAnim) cancelAnimationFrame(bridgeAnim);
+  frame();
+}
+
+// ═══ SLIDE 3: Switch ═══
+let switchAnim=null;
+function drawSwitch(){
+  const el=initCanvas('switch-canvas'); if(!el) return;
+  const ctx=el.getContext('2d'), W=el.width, H=el.height;
+  const cx=W/2, cy=H/2;
+  const pcs=[{a:-Math.PI/3,label:'PC1',target:false},{a:0,label:'PC2',target:true},{a:Math.PI/3,label:'PC3',target:false},{a:Math.PI*2/3,label:'PC4',target:false},{a:Math.PI,label:'PC5',target:false},{a:-Math.PI*2/3,label:'PC6',target:false}];
+  let t=0;
+  function frame(){
+    ctx.clearRect(0,0,W,H); grid(ctx,W,H,'rgba(251,146,60,0.04)');
+    const radius=Math.min(W,H)*0.35;
+    // Switch center
+    ctx.fillStyle='rgba(251,146,60,0.15)'; ctx.strokeStyle='#fb923c'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.arc(cx,cy,30,0,Math.PI*2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#fb923c'; ctx.font='bold 10px JetBrains Mono'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('SWITCH',cx,cy); ctx.textBaseline='alphabetic';
+    pcs.forEach((pc,i)=>{
+      const px=cx+Math.cos(pc.a)*radius, py=cy+Math.sin(pc.a)*radius;
+      const col=pc.target?'#4ade80':'#374151';
+      const colB=pc.target?'#4ade80':'#4b5563';
+      // Line
+      ctx.strokeStyle=pc.target?'rgba(74,222,128,0.4)':'rgba(255,255,255,0.08)'; ctx.lineWidth=pc.target?2:1;
+      ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(px,py); ctx.stroke();
+      // Targeted packet animation
+      if(pc.target){
+        const pulse=(t*2)%1;
+        const ppx=cx+(px-cx)*pulse, ppy=cy+(py-cy)*pulse;
+        ctx.fillStyle='#4ade80'; ctx.shadowColor='#4ade80'; ctx.shadowBlur=12;
+        ctx.beginPath(); ctx.arc(ppx,ppy,5,0,Math.PI*2); ctx.fill(); ctx.shadowBlur=0;
+      }
+      // PC
+      ctx.fillStyle=col+'22'; ctx.strokeStyle=colB; ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.arc(px,py,16,0,Math.PI*2); ctx.fill(); ctx.stroke();
+      ctx.fillStyle=colB; ctx.font='9px JetBrains Mono'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(pc.label,px,py); ctx.textBaseline='alphabetic';
+    });
+    ctx.fillStyle='rgba(74,222,128,0.7)'; ctx.font='10px JetBrains Mono'; ctx.textAlign='center';
+    ctx.fillText('✓ Sadece HEDEF cihaza gider', cx, H-14);
+    t+=0.02;
+    if(document.getElementById('s3').classList.contains('active')) switchAnim=requestAnimationFrame(frame);
+  }
+  if(switchAnim) cancelAnimationFrame(switchAnim);
+  frame();
+}
+
+// ═══ SLIDE 4: Router ═══
+let routerAnim=null;
+function drawRouter(){
+  const el=initCanvas('router-canvas'); if(!el) return;
+  const ctx=el.getContext('2d'), W=el.width, H=el.height;
+  let t=0;
+  function frame(){
+    ctx.clearRect(0,0,W,H); grid(ctx,W,H,'rgba(96,165,250,0.04)');
+    const cy=H/2;
+    // Network A
+    ctx.fillStyle='rgba(96,165,250,0.06)'; ctx.strokeStyle='rgba(96,165,250,0.3)'; ctx.lineWidth=1;
+    ctx.fillRect(20,40,W*0.3,H-80); ctx.strokeRect(20,40,W*0.3,H-80);
+    ctx.fillStyle='#60a5fa'; ctx.font='11px JetBrains Mono'; ctx.textAlign='center';
+    ctx.fillText('Ağ A: 192.168.1.0/24', 20+W*0.15, 34);
+    for(let i=0;i<4;i++){
+      const py=H*0.25+i*(H*0.15);
+      ctx.fillStyle='rgba(96,165,250,0.15)'; ctx.strokeStyle='#60a5fa'; ctx.lineWidth=1;
+      ctx.beginPath(); ctx.arc(20+W*0.15, py, 14, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+      ctx.fillStyle='#60a5fa'; ctx.font='8px JetBrains Mono'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText('.1'+(i), 20+W*0.15, py); ctx.textBaseline='alphabetic';
+    }
+    // Router
+    const rx=W*0.4, rw=W*0.2;
+    ctx.fillStyle='rgba(96,165,250,0.12)'; ctx.strokeStyle='#60a5fa'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.arc(rx+rw/2,cy,35,0,Math.PI*2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#60a5fa'; ctx.font='bold 13px JetBrains Mono'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('ROUTER',rx+rw/2,cy); ctx.textBaseline='alphabetic';
+    // Pulse ring
+    const pulseR=35+(t*30%40);
+    ctx.strokeStyle=`rgba(96,165,250,${Math.max(0,0.3-pulseR/100)})`; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.arc(rx+rw/2,cy,pulseR,0,Math.PI*2); ctx.stroke();
+    // Network B
+    ctx.fillStyle='rgba(74,222,128,0.06)'; ctx.strokeStyle='rgba(74,222,128,0.3)'; ctx.lineWidth=1;
+    ctx.fillRect(W*0.7,40,W*0.3-20,H-80); ctx.strokeRect(W*0.7,40,W*0.3-20,H-80);
+    ctx.fillStyle='#4ade80'; ctx.font='11px JetBrains Mono'; ctx.textAlign='center';
+    ctx.fillText('Ağ B: 10.0.0.0/24', W*0.7+W*0.15-10, 34);
+    for(let i=0;i<4;i++){
+      const py=H*0.25+i*(H*0.15);
+      ctx.fillStyle='rgba(74,222,128,0.15)'; ctx.strokeStyle='#4ade80'; ctx.lineWidth=1;
+      ctx.beginPath(); ctx.arc(W*0.7+W*0.15-10, py, 14, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+      ctx.fillStyle='#4ade80'; ctx.font='8px JetBrains Mono'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText('.1'+(i), W*0.7+W*0.15-10, py); ctx.textBaseline='alphabetic';
+    }
+    // Animated packet traveling A→B
+    const pkt=(t*0.6)%2;
+    if(pkt<1){
+      const startX=W*0.32, endX=W*0.68;
+      const px=startX+(endX-startX)*pkt;
+      ctx.fillStyle='#f5a623'; ctx.shadowColor='#f5a623'; ctx.shadowBlur=12;
+      ctx.beginPath(); ctx.arc(px,cy,5,0,Math.PI*2); ctx.fill(); ctx.shadowBlur=0;
+    }
+    // Connection lines
+    ctx.strokeStyle='rgba(96,165,250,0.2)'; ctx.setLineDash([5,5]); ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(W*0.32,cy); ctx.lineTo(rx,cy); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(rx+rw,cy); ctx.lineTo(W*0.68,cy); ctx.stroke();
+    ctx.setLineDash([]);
+    t+=0.02;
+    if(document.getElementById('s4').classList.contains('active')) routerAnim=requestAnimationFrame(frame);
+  }
+  if(routerAnim) cancelAnimationFrame(routerAnim);
+  frame();
+}
+
+// ═══ SLIDE 5: Gateway ═══
+let gwAnim=null;
+function drawGateway(){
+  const el=initCanvas('gw-canvas'); if(!el) return;
+  const ctx=el.getContext('2d'), W=el.width, H=el.height;
+  let t=0;
+  function frame(){
+    ctx.clearRect(0,0,W,H); grid(ctx,W,H,'rgba(167,139,250,0.04)');
+    const cy=H/2;
+    // Protocol A
+    ctx.fillStyle='rgba(167,139,250,0.06)'; ctx.strokeStyle='rgba(167,139,250,0.3)'; ctx.lineWidth=1;
+    ctx.fillRect(20,40,W*0.3,H-80); ctx.strokeRect(20,40,W*0.3,H-80);
+    ctx.fillStyle='#a78bfa'; ctx.font='12px JetBrains Mono'; ctx.textAlign='center';
+    ctx.fillText('Protokol A', 20+W*0.15, 34);
+    const proA=['TCP/IP','HTTP','SMTP'];
+    proA.forEach((p,i)=>{
+      ctx.fillStyle='rgba(167,139,250,0.15)'; ctx.fillRect(40, H*0.3+i*36, W*0.26, 28);
+      ctx.strokeStyle='#a78bfa'; ctx.lineWidth=1; ctx.strokeRect(40, H*0.3+i*36, W*0.26, 28);
+      ctx.fillStyle='#a78bfa'; ctx.font='10px JetBrains Mono'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(p, 40+W*0.13, H*0.3+i*36+14); ctx.textBaseline='alphabetic';
+    });
+    // Gateway
+    ctx.fillStyle='rgba(167,139,250,0.12)'; ctx.strokeStyle='#a78bfa'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.arc(W/2,cy,32,0,Math.PI*2); ctx.fill(); ctx.stroke();
+    // Rotating arrows
+    ctx.save(); ctx.translate(W/2,cy); ctx.rotate(t);
+    ctx.strokeStyle='#a78bfa'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(-15,-8); ctx.lineTo(15,-8); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(15,8); ctx.lineTo(-15,8); ctx.stroke();
+    // arrowheads
+    ctx.fillStyle='#a78bfa';
+    ctx.beginPath(); ctx.moveTo(15,-8); ctx.lineTo(10,-13); ctx.lineTo(10,-3); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(-15,8); ctx.lineTo(-10,3); ctx.lineTo(-10,13); ctx.fill();
+    ctx.restore();
+    ctx.fillStyle='#a78bfa'; ctx.font='bold 8px JetBrains Mono'; ctx.textAlign='center';
+    ctx.fillText('GATEWAY',W/2,cy+46);
+    // Protocol B
+    ctx.fillStyle='rgba(251,146,60,0.06)'; ctx.strokeStyle='rgba(251,146,60,0.3)'; ctx.lineWidth=1;
+    ctx.fillRect(W*0.7,40,W*0.3-20,H-80); ctx.strokeRect(W*0.7,40,W*0.3-20,H-80);
+    ctx.fillStyle='#fb923c'; ctx.font='12px JetBrains Mono'; ctx.textAlign='center';
+    ctx.fillText('Protokol B', W*0.7+W*0.15-10, 34);
+    const proB=['IPX/SPX','VoIP','X.400'];
+    proB.forEach((p,i)=>{
+      ctx.fillStyle='rgba(251,146,60,0.15)'; ctx.fillRect(W*0.72, H*0.3+i*36, W*0.26, 28);
+      ctx.strokeStyle='#fb923c'; ctx.lineWidth=1; ctx.strokeRect(W*0.72, H*0.3+i*36, W*0.26, 28);
+      ctx.fillStyle='#fb923c'; ctx.font='10px JetBrains Mono'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(p, W*0.72+W*0.13, H*0.3+i*36+14); ctx.textBaseline='alphabetic';
+    });
+    // Connection dashes
+    ctx.strokeStyle='rgba(167,139,250,0.2)'; ctx.setLineDash([4,4]); ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(W*0.32,cy); ctx.lineTo(W/2-35,cy); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(W/2+35,cy); ctx.lineTo(W*0.68,cy); ctx.stroke();
+    ctx.setLineDash([]);
+    t+=0.015;
+    if(document.getElementById('s5').classList.contains('active')) gwAnim=requestAnimationFrame(frame);
+  }
+  if(gwAnim) cancelAnimationFrame(gwAnim);
+  frame();
+}
+
+// ═══ SLIDE 5: Cloud ═══
+let cloudAnim=null;
+function drawCloud(){
+  const el=initCanvas('cloud-canvas'); if(!el) return;
+  const ctx=el.getContext('2d'), W=el.width, H=el.height;
+  let t=0;
+  // Particles inside cloud
+  const particles=[];
+  for(let i=0;i<20;i++) particles.push({x:W*0.3+Math.random()*W*0.4, y:H*0.2+Math.random()*H*0.6, vx:(Math.random()-0.5)*0.8, vy:(Math.random()-0.5)*0.8, r:2});
+  function frame(){
+    ctx.clearRect(0,0,W,H);
+    const cx=W/2, cy=H/2;
+    // Cloud shape (multiple ovals)
+    ctx.save();
+    ctx.beginPath();
+    ctx.ellipse(cx,cy,W*0.25,H*0.3,0,0,Math.PI*2);
+    ctx.ellipse(cx-W*0.12,cy-H*0.05,W*0.18,H*0.22,0,0,Math.PI*2);
+    ctx.ellipse(cx+W*0.12,cy+H*0.02,W*0.2,H*0.25,0,0,Math.PI*2);
+    ctx.fillStyle='rgba(34,211,238,0.04)';
+    ctx.strokeStyle='rgba(34,211,238,0.25)'; ctx.lineWidth=2; ctx.setLineDash([6,6]);
+    ctx.fill(); ctx.stroke(); ctx.setLineDash([]);
+    ctx.restore();
+    // Particles
+    particles.forEach(p=>{
+      p.x+=p.vx; p.y+=p.vy;
+      if(p.x<W*0.25||p.x>W*0.75) p.vx*=-1;
+      if(p.y<H*0.15||p.y>H*0.85) p.vy*=-1;
+      ctx.fillStyle='rgba(34,211,238,0.4)';
+      ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fill();
+    });
+    // Draw connections between nearby particles
+    for(let i=0;i<particles.length;i++){
+      for(let j=i+1;j<particles.length;j++){
+        const dx=particles[i].x-particles[j].x, dy=particles[i].y-particles[j].y;
+        const d=Math.sqrt(dx*dx+dy*dy);
+        if(d<80){
+          ctx.strokeStyle=`rgba(34,211,238,${(1-d/80)*0.15})`; ctx.lineWidth=0.5;
+          ctx.beginPath(); ctx.moveTo(particles[i].x,particles[i].y); ctx.lineTo(particles[j].x,particles[j].y); ctx.stroke();
+        }
+      }
+    }
+    ctx.fillStyle='rgba(34,211,238,0.5)'; ctx.font='12px JetBrains Mono'; ctx.textAlign='center';
+    ctx.fillText('İnternet / WAN', cx, cy-4);
+    ctx.fillStyle='rgba(34,211,238,0.3)'; ctx.font='9px JetBrains Mono';
+    ctx.fillText('Router\'lar, Switch\'ler, Fiber...', cx, cy+14);
+    // External nodes
+    // Ofis A
+    ctx.fillStyle='rgba(96,165,250,0.15)'; ctx.strokeStyle='#60a5fa'; ctx.lineWidth=1.5;
+    ctx.fillRect(10, cy-18, 60, 36); ctx.strokeRect(10, cy-18, 60, 36);
+    ctx.fillStyle='#60a5fa'; ctx.font='9px JetBrains Mono'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('Ofis A', 40, cy); ctx.textBaseline='alphabetic';
+    ctx.strokeStyle='rgba(96,165,250,0.3)'; ctx.setLineDash([3,3]);
+    ctx.beginPath(); ctx.moveTo(72,cy); ctx.lineTo(cx-W*0.25,cy); ctx.stroke(); ctx.setLineDash([]);
+    // Ofis B
+    ctx.fillStyle='rgba(74,222,128,0.15)'; ctx.strokeStyle='#4ade80'; ctx.lineWidth=1.5;
+    ctx.fillRect(W-70, cy-18, 60, 36); ctx.strokeRect(W-70, cy-18, 60, 36);
+    ctx.fillStyle='#4ade80'; ctx.font='9px JetBrains Mono'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('Ofis B', W-40, cy); ctx.textBaseline='alphabetic';
+    ctx.strokeStyle='rgba(74,222,128,0.3)'; ctx.setLineDash([3,3]);
+    ctx.beginPath(); ctx.moveTo(W-72,cy); ctx.lineTo(cx+W*0.25,cy); ctx.stroke(); ctx.setLineDash([]);
+    t+=0.01;
+    if(document.getElementById('s5').classList.contains('active')) cloudAnim=requestAnimationFrame(frame);
+  }
+  if(cloudAnim) cancelAnimationFrame(cloudAnim);
+  frame();
+}
+
+// ── TRIGGER ──
+function triggerSlideAnim(n){
+  if(n===1) drawS1();
+  if(n===2){ drawRepeater(); drawHub(); }
+  if(n===3){ drawBridge(); drawSwitch(); }
+  if(n===4) drawRouter();
+  if(n===5){ drawGateway(); drawCloud(); }
+}
+
+setTimeout(()=>{
+  drawS1();
+  window.addEventListener('resize', ()=>triggerSlideAnim(cur));
+}, 100);
+</script>
+</body>
+</html>
