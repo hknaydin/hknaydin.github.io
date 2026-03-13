@@ -34,6 +34,7 @@
 </head>
 
 <body class="flex-item flex-container">
+	<canvas id="matrix-canvas"></canvas>
 
 
 	<div class="container text-center flex-item ">
@@ -74,31 +75,85 @@
 
 		<a id="blog" href="https://yazilimdnyasi.wordpress.com/">check out <strong>my blog</strong> </a>
 		<br><br>
-		<div>
-			<a href="hello_modulation.html" class="btn btn-primary btn-lg"
-				style="margin-top: 10px; margin-right: 10px; border-radius: 5px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); background-color: #00c9cc; border-color: #00cc66; color: white;">
+		<!-- Gizli Proje Linkleri (Artık Açık) -->
+		<div id="project-links"
+			style="display: block; background: rgba(0,0,0,0.5); padding: 20px; border-radius: 10px; border: 1px dashed #00ff41;">
+			<h3 style="color: #00ff41; font-family: monospace; margin-bottom: 20px;">&gt; SELECT A MODULE_</h3>
+			<a href="#" data-target="hello_modulation.html" class="btn btn-primary btn-lg secure-link"
+				style="margin-top: 10px; margin-right: 10px; border-radius: 5px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); background-color: #00c9cc; border-color: #00cc66; color: white; font-family: Arial, sans-serif;">
 				<i class="fa fa-play-circle-o"></i> Modulation Simulator
 			</a>
-			<a href="cogullama_teknolojileri.html" class="btn btn-primary btn-lg"
-				style="margin-top: 10px; margin-right: 10px; border-radius: 5px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); background-color: #f5a623; border-color: #f5a623; color: white;">
+			<a href="#" data-target="cogullama_teknolojileri.html" class="btn btn-primary btn-lg secure-link"
+				style="margin-top: 10px; margin-right: 10px; border-radius: 5px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); background-color: #f5a623; border-color: #f5a623; color: white; font-family: Arial, sans-serif;">
 				<i class="fa fa-sitemap"></i> Çoğullama Teknolojileri
 			</a>
-			<a href="ag_topolojileri.html" class="btn btn-primary btn-lg"
-				style="margin-top: 10px; margin-right: 10px; border-radius: 5px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); background-color: #60a5fa; border-color: #60a5fa; color: white;">
+			<a href="#" data-target="ag_topolojileri.html" class="btn btn-primary btn-lg secure-link"
+				style="margin-top: 10px; margin-right: 10px; border-radius: 5px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); background-color: #60a5fa; border-color: #60a5fa; color: white; font-family: Arial, sans-serif;">
 				<i class="fa fa-share-alt"></i> Ağ Topolojileri
 			</a>
-			<a href="ag_cihazlari.html" class="btn btn-primary btn-lg"
-				style="margin-top: 10px; margin-right: 10px; border-radius: 5px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); background-color: #a78bfa; border-color: #a78bfa; color: white;">
+			<a href="#" data-target="ag_cihazlari.html" class="btn btn-primary btn-lg secure-link"
+				style="margin-top: 10px; margin-right: 10px; border-radius: 5px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); background-color: #a78bfa; border-color: #a78bfa; color: white; font-family: Arial, sans-serif;">
 				<i class="fa fa-server"></i> Ağ Cihazları
 			</a>
-			<a href="Ag_Cihazlari_Sunum.html" class="btn btn-primary btn-lg"
-				style="margin-top: 10px; border-radius: 5px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); background-color: #ef4444; border-color: #ef4444; color: white;">
+			<a href="#" data-target="Ag_Cihazlari_Sunum.html" class="btn btn-primary btn-lg secure-link"
+				style="margin-top: 10px; border-radius: 5px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); background-color: #ef4444; border-color: #ef4444; color: white; font-family: Arial, sans-serif;">
 				<i class="fa fa-television"></i> Ağ Cihazları Sunumu
 			</a>
 		</div>
 
+		<!-- Projeler Giriş Paneli Modal Overlay -->
+		<div id="login-modal"
+			style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center;">
+			<div id="project-login-panel"
+				style="background: rgba(0,0,0,0.9); border: 2px solid #00ff41; border-radius: 10px; padding: 30px; width: 90%; max-width: 400px; box-shadow: 0 0 25px #00ff41;">
+				<h3 style="color: #00ff41; font-family: monospace; text-shadow: none; margin-top: 0; font-size: 24px;">
+					&gt; SECURE ACCESS REQUIRED_</h3>
+				<p style="color: #ccc; font-family: monospace; font-size: 14px; margin-bottom: 10px;">Enter credentials
+					to unlock module.</p>
+				<p
+					style="color: #f5a623; font-family: monospace; font-size: 11px; margin-bottom: 20px; font-style: italic;">
+					Note: Dr. Hakan Aydın tarafından AVESİS sayfasında Kriptoloji notları için verilmiş olan şifre
+					burada kullanılmıştır.</p>
+
+				<div style="margin-bottom: 15px; text-align: left;">
+					<label style="color: #00ff41; font-family: monospace; display: block; margin-bottom: 5px;">Operator
+						ID:</label>
+					<input type="text" id="admin-user" placeholder="hakanaydin"
+						style="width: 100%; padding: 10px; background: #111; border: 1px solid #00ff41; color: #fff; font-family: monospace; font-size: 16px;">
+				</div>
+
+				<div style="margin-bottom: 20px; text-align: left;">
+					<label
+						style="color: #00ff41; font-family: monospace; display: block; margin-bottom: 5px;">Passkey:</label>
+					<div style="display: flex; align-items: stretch;">
+						<input type="password" id="admin-pass" placeholder="••••••••"
+							style="flex: 1; padding: 10px; background: #111; border: 1px solid #00ff41; border-right: none; color: #fff; font-family: monospace; font-size: 16px;">
+						<button id="toggle-pass" type="button"
+							style="background: #111; border: 1px solid #00ff41; border-left: none; color: #00ff41; padding: 0 12px; cursor: pointer; transition: 0.2s;">
+							<i class="fa fa-eye" id="toggle-icon"></i>
+						</button>
+					</div>
+				</div>
+
+				<p id="login-error"
+					style="color: #ff3333; font-family: monospace; display: none; margin-bottom: 15px; font-weight: bold;">
+					&gt; ACCESS DENIED_</p>
+
+				<div style="display: flex; gap: 10px;">
+					<button id="auth-btn"
+						style="background: #00ff41; color: #000; border: none; padding: 12px 20px; font-weight: bold; font-family: monospace; cursor: pointer; flex: 1; font-size: 16px;">AUTHENTICATE</button>
+					<button id="cancel-btn"
+						style="background: #333; color: #fff; border: 1px solid #777; padding: 12px 20px; font-weight: bold; font-family: monospace; cursor: pointer; font-size: 16px;">CANCEL</button>
+				</div>
+			</div>
+		</div>
+
 	</div>
 
+	<!-- SHA-256 for secure client-side hashing -->
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/js-sha256/0.9.0/sha256.min.js"></script>
+	<script src="js/matrix.js"></script>
+	<script src="js/auth.js"></script>
 </body>
 <footer class="footer text-center ">
 	<div class="container">
