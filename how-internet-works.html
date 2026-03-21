@@ -1,0 +1,1203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>How The Internet Works</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#050908;
+  --card:#0a100d;
+  --card2:#0d1510;
+  --border:#152218;
+  --green:#00ff7f;
+  --cyan:#00e5ff;
+  --yellow:#f5a623;
+  --purple:#c77dff;
+  --blue:#4da6ff;
+  --red:#ff4444;
+  --orange:#ff8800;
+  --pink:#ff4da6;
+  --white:#e8f4ee;
+  --mono:'Share Tech Mono',monospace;
+  --muted:#1e3828;
+  --text:#7ab898;
+}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:'Inter',sans-serif;
+  min-height:100vh;
+  padding:28px 16px 60px;
+  max-width:860px;
+  margin:0 auto;
+}
+
+/* ── TITLE ── */
+.title-wrap{text-align:center;margin-bottom:28px;}
+.t1{font-family:'Orbitron',monospace;font-size:30px;font-weight:400;color:var(--white);letter-spacing:6px;display:block;}
+.t2{font-family:'Orbitron',monospace;font-size:62px;font-weight:900;color:var(--green);letter-spacing:2px;
+  text-shadow:0 0 40px rgba(0,255,127,0.5),0 0 80px rgba(0,255,127,0.2);
+  display:block;line-height:1;}
+.t3{font-family:'Orbitron',monospace;font-size:30px;font-weight:700;color:var(--white);letter-spacing:6px;display:block;}
+.t-sub{
+  display:flex;justify-content:center;gap:14px;flex-wrap:wrap;
+  margin-top:12px;
+  font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:2px;
+}
+.t-sub span.active-sub{color:var(--green);text-shadow:0 0 12px rgba(0,255,127,0.4);}
+
+/* ── STEP NAV ── */
+.step-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.step-label{font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:3px;}
+.step-badge{
+  font-family:'Orbitron',monospace;font-size:13px;font-weight:700;
+  letter-spacing:2px;padding:10px 24px;
+  border:2px solid;
+  display:flex;align-items:center;gap:8px;
+}
+.step-arrows{display:flex;gap:8px;}
+.step-arrows button{
+  background:rgba(255,255,255,0.03);border:1px solid var(--border);
+  color:var(--muted);width:32px;height:32px;cursor:pointer;font-size:16px;
+  border-radius:4px;transition:all 0.15s;display:flex;align-items:center;justify-content:center;
+}
+.step-arrows button:hover{border-color:var(--green);color:var(--green);}
+
+/* ── NETWORK MAP CANVAS ── */
+.map-card{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:12px;
+  margin-bottom:14px;
+  position:relative;
+  overflow:hidden;
+}
+.map-label{
+  position:absolute;top:12px;left:50%;transform:translateX(-50%);
+  font-family:var(--mono);font-size:9px;letter-spacing:3px;color:var(--muted);
+  pointer-events:none;z-index:2;
+}
+#netCanvas{display:block;width:100%;cursor:pointer;}
+
+/* ── STEP VIEWS ── */
+.step-view{display:none;}
+.step-view.active{display:block;}
+
+/* ── DNS LOOKUP ── */
+.dns-chain{display:flex;align-items:center;gap:0;margin-bottom:14px;overflow-x:auto;}
+.dns-node{
+  display:flex;flex-direction:column;align-items:center;gap:6px;
+  flex-shrink:0;
+}
+.dns-icon{
+  width:54px;height:54px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:22px;border:2px solid;
+  transition:all 0.4s;
+}
+.dns-name{font-family:var(--mono);font-size:9px;letter-spacing:1px;text-align:center;}
+.dns-arrow{flex:0 0 28px;height:2px;position:relative;flex-shrink:0;margin-top:-24px;}
+.dns-arrow::after{content:'';position:absolute;right:-1px;top:-4px;border:5px solid transparent;}
+
+.dns-query-box{
+  border:1.5px solid;border-radius:6px;padding:10px 14px;
+  font-family:var(--mono);font-size:11px;
+  margin-bottom:8px;transition:all 0.4s;
+}
+
+/* ── TCP HANDSHAKE ── */
+.tcp-diagram{display:flex;gap:0;position:relative;margin-bottom:16px;}
+.tcp-side{flex:0 0 110px;display:flex;flex-direction:column;align-items:center;gap:8px;}
+.tcp-side-label{font-family:'Orbitron',monospace;font-size:10px;letter-spacing:2px;padding:8px 14px;border:1.5px solid;border-radius:4px;}
+.tcp-middle{flex:1;position:relative;min-height:260px;}
+.tcp-msg{
+  position:absolute;display:flex;align-items:center;gap:6px;
+  font-family:var(--mono);font-size:10px;
+  transition:all 0.6s cubic-bezier(0.4,0,0.2,1);
+  white-space:nowrap;
+}
+.tcp-flag{
+  padding:3px 8px;border-radius:3px;font-size:10px;font-weight:600;
+  font-family:var(--mono);border:1px solid;
+}
+.tcp-timeline{
+  position:absolute;height:100%;width:1px;
+  background:repeating-linear-gradient(to bottom,var(--border) 0,var(--border) 4px,transparent 4px,transparent 8px);
+}
+
+/* ── PACKET ── */
+.packet-journey{
+  display:flex;flex-direction:column;gap:8px;
+  margin-bottom:14px;
+}
+.pj-row{
+  display:flex;align-items:center;gap:8px;
+  font-family:var(--mono);font-size:11px;
+}
+.pj-hop{
+  width:26px;height:26px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:11px;border:1.5px solid;flex-shrink:0;
+  transition:all 0.4s;
+}
+.pj-arrow{color:var(--muted);font-size:14px;}
+.pj-info{flex:1;}
+.pj-latency{color:var(--muted);font-size:10px;margin-left:auto;}
+.pj-row.active .pj-hop{box-shadow:0 0 14px currentColor;}
+
+/* ── TLS ── */
+.tls-steps{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;}
+.tls-step{
+  display:flex;align-items:flex-start;gap:12px;
+  padding:10px 14px;border-radius:6px;border:1.5px solid var(--border);
+  background:var(--card2);font-family:var(--mono);font-size:11px;
+  transition:all 0.4s;
+}
+.tls-step.active-tls{
+  border-color:rgba(0,229,255,0.4);background:rgba(0,229,255,0.05);
+}
+.tls-step.done-tls{
+  border-color:rgba(0,255,127,0.3);background:rgba(0,255,127,0.04);
+}
+.tls-num{
+  width:22px;height:22px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:10px;font-weight:700;flex-shrink:0;
+  border:1.5px solid var(--muted);color:var(--muted);
+  transition:all 0.4s;
+}
+.tls-step.active-tls .tls-num{border-color:var(--cyan);color:var(--cyan);}
+.tls-step.done-tls .tls-num{border-color:var(--green);color:var(--green);}
+.tls-content{flex:1;}
+.tls-title{color:var(--text);font-weight:600;margin-bottom:2px;}
+.tls-desc{color:var(--muted);font-size:10px;line-height:1.5;}
+.tls-tag{
+  font-size:9px;padding:2px 7px;border-radius:3px;border:1px solid;
+  flex-shrink:0;margin-top:2px;
+}
+
+/* ── BGP TABLE ── */
+.bgp-table{
+  border:1px solid var(--border);border-radius:8px;overflow:hidden;
+  font-family:var(--mono);font-size:10px;margin-bottom:14px;
+}
+.bgp-thead{background:rgba(255,255,255,0.03);}
+.bgp-tr{display:flex;border-bottom:1px solid var(--border);}
+.bgp-tr:last-child{border-bottom:none;}
+.bgp-td{
+  flex:1;padding:8px 10px;border-right:1px solid var(--border);
+  transition:all 0.3s;
+}
+.bgp-td:last-child{border-right:none;}
+.bgp-thead .bgp-td{color:var(--muted);letter-spacing:1px;font-size:9px;}
+.bgp-tr.best-route .bgp-td:first-child{color:var(--green);}
+.bgp-tr.best-route{background:rgba(0,255,127,0.03);}
+
+.bgp-as-path{display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin-bottom:14px;}
+.as-box{
+  padding:5px 10px;border:1.5px solid;border-radius:4px;
+  font-family:var(--mono);font-size:10px;transition:all 0.3s;
+}
+.as-sep{color:var(--muted);font-size:14px;}
+
+/* ── CDN ── */
+.cdn-map{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:8px;
+  margin-bottom:14px;
+}
+.cdn-server{
+  border:1.5px solid;border-radius:8px;padding:12px 10px;text-align:center;
+  font-family:var(--mono);font-size:10px;transition:all 0.4s;cursor:pointer;
+}
+.cdn-server.nearest{animation:nearestpulse 1.5s ease infinite;}
+@keyframes nearestpulse{
+  0%,100%{box-shadow:0 0 0 0 rgba(0,255,127,0.3);}
+  50%{box-shadow:0 0 0 8px rgba(0,255,127,0);}
+}
+.cdn-server .srv-loc{font-size:11px;font-weight:600;margin-bottom:4px;}
+.cdn-server .srv-lat{font-size:9px;margin-top:3px;}
+.cdn-server .srv-cache{font-size:9px;margin-top:2px;}
+
+/* ── HTTP/2 ── */
+.h2-streams{display:flex;flex-direction:column;gap:4px;margin-bottom:14px;}
+.h2-stream{
+  display:flex;align-items:center;gap:8px;
+  padding:6px 10px;border-radius:4px;border:1px solid var(--border);
+  font-family:var(--mono);font-size:10px;background:var(--card2);
+}
+.h2-stream-id{
+  width:26px;height:26px;border-radius:4px;
+  display:flex;align-items:center;justify-content:center;
+  font-weight:700;font-size:11px;border:1.5px solid;flex-shrink:0;
+}
+.h2-bar-track{flex:1;height:8px;background:rgba(255,255,255,0.04);border-radius:2px;overflow:hidden;}
+.h2-bar-fill{height:100%;border-radius:2px;transition:width 1s ease;}
+.h2-status{font-size:9px;color:var(--muted);width:40px;text-align:right;}
+
+/* ── COMMON ── */
+.info-card{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:10px;padding:20px 22px;margin-bottom:14px;
+}
+.info-title{font-family:var(--mono);font-size:15px;font-weight:600;color:var(--green);margin-bottom:8px;}
+.info-body{font-size:13px;color:#3d6650;line-height:1.7;margin-bottom:10px;}
+.info-body strong{color:var(--text);}
+.info-fact{font-family:var(--mono);font-size:10px;color:var(--muted);display:flex;align-items:flex-start;gap:8px;}
+.info-fact::before{content:'•';color:var(--green);flex-shrink:0;}
+
+.facts-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px;}
+.fact-box{border:1.5px solid;border-radius:8px;padding:12px 10px;text-align:center;cursor:default;}
+.fact-top{font-family:'Orbitron',monospace;font-size:12px;font-weight:700;margin-bottom:3px;}
+.fact-label{font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:1px;}
+.fb-green{border-color:rgba(0,255,127,0.35);background:rgba(0,255,127,0.04);}
+.fb-green .fact-top{color:var(--green);}
+.fb-cyan{border-color:rgba(0,229,255,0.35);background:rgba(0,229,255,0.04);}
+.fb-cyan .fact-top{color:var(--cyan);}
+.fb-yellow{border-color:rgba(245,166,35,0.35);background:rgba(245,166,35,0.04);}
+.fb-yellow .fact-top{color:var(--yellow);}
+.fb-purple{border-color:rgba(199,125,255,0.35);background:rgba(199,125,255,0.04);}
+.fb-purple .fact-top{color:var(--purple);}
+
+.terminal{background:#060c08;border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:14px;}
+.term-head{background:#0a100d;padding:9px 14px;display:flex;align-items:center;gap:7px;border-bottom:1px solid var(--border);}
+.td{width:12px;height:12px;border-radius:50%;}
+.td1{background:#ff5f56;}.td2{background:#ffbd2e;}.td3{background:#27c93f;}
+.term-title-txt{flex:1;text-align:center;font-family:var(--mono);font-size:10px;color:var(--muted);}
+.term-lines{padding:12px 16px 6px;font-family:var(--mono);font-size:11px;line-height:2;min-height:60px;}
+.tl{display:flex;gap:8px;}
+.tl-t{color:#0d2018;font-size:10px;flex-shrink:0;}
+.tc-g{color:var(--green);}
+.tc-c{color:var(--cyan);}
+.tc-y{color:var(--yellow);}
+.tc-r{color:var(--red);}
+.tc-d{color:#1e3828;}
+.tc-w{color:var(--white);}
+.tc-p{color:var(--purple);}
+.term-prompt{padding:0 16px 12px;font-family:var(--mono);font-size:11px;display:flex;align-items:center;gap:8px;}
+.tp-gt{color:var(--green);}
+.tp-cmd{color:var(--text);}
+.cursor{width:8px;height:13px;background:var(--green);display:inline-block;vertical-align:middle;animation:blink 1s step-end infinite;}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:0;}}
+
+.step-btn{
+  width:100%;margin-bottom:14px;
+  background:rgba(0,255,127,0.08);border:1.5px solid rgba(0,255,127,0.35);
+  color:var(--green);font-family:var(--mono);font-size:13px;
+  letter-spacing:2px;font-weight:600;padding:13px;border-radius:8px;
+  cursor:pointer;transition:all 0.2s;
+}
+.step-btn:hover{background:rgba(0,255,127,0.15);box-shadow:0 0 24px rgba(0,255,127,0.12);}
+
+.dots-row{display:flex;justify-content:center;gap:7px;margin-top:16px;}
+.dot-btn{width:10px;height:10px;border-radius:50%;border:none;cursor:pointer;background:var(--border);transition:all 0.2s;padding:0;}
+.dot-btn.active{background:var(--green);width:26px;border-radius:5px;}
+
+@media(max-width:600px){
+  .facts-row{grid-template-columns:repeat(2,1fr);}
+  .t2{font-size:44px;}
+  .cdn-map{grid-template-columns:repeat(2,1fr);}
+  .dns-chain{gap:0;}
+}
+</style>
+</head>
+<body>
+
+<div class="title-wrap">
+  <span class="t1">HOW THE</span>
+  <span class="t2">INTERNET</span>
+  <span class="t3">WORKS</span>
+  <div class="t-sub">
+    <span id="sub-dns">DNS</span><span>·</span>
+    <span id="sub-tcp">TCP</span><span>·</span>
+    <span id="sub-packet">packets</span><span>·</span>
+    <span id="sub-bgp">BGP</span><span>·</span>
+    <span id="sub-tls">TLS</span><span>·</span>
+    <span id="sub-cdn">CDN</span><span>·</span>
+    <span id="sub-http2">HTTP/2</span>
+  </div>
+</div>
+
+<div class="step-nav">
+  <span class="step-label">STEP <span id="stepNum">1</span> / 7</span>
+  <div class="step-badge" id="stepBadge">DNS</div>
+  <div class="step-arrows">
+    <button id="btnPrev">‹</button>
+    <button id="btnNext">›</button>
+  </div>
+</div>
+
+<!-- ══════ NETWORK MAP CANVAS ══════ -->
+<div class="map-card">
+  <div class="map-label" id="mapLabel">NETWORK MAP — packet journey</div>
+  <canvas id="netCanvas" height="300"></canvas>
+</div>
+
+<!-- ══════ STEP VIEWS ══════ -->
+
+<!-- STEP 1: DNS -->
+<div class="step-view" id="view-1">
+  <div style="font-family:var(--mono);font-size:9px;letter-spacing:3px;color:var(--muted);margin-bottom:12px;">DNS RESOLUTION CHAIN</div>
+  <div class="dns-chain" id="dnsChain"></div>
+  <div id="dnsQueries"></div>
+  <div style="margin-top:10px;border:1px solid var(--border);border-radius:6px;padding:12px 14px;background:var(--card2);">
+    <div style="font-family:var(--mono);font-size:9px;letter-spacing:2px;color:var(--muted);margin-bottom:8px;">DNS CACHE</div>
+    <div id="dnsCache" style="display:flex;flex-direction:column;gap:4px;font-family:var(--mono);font-size:10px;"></div>
+  </div>
+</div>
+
+<!-- STEP 2: TCP -->
+<div class="step-view" id="view-2">
+  <div style="font-family:var(--mono);font-size:9px;letter-spacing:3px;color:var(--muted);margin-bottom:12px;">3-WAY HANDSHAKE</div>
+  <div class="tcp-diagram" id="tcpDiagram"></div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;" id="tcpFlags"></div>
+</div>
+
+<!-- STEP 3: PACKETS -->
+<div class="step-view" id="view-3">
+  <div style="font-family:var(--mono);font-size:9px;letter-spacing:3px;color:var(--muted);margin-bottom:12px;">PACKET STRUCTURE</div>
+  <div id="packetStruct" style="margin-bottom:14px;"></div>
+  <div style="font-family:var(--mono);font-size:9px;letter-spacing:3px;color:var(--muted);margin-bottom:10px;">HOP-BY-HOP JOURNEY</div>
+  <div class="packet-journey" id="pktJourney"></div>
+</div>
+
+<!-- STEP 4: BGP -->
+<div class="step-view" id="view-4">
+  <div style="font-family:var(--mono);font-size:9px;letter-spacing:3px;color:var(--muted);margin-bottom:10px;">AS PATH SELECTION</div>
+  <div class="bgp-as-path" id="bgpPath"></div>
+  <div style="font-family:var(--mono);font-size:9px;letter-spacing:3px;color:var(--muted);margin-bottom:8px;">ROUTING TABLE (prefix 93.184.216.0/24)</div>
+  <div class="bgp-table" id="bgpTable"></div>
+</div>
+
+<!-- STEP 5: TLS -->
+<div class="step-view" id="view-5">
+  <div style="font-family:var(--mono);font-size:9px;letter-spacing:3px;color:var(--muted);margin-bottom:10px;">TLS 1.3 HANDSHAKE</div>
+  <div class="tls-steps" id="tlsSteps"></div>
+  <button onclick="runTLS()" style="background:rgba(0,229,255,0.08);border:1px solid rgba(0,229,255,0.3);color:var(--cyan);font-family:var(--mono);font-size:11px;padding:8px 20px;border-radius:6px;cursor:pointer;letter-spacing:2px;margin-bottom:10px;">▶ ANIMATE HANDSHAKE</button>
+</div>
+
+<!-- STEP 6: CDN -->
+<div class="step-view" id="view-6">
+  <div style="font-family:var(--mono);font-size:9px;letter-spacing:3px;color:var(--muted);margin-bottom:10px;">CDN EDGE SERVERS — click to connect</div>
+  <div class="cdn-map" id="cdnMap"></div>
+  <div id="cdnResult" style="font-family:var(--mono);font-size:10px;color:var(--muted);text-align:center;padding:10px;border:1px solid var(--border);border-radius:6px;background:var(--card2);">Select a CDN edge server above</div>
+</div>
+
+<!-- STEP 7: HTTP/2 -->
+<div class="step-view" id="view-7">
+  <div style="font-family:var(--mono);font-size:9px;letter-spacing:3px;color:var(--muted);margin-bottom:10px;">HTTP/1.1 vs HTTP/2 MULTIPLEXING</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
+    <div style="border:1px solid rgba(255,68,68,0.3);border-radius:8px;padding:12px;background:rgba(255,68,68,0.04);">
+      <div style="font-family:'Orbitron',monospace;font-size:10px;color:var(--red);letter-spacing:2px;margin-bottom:10px;">HTTP/1.1</div>
+      <div id="h1streams"></div>
+      <div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:8px;">Sequential · Head-of-line blocking</div>
+    </div>
+    <div style="border:1px solid rgba(0,255,127,0.3);border-radius:8px;padding:12px;background:rgba(0,255,127,0.04);">
+      <div style="font-family:'Orbitron',monospace;font-size:10px;color:var(--green);letter-spacing:2px;margin-bottom:10px;">HTTP/2</div>
+      <div id="h2streams"></div>
+      <div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:8px;">Multiplexed · Parallel streams</div>
+    </div>
+  </div>
+  <div id="http2Features" style="display:flex;gap:8px;flex-wrap:wrap;"></div>
+</div>
+
+<!-- INFO + FACTS + TERMINAL -->
+<div class="info-card" id="infoCard"></div>
+<div class="facts-row" id="factsRow"></div>
+
+<div class="terminal">
+  <div class="term-head">
+    <div class="td td1"></div><div class="td td2"></div><div class="td td3"></div>
+    <div class="term-title-txt" id="termTitle">network.sim — bash — 80×24</div>
+  </div>
+  <div class="term-lines" id="termLines"></div>
+  <div class="term-prompt">
+    <span class="tp-gt">$</span>
+    <span class="tp-cmd" id="termCmd">_</span>
+    <span class="cursor"></span>
+  </div>
+</div>
+
+<button class="step-btn" id="mainBtn" onclick="advanceStep()">▶ NEXT STEP</button>
+<div class="dots-row" id="dotsRow"></div>
+
+<!-- ══════ NETWORK CANVAS ══════ -->
+<script>
+// ════════════════════════════════════════════════════
+// NETWORK MAP (Canvas)
+// ════════════════════════════════════════════════════
+const canvas = document.getElementById('netCanvas');
+const ctx = canvas.getContext('2d');
+
+const NODE_DEFS = [
+  // DNS step
+  [{id:'browser',label:'Browser',icon:'🌐',x:.08,y:.45,color:'#00ff7f'},{id:'resolver',label:'DNS Resolver',icon:'🔍',x:.28,y:.45,color:'#00ff7f'},{id:'root',label:'Root NS',icon:'🌍',x:.48,y:.20,color:'#00e5ff'},{id:'tld',label:'.com TLD',icon:'📋',x:.68,y:.45,color:'#00e5ff'},{id:'auth',label:'Auth NS',icon:'📌',x:.88,y:.45,color:'#00ff7f'}],
+  // TCP step
+  [{id:'client',label:'Client',icon:'💻',x:.15,y:.5,color:'#00ff7f'},{id:'server',label:'Server',icon:'🖥️',x:.85,y:.5,color:'#f5a623'},{id:'syn',label:'SYN',icon:'→',x:.5,y:.25,color:'#00e5ff'},{id:'synack',label:'SYN-ACK',icon:'←',x:.5,y:.5,color:'#f5a623'},{id:'ack',label:'ACK',icon:'→',x:.5,y:.75,color:'#00ff7f'}],
+  // PACKETS step
+  [{id:'mypc',label:'My PC',icon:'💻',x:.08,y:.5,color:'#00ff7f'},{id:'isp',label:'ISP Router',icon:'📡',x:.26,y:.3,color:'#00e5ff'},{id:'r1',label:'Router A',icon:'🔀',x:.44,y:.6,color:'#4da6ff'},{id:'r2',label:'Router B',icon:'🔀',x:.62,y:.25,color:'#4da6ff'},{id:'r3',label:'Router C',icon:'🔀',x:.76,y:.6,color:'#c77dff'},{id:'dest',label:'Server',icon:'🖥️',x:.92,y:.4,color:'#f5a623'}],
+  // BGP step
+  [{id:'as1',label:'AS1',icon:'🏢',x:.15,y:.5,color:'#00ff7f'},{id:'as2',label:'AS2',icon:'🏢',x:.38,y:.2,color:'#00e5ff'},{id:'as3',label:'AS3',icon:'🏢',x:.38,y:.75,color:'#f5a623'},{id:'as4',label:'AS4',icon:'🏢',x:.62,y:.2,color:'#c77dff'},{id:'as5',label:'AS5',icon:'🏢',x:.62,y:.75,color:'#ff8800'},{id:'as6',label:'AS6',icon:'🏢',x:.85,y:.5,color:'#00ff7f'}],
+  // TLS step
+  [{id:'cli',label:'Client',icon:'🔓',x:.12,y:.5,color:'#00ff7f'},{id:'srv2',label:'Server',icon:'🔒',x:.88,y:.5,color:'#00e5ff'},{id:'hello',label:'ClientHello',icon:'👋',x:.35,y:.25,color:'#00e5ff'},{id:'cert',label:'Certificate',icon:'📜',x:.65,y:.25,color:'#c77dff'},{id:'keys',label:'Key Exchange',icon:'🔑',x:.5,y:.65,color:'#f5a623'}],
+  // CDN step
+  [{id:'origin',label:'Origin',icon:'🖥️',x:.5,y:.5,color:'#f5a623'},{id:'cdn1',label:'NYC Edge',icon:'📡',x:.15,y:.25,color:'#00ff7f'},{id:'cdn2',label:'LON Edge',icon:'📡',x:.38,y:.15,color:'#00e5ff'},{id:'cdn3',label:'TYO Edge',icon:'📡',x:.72,y:.2,color:'#c77dff'},{id:'cdn4',label:'SYD Edge',icon:'📡',x:.85,y:.65,color:'#ff8800'},{id:'user2',label:'User',icon:'👤',x:.15,y:.7,color:'#00ff7f'}],
+  // HTTP/2 step
+  [{id:'browser2',label:'Browser',icon:'🌐',x:.12,y:.5,color:'#00ff7f'},{id:'proxy',label:'TCP Conn',icon:'⚡',x:.5,y:.5,color:'#00e5ff'},{id:'srv3',label:'Server',icon:'🖥️',x:.88,y:.5,color:'#f5a623'},{id:'s1',label:'HTML',icon:'📄',x:.5,y:.2,color:'#00ff7f'},{id:'s2',label:'CSS',icon:'🎨',x:.5,y:.38,color:'#f5a623'},{id:'s3',label:'JS',icon:'⚡',x:.5,y:.62,color:'#c77dff'},{id:'s4',label:'IMG',icon:'🖼️',x:.5,y:.8,color:'#00e5ff'}],
+];
+
+const EDGE_DEFS = [
+  [[0,1],[1,2],[1,3],[3,4]],
+  [[0,1]],
+  [[0,1],[1,2],[2,3],[3,4],[4,5]],
+  [[0,1],[0,2],[1,3],[2,4],[3,5],[4,5]],
+  [[0,1]],
+  [[5,0],[5,1],[5,2],[5,3],[5,4],[1,0],[2,0],[3,0],[4,0]],
+  [[0,1],[1,2],[1,3],[1,4],[1,5],[1,6]],
+];
+
+const ACTIVE_PATH = [
+  [0,1,2,3,4],
+  [0,1],
+  [0,1,2,3,4,5],
+  [0,1,3,5],
+  [0,1],
+  [5,1,0],
+  [0,1,2],
+];
+
+let currentStep = 1;
+let packets = [];
+let animFrame;
+
+function resizeCanvas(){
+  const w = canvas.parentElement.clientWidth;
+  canvas.width = w;
+  canvas.style.width = w + 'px';
+}
+
+function getNodes(){ return NODE_DEFS[currentStep-1]; }
+function getEdges(){ return EDGE_DEFS[currentStep-1]; }
+function getPath(){ return ACTIVE_PATH[currentStep-1]; }
+
+function nodePos(n){
+  return {x: n.x * canvas.width, y: n.y * canvas.height};
+}
+
+function drawNet(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  // bg glow
+  ctx.save();
+  const grad = ctx.createRadialGradient(canvas.width/2,canvas.height/2,0,canvas.width/2,canvas.height/2,canvas.width*0.6);
+  grad.addColorStop(0,'rgba(0,40,20,0.4)');
+  grad.addColorStop(1,'rgba(5,9,8,0)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.restore();
+
+  const nodes = getNodes();
+  const edges = getEdges();
+  const path = getPath();
+
+  // Edges
+  edges.forEach(([ai,bi]) => {
+    const a = nodePos(nodes[ai]), b = nodePos(nodes[bi]);
+    const inPath = path.includes(ai) && path.includes(bi) &&
+      Math.abs(path.indexOf(ai)-path.indexOf(bi))===1;
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(a.x,a.y);
+    ctx.lineTo(b.x,b.y);
+    if(inPath){
+      ctx.strokeStyle = 'rgba(0,255,127,0.4)';
+      ctx.lineWidth = 2;
+      ctx.shadowColor = '#00ff7f';
+      ctx.shadowBlur = 8;
+    } else {
+      ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4,6]);
+    }
+    ctx.stroke();
+    ctx.restore();
+  });
+
+  // Packets
+  packets.forEach(p => {
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(p.x,p.y,6,0,Math.PI*2);
+    ctx.fillStyle = p.color || '#00ff7f';
+    ctx.shadowColor = p.color || '#00ff7f';
+    ctx.shadowBlur = 16;
+    ctx.fill();
+    // trail
+    if(p.trail){
+      p.trail.forEach((pt,i) => {
+        ctx.beginPath();
+        ctx.arc(pt.x,pt.y,3*(1-i/p.trail.length),0,Math.PI*2);
+        ctx.fillStyle = (p.color||'#00ff7f').replace(')',','+(0.4*(1-i/p.trail.length))+')').replace('rgb','rgba');
+        ctx.fill();
+      });
+    }
+    ctx.restore();
+  });
+
+  // Nodes
+  nodes.forEach((n,i) => {
+    const {x,y} = nodePos(n);
+    const inPath = path.includes(i);
+    const r = inPath ? 26 : 20;
+
+    ctx.save();
+    // glow
+    if(inPath){
+      ctx.beginPath();
+      ctx.arc(x,y,r+10,0,Math.PI*2);
+      const g = ctx.createRadialGradient(x,y,r,x,y,r+14);
+      g.addColorStop(0,n.color+'33');
+      g.addColorStop(1,'transparent');
+      ctx.fillStyle=g;
+      ctx.fill();
+    }
+    // circle
+    ctx.beginPath();
+    ctx.arc(x,y,r,0,Math.PI*2);
+    ctx.fillStyle = inPath ? n.color+'22' : 'rgba(10,20,15,0.8)';
+    ctx.fill();
+    ctx.strokeStyle = inPath ? n.color : 'rgba(255,255,255,0.1)';
+    ctx.lineWidth = inPath ? 2 : 1;
+    if(inPath){ctx.shadowColor=n.color;ctx.shadowBlur=12;}
+    ctx.stroke();
+    ctx.restore();
+
+    // icon
+    ctx.save();
+    ctx.font = `${inPath?15:12}px sans-serif`;
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(n.icon,x,y-3);
+    ctx.restore();
+
+    // label
+    ctx.save();
+    ctx.font = `10px Share Tech Mono`;
+    ctx.textAlign='center';ctx.textBaseline='top';
+    ctx.fillStyle = inPath ? n.color : 'rgba(255,255,255,0.2)';
+    ctx.fillText(n.label,x,y+r+4);
+    ctx.restore();
+  });
+}
+
+function spawnPacket(){
+  const nodes = getNodes();
+  const path = getPath();
+  if(path.length < 2) return;
+
+  const seg = Math.floor(Math.random()*(path.length-1));
+  const a = nodePos(nodes[path[seg]]);
+  const b = nodePos(nodes[path[seg+1]]);
+
+  packets.push({
+    x:a.x, y:a.y,
+    tx:b.x, ty:b.y,
+    color: nodes[path[seg]].color,
+    speed: 0.012 + Math.random()*0.008,
+    t:0, trail:[],
+    seg, nextSeg:seg+1,
+  });
+}
+
+function animNet(ts){
+  packets.forEach((p,i) => {
+    p.trail.unshift({x:p.x,y:p.y});
+    if(p.trail.length>8) p.trail.pop();
+
+    p.t += p.speed;
+    if(p.t >= 1){
+      const nodes = getNodes();
+      const path = getPath();
+      p.t = 0;
+      p.x = p.tx; p.y = p.ty;
+      p.nextSeg++;
+      if(p.nextSeg >= path.length){
+        packets.splice(i,1); return;
+      }
+      const a = nodePos(nodes[path[p.nextSeg-1]]);
+      const b = nodePos(nodes[path[p.nextSeg]]);
+      p.x=a.x; p.y=a.y; p.tx=b.x; p.ty=b.y;
+    } else {
+      p.x = p.x + (p.tx-p.x)*p.speed/(1-p.t+p.speed);
+      p.y = p.y + (p.ty-p.y)*p.speed/(1-p.t+p.speed);
+    }
+  });
+
+  if(Math.random()<0.03 && packets.length < 5) spawnPacket();
+
+  drawNet();
+  animFrame = requestAnimationFrame(animNet);
+}
+
+// ════════════════════════════════════════════════════
+// STEP DATA
+// ════════════════════════════════════════════════════
+const STEPS = [
+  {
+    id:1, name:'DNS', sub:'dns', badgeColor:'var(--green)',
+    mapLabel:'DNS RESOLUTION — google.com lookup',
+    title:'DNS — The Internet\'s Phone Book',
+    body:`Before connecting to any website, your browser must translate a <strong>domain name</strong> like google.com into an IP address. This involves a chain of DNS servers — each knowing a piece of the puzzle.`,
+    fact:'DNS over HTTPS (DoH) encrypts DNS queries · Average DNS lookup: ~20ms · TTL caches results',
+    facts:[
+      {val:'~20ms',label:'LOOKUP',cls:'fb-green'},
+      {val:'13',label:'ROOT SERVERS',cls:'fb-cyan'},
+      {val:'TTL',label:'CACHING',cls:'fb-yellow'},
+      {val:'DoH/DoT',label:'SECURE DNS',cls:'fb-purple'},
+    ],
+    logs:[
+      {c:'tc-g',t:'dig google.com A'},
+      {c:'tc-c',t:'Checking local cache... MISS'},
+      {c:'tc-c',t:'Querying resolver 8.8.8.8...'},
+      {c:'tc-y',t:'resolver → root NS → .com TLD NS'},
+      {c:'tc-g',t:'google.com → 142.250.74.78'},
+      {c:'tc-g',t:'TTL: 300s · cached locally'},
+    ],
+    cmd:'dig +trace google.com A'
+  },
+  {
+    id:2, name:'TCP', sub:'tcp', badgeColor:'var(--cyan)',
+    mapLabel:'TCP 3-WAY HANDSHAKE',
+    title:'TCP — Reliable Connection',
+    body:`Before sending HTTP data, TCP establishes a reliable connection via a <strong>3-way handshake</strong>. This guarantees packet ordering, retransmission of lost packets, and congestion control.`,
+    fact:'TCP slow start · Congestion window · CUBIC/BBR algorithms · RTT measurement',
+    facts:[
+      {val:'1.5 RTT',label:'SETUP TIME',cls:'fb-cyan'},
+      {val:'≤1460B',label:'MSS',cls:'fb-green'},
+      {val:'65535B',label:'WINDOW',cls:'fb-yellow'},
+      {val:'CUBIC',label:'CONGESTION',cls:'fb-purple'},
+    ],
+    logs:[
+      {c:'tc-c',t:'Client → SYN seq=1000'},
+      {c:'tc-y',t:'Server → SYN-ACK seq=5000 ack=1001'},
+      {c:'tc-g',t:'Client → ACK ack=5001'},
+      {c:'tc-g',t:'TCP connection ESTABLISHED'},
+      {c:'tc-c',t:'RTT measured: 42ms'},
+      {c:'tc-g',t:'cwnd=10 · ssthresh=64 · CUBIC start'},
+    ],
+    cmd:'tcpdump -i eth0 tcp and host google.com'
+  },
+  {
+    id:3, name:'PACKETS', sub:'packet', badgeColor:'var(--blue)',
+    mapLabel:'IP PACKET — hop-by-hop routing',
+    title:'IP Packets — Splitting Data Across Hops',
+    body:`Data is split into <strong>IP packets</strong> (up to ~1500 bytes each). Each packet travels independently through routers. Routers read only the IP header to decide where to forward next.`,
+    fact:'IPv4 TTL starts at 64/128, decremented each hop. traceroute uses TTL expiry to map hops.',
+    facts:[
+      {val:'1500B',label:'MAX MTU',cls:'fb-green'},
+      {val:'20B',label:'IP HEADER',cls:'fb-cyan'},
+      {val:'64 TTL',label:'DEFAULT',cls:'fb-yellow'},
+      {val:'7-15',label:'AVG HOPS',cls:'fb-purple'},
+    ],
+    logs:[
+      {c:'tc-c',t:'traceroute google.com'},
+      {c:'tc-g',t:' 1  192.168.1.1      2ms (gateway)'},
+      {c:'tc-g',t:' 2  10.0.0.1         8ms (ISP)'},
+      {c:'tc-c',t:' 3  72.14.232.1      18ms (peering)'},
+      {c:'tc-y',t:' 4  216.239.49.1     22ms (backbone)'},
+      {c:'tc-g',t:' 5  142.250.74.78    28ms (destination)'},
+    ],
+    cmd:'traceroute -n google.com'
+  },
+  {
+    id:4, name:'BGP', sub:'bgp', badgeColor:'var(--purple)',
+    mapLabel:'BGP — Autonomous System routing',
+    title:'BGP — How Networks Choose Paths',
+    body:`The internet is made of <strong>Autonomous Systems (AS)</strong> — networks owned by ISPs, companies, universities. BGP is the protocol they use to announce reachable IP prefixes to each other, selecting best paths by policy.`,
+    fact:'~900,000 IPv4 prefixes in the global BGP table · BGP hijacking can reroute internet traffic',
+    facts:[
+      {val:'900K+',label:'PREFIXES',cls:'fb-purple'},
+      {val:'AS PATH',label:'METRIC',cls:'fb-cyan'},
+      {val:'TCP:179',label:'PORT',cls:'fb-green'},
+      {val:'NEXT HOP',label:'ATTRIBUTE',cls:'fb-yellow'},
+    ],
+    logs:[
+      {c:'tc-p',t:'BGP UPDATE from AS2 peer'},
+      {c:'tc-c',t:'PREFIX: 93.184.216.0/24'},
+      {c:'tc-y',t:'AS_PATH: AS2 AS4 AS6'},
+      {c:'tc-c',t:'BGP UPDATE from AS3 peer'},
+      {c:'tc-y',t:'AS_PATH: AS3 AS5 AS6 (longer)'},
+      {c:'tc-g',t:'BEST: AS2→AS4→AS6 (shorter path)'},
+    ],
+    cmd:'show ip bgp 93.184.216.0/24'
+  },
+  {
+    id:5, name:'TLS', sub:'tls', badgeColor:'var(--cyan)',
+    mapLabel:'TLS 1.3 — encrypted tunnel',
+    title:'TLS 1.3 — Securing the Connection',
+    body:`Before sending your HTTP request, TLS establishes an <strong>encrypted tunnel</strong>. Client and server exchange keys using ECDHE — a mathematical trick where both derive the same secret without ever sending it.`,
+    fact:'TLS 1.3: 1 round trip · AES-256-GCM encryption · Perfect Forward Secrecy via ECDHE',
+    facts:[
+      {val:'1-RTT',label:'HANDSHAKE',cls:'fb-cyan'},
+      {val:'AES-256',label:'CIPHER',cls:'fb-green'},
+      {val:'ECDHE',label:'KEY EXCH',cls:'fb-yellow'},
+      {val:'PFS',label:'SECRECY',cls:'fb-purple'},
+    ],
+    logs:[
+      {c:'tc-c',t:'ClientHello: TLS1.3 + supported ciphers'},
+      {c:'tc-y',t:'ServerHello: TLS_AES_256_GCM_SHA384'},
+      {c:'tc-p',t:'Server sends Certificate + CertVerify'},
+      {c:'tc-g',t:'ECDHE key exchange (x25519)'},
+      {c:'tc-g',t:'Both derive: session_secret'},
+      {c:'tc-g',t:'TLS tunnel ESTABLISHED in 1-RTT'},
+    ],
+    cmd:'openssl s_client -connect google.com:443 -tls1_3'
+  },
+  {
+    id:6, name:'CDN', sub:'cdn', badgeColor:'var(--yellow)',
+    mapLabel:'CDN — Global edge network',
+    title:'CDN — Bringing Content Closer',
+    body:`A <strong>Content Delivery Network</strong> caches static content at edge servers around the world. Instead of travelling to the origin server in one datacenter, you connect to the nearest edge — reducing latency dramatically.`,
+    fact:'Cloudflare has ~300 edge locations · CDN can cut latency by 60-80% · ~80% of internet traffic served by CDN',
+    facts:[
+      {val:'300+',label:'EDGE NODES',cls:'fb-yellow'},
+      {val:'<10ms',label:'EDGE RTT',cls:'fb-green'},
+      {val:'Cache-Ctrl',label:'HEADERS',cls:'fb-cyan'},
+      {val:'PoP',label:'POINT',cls:'fb-purple'},
+    ],
+    logs:[
+      {c:'tc-c',t:'GET https://cdn.example.com/app.js'},
+      {c:'tc-g',t:'DNS → nearest CDN PoP: AMS-01'},
+      {c:'tc-g',t:'Cache HIT · Age: 3600'},
+      {c:'tc-g',t:'X-Cache: HIT from AMS-01'},
+      {c:'tc-g',t:'Latency: 8ms (vs 120ms to origin)'},
+      {c:'tc-y',t:'Savings: ~112ms · Compression: gzip'},
+    ],
+    cmd:'curl -I https://cdn.example.com/app.js'
+  },
+  {
+    id:7, name:'HTTP/2', sub:'http2', badgeColor:'var(--green)',
+    mapLabel:'HTTP/2 — multiplexed streams',
+    title:'HTTP/2 — Multiplexing & Performance',
+    body:`HTTP/1.1 sends one request at a time per connection, causing <strong>head-of-line blocking</strong>. HTTP/2 multiplexes multiple streams over a single TCP connection, adds header compression (HPACK) and server push.`,
+    fact:'HTTP/3 uses QUIC (UDP) to eliminate TCP head-of-line blocking entirely · ~40% faster',
+    facts:[
+      {val:'streams',label:'MULTIPLEX',cls:'fb-green'},
+      {val:'HPACK',label:'HDR COMPRESS',cls:'fb-cyan'},
+      {val:'Server Push',label:'FEATURE',cls:'fb-yellow'},
+      {val:'HTTP/3',label:'NEXT: QUIC',cls:'fb-purple'},
+    ],
+    logs:[
+      {c:'tc-g',t:'HTTP/2 connection established'},
+      {c:'tc-c',t:'STREAM 1: GET /index.html → 200'},
+      {c:'tc-c',t:'STREAM 3: GET /style.css  → 200'},
+      {c:'tc-c',t:'STREAM 5: GET /app.js      → 200'},
+      {c:'tc-c',t:'STREAM 7: GET /logo.png   → 200'},
+      {c:'tc-g',t:'All 4 requests: 42ms (parallel)'},
+      {c:'tc-y',t:'HTTP/1.1 equivalent: ~168ms (serial)'},
+    ],
+    cmd:'curl --http2 -v https://example.com/'
+  },
+];
+
+// ════════════════════════════════════════════════════
+// STEP BUILDERS
+// ════════════════════════════════════════════════════
+
+// DNS
+function buildDNS(){
+  const nodes = [
+    {label:'Your Browser',icon:'🌐',color:'var(--green)'},
+    {label:'DNS Resolver',icon:'🔍',color:'var(--green)'},
+    {label:'Root NS',icon:'🌍',color:'var(--cyan)'},
+    {label:'.com TLD NS',icon:'📋',color:'var(--cyan)'},
+    {label:'google.com NS',icon:'📌',color:'var(--yellow)'},
+  ];
+  const chain = document.getElementById('dnsChain');
+  chain.innerHTML = nodes.map((n,i) => `
+    <div class="dns-node" id="dn${i}">
+      <div class="dns-icon" style="border-color:${n.color};background:${n.color}18;font-size:20px;">${n.icon}</div>
+      <div class="dns-name" style="color:${n.color};">${n.label}</div>
+    </div>
+    ${i<nodes.length-1?`<div class="dns-arrow" style="background:${n.color}44;margin:0 2px;width:30px;height:2px;flex-shrink:0;margin-top:-30px;"><span style="position:absolute;right:-5px;top:-5px;color:${n.color};font-size:12px;">›</span></div>`:''}
+  `).join('');
+
+  const queries = [
+    {q:'Who is google.com?',from:'Browser',to:'Resolver',ans:'I\'ll ask the Root NS'},
+    {q:'Where is .com TLD?',from:'Resolver',to:'Root NS',ans:'Try a.gtld-servers.net'},
+    {q:'Where is google.com NS?',from:'Resolver',to:'.com TLD',ans:'ns1.google.com'},
+    {q:'What is google.com\'s IP?',from:'Resolver',to:'Auth NS',ans:'142.250.74.78 (TTL 300)'},
+  ];
+  document.getElementById('dnsQueries').innerHTML = `<div style="display:flex;flex-direction:column;gap:6px;">`+
+    queries.map(q=>`
+      <div class="dns-query-box" style="border-color:rgba(0,229,255,0.25);background:rgba(0,229,255,0.04);">
+        <div style="display:flex;justify-content:space-between;margin-bottom:3px;">
+          <span style="font-family:var(--mono);font-size:10px;color:var(--cyan);">${q.from} → ${q.to}</span>
+        </div>
+        <div style="font-family:var(--mono);font-size:11px;color:var(--text);">Q: ${q.q}</div>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--green);margin-top:2px;">A: ${q.ans}</div>
+      </div>
+    `).join('') + '</div>';
+
+  document.getElementById('dnsCache').innerHTML = [
+    {domain:'google.com',ip:'142.250.74.78',ttl:'300s',type:'A'},
+    {domain:'cdn.example.com',ip:'104.21.12.5',ttl:'60s',type:'A'},
+    {domain:'api.github.com',ip:'140.82.121.6',ttl:'600s',type:'A'},
+  ].map(r=>`
+    <div style="display:flex;gap:10px;align-items:center;padding:4px 0;border-bottom:1px solid var(--border);">
+      <span style="color:var(--green);flex:1.5;">${r.domain}</span>
+      <span style="color:var(--cyan);flex:1.2;">${r.ip}</span>
+      <span style="color:var(--yellow);">${r.type}</span>
+      <span style="color:var(--muted);">TTL:${r.ttl}</span>
+    </div>
+  `).join('');
+}
+
+// TCP
+function buildTCP(){
+  const d = document.getElementById('tcpDiagram');
+  d.innerHTML = `
+    <div class="tcp-side">
+      <div class="tcp-side-label" style="border-color:rgba(0,255,127,0.4);color:var(--green);">CLIENT</div>
+      <div style="width:2px;flex:1;background:repeating-linear-gradient(to bottom,var(--green) 0,var(--green) 4px,transparent 4px,transparent 8px);opacity:0.3;"></div>
+    </div>
+    <div class="tcp-middle" id="tcpMid">
+      ${[
+        {label:'SYN',detail:'seq=1000 · want to connect',color:'var(--cyan)',dir:'→',top:'8%'},
+        {label:'SYN-ACK',detail:'seq=5000 ack=1001',color:'var(--yellow)',dir:'←',top:'36%'},
+        {label:'ACK',detail:'ack=5001 · connected!',color:'var(--green)',dir:'→',top:'64%'},
+        {label:'HTTP GET',detail:'GET /index.html HTTP/2',color:'var(--green)',dir:'→',top:'86%'},
+      ].map(m=>`
+        <div class="tcp-msg" style="top:${m.top};${m.dir==='→'?'left:8%':'right:8%;flex-direction:row-reverse;'}">
+          <div class="tcp-flag" style="border-color:${m.color}55;color:${m.color};background:${m.color}14;">${m.label}</div>
+          <div style="font-size:9px;color:var(--muted);max-width:120px;text-align:${m.dir==='→'?'left':'right'};">${m.detail}</div>
+          <div style="flex:1;height:1px;background:${m.color}33;position:relative;">
+            <div style="position:absolute;${m.dir==='→'?'right:-4px':'left:-4px'};top:-5px;color:${m.color};font-size:12px;">${m.dir==='→'?'›':'‹'}</div>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+    <div class="tcp-side">
+      <div class="tcp-side-label" style="border-color:rgba(245,166,35,0.4);color:var(--yellow);">SERVER</div>
+      <div style="width:2px;flex:1;background:repeating-linear-gradient(to bottom,var(--yellow) 0,var(--yellow) 4px,transparent 4px,transparent 8px);opacity:0.3;"></div>
+    </div>
+  `;
+
+  document.getElementById('tcpFlags').innerHTML = [
+    {f:'SYN',d:'Synchronize sequence numbers',c:'var(--cyan)'},
+    {f:'ACK',d:'Acknowledge received data',c:'var(--green)'},
+    {f:'FIN',d:'Finish — close connection',c:'var(--yellow)'},
+    {f:'RST',d:'Reset — abort connection',c:'var(--red)'},
+    {f:'PSH',d:'Push data immediately',c:'var(--purple)'},
+    {f:'URG',d:'Urgent pointer valid',c:'var(--orange)'},
+  ].map(f=>`
+    <div style="border:1px solid ${f.c}44;border-radius:4px;padding:6px 10px;background:${f.c}0e;min-width:80px;">
+      <div style="font-family:'Orbitron',monospace;font-size:11px;color:${f.c};font-weight:700;">${f.f}</div>
+      <div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:2px;">${f.d}</div>
+    </div>
+  `).join('');
+}
+
+// PACKETS
+function buildPackets(){
+  document.getElementById('packetStruct').innerHTML = `
+    <div style="border:1.5px solid rgba(77,166,255,0.3);border-radius:8px;overflow:hidden;">
+      <div style="background:rgba(77,166,255,0.08);padding:8px 12px;font-family:var(--mono);font-size:9px;letter-spacing:2px;color:var(--blue);">IP PACKET — ETHERNET FRAME (1518 bytes max)</div>
+      <div style="display:flex;font-family:var(--mono);font-size:10px;">
+        ${[
+          {l:'ETH HDR',b:'14B',c:'#ff8800'},
+          {l:'IP HDR',b:'20B',c:'#4da6ff'},
+          {l:'TCP HDR',b:'20B',c:'#00e5ff'},
+          {l:'DATA PAYLOAD',b:'≤1460B',c:'#00ff7f',flex:4},
+          {l:'ETH CRC',b:'4B',c:'#c77dff'},
+        ].map(f=>`
+          <div style="flex:${f.flex||1};padding:10px 6px;text-align:center;border-right:1px solid var(--border);background:${f.c}14;">
+            <div style="color:${f.c};font-size:9px;font-weight:600;">${f.l}</div>
+            <div style="color:var(--muted);font-size:8px;margin-top:3px;">${f.b}</div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+
+  document.getElementById('pktJourney').innerHTML = [
+    {hop:1,icon:'💻',label:'Your PC',info:'192.168.1.100 → NAT',lat:'0ms',c:'var(--green)',active:true},
+    {hop:2,icon:'📡',label:'ISP Router',info:'10.0.0.1 · TTL=63',lat:'+8ms',c:'var(--cyan)',active:true},
+    {hop:3,icon:'🔀',label:'Core Router A',info:'72.14.232.1 · TTL=62',lat:'+18ms',c:'var(--blue)',active:true},
+    {hop:4,icon:'🌐',label:'Peering Point',info:'IX exchange · AS15169',lat:'+22ms',c:'var(--purple)',active:true},
+    {hop:5,icon:'🔀',label:'Google Backbone',info:'216.239.49.1 · TTL=60',lat:'+25ms',c:'var(--yellow)',active:true},
+    {hop:6,icon:'🖥️',label:'google.com',info:'142.250.74.78 · TTL=59',lat:'+28ms',c:'var(--green)',active:true},
+  ].map(h=>`
+    <div class="pj-row ${h.active?'active':''}">
+      <div class="pj-hop" style="border-color:${h.c};color:${h.c};background:${h.c}18;">${h.icon}</div>
+      <div class="pj-arrow">→</div>
+      <div class="pj-info"><span style="color:${h.c};">Hop ${h.hop}: ${h.label}</span><span style="color:var(--muted);font-size:9px;"> · ${h.info}</span></div>
+      <div class="pj-latency">${h.lat}</div>
+    </div>
+  `).join('');
+}
+
+// BGP
+function buildBGP(){
+  const path = ['AS1\n(Your ISP)','AS2\n(Tier-1)','AS4\n(Google)','AS6\n(Destination)'];
+  const colors = ['var(--green)','var(--cyan)','var(--purple)','var(--green)'];
+  document.getElementById('bgpPath').innerHTML = path.map((as,i)=>`
+    <div class="as-box" style="border-color:${colors[i]}55;color:${colors[i]};background:${colors[i]}10;white-space:pre;text-align:center;font-size:10px;">${as}</div>
+    ${i<path.length-1?`<div class="as-sep">→</div>`:''}
+  `).join('');
+
+  document.getElementById('bgpTable').innerHTML = `
+    <div class="bgp-thead">
+      <div class="bgp-tr">
+        <div class="bgp-td">PREFIX</div>
+        <div class="bgp-td">NEXT HOP</div>
+        <div class="bgp-td">AS PATH</div>
+        <div class="bgp-td">LP</div>
+        <div class="bgp-td">MED</div>
+        <div class="bgp-td">ORIGIN</div>
+      </div>
+    </div>
+    ${[
+      {p:'93.184.216.0/24',nh:'10.1.0.2',asp:'AS2 AS4 AS6',lp:'100',med:'0',orig:'i',best:true},
+      {p:'93.184.216.0/24',nh:'10.1.0.6',asp:'AS3 AS5 AS6',lp:'100',med:'10',orig:'i',best:false},
+      {p:'93.184.216.0/24',nh:'10.1.0.10',asp:'AS2 AS7 AS4 AS6',lp:'90',med:'0',orig:'i',best:false},
+    ].map(r=>`
+      <div class="bgp-tr ${r.best?'best-route':''}">
+        <div class="bgp-td">${r.best?'★ ':''}<span style="color:${r.best?'var(--green)':'var(--text)'};">${r.p}</span></div>
+        <div class="bgp-td" style="color:var(--cyan);">${r.nh}</div>
+        <div class="bgp-td" style="color:${r.best?'var(--green)':'var(--muted)'};">${r.asp}</div>
+        <div class="bgp-td" style="color:var(--yellow);">${r.lp}</div>
+        <div class="bgp-td" style="color:var(--muted);">${r.med}</div>
+        <div class="bgp-td">${r.orig}</div>
+      </div>
+    `).join('')}
+  `;
+}
+
+// TLS
+const TLS_STEPS_DATA = [
+  {n:1,title:'ClientHello',desc:'Browser sends: TLS version, supported cipher suites, random nonce, SNI (server name)',tag:'→ Client',tagC:'var(--cyan)'},
+  {n:2,title:'ServerHello + Certificate',desc:'Server chooses cipher, sends X.509 certificate (public key + identity), server random',tag:'← Server',tagC:'var(--yellow)'},
+  {n:3,title:'Certificate Verification',desc:'Browser verifies cert against trusted CA roots. Checks expiry, hostname, revocation (OCSP)',tag:'Browser',tagC:'var(--purple)'},
+  {n:4,title:'ECDHE Key Exchange',desc:'Both sides generate ephemeral EC keypairs. Derive shared secret via Diffie-Hellman — secret never transmitted',tag:'Math',tagC:'var(--green)'},
+  {n:5,title:'Session Keys Derived',desc:'Master secret → HKDF → separate keys for client encrypt, server encrypt, client MAC, server MAC',tag:'HKDF',tagC:'var(--yellow)'},
+  {n:6,title:'Finished — Encrypted',desc:'Both sides send Finished message encrypted with session keys. Handshake verified. HTTPS ready!',tag:'✓ Done',tagC:'var(--green)'},
+];
+let tlsActive = -1;
+
+function buildTLS(){
+  document.getElementById('tlsSteps').innerHTML = TLS_STEPS_DATA.map(s=>`
+    <div class="tls-step" id="tls${s.n}">
+      <div class="tls-num">${s.n}</div>
+      <div class="tls-content">
+        <div class="tls-title">${s.title}</div>
+        <div class="tls-desc">${s.desc}</div>
+      </div>
+      <div class="tls-tag" style="border-color:${s.tagC}55;color:${s.tagC};background:${s.tagC}12;">${s.tag}</div>
+    </div>
+  `).join('');
+}
+
+async function runTLS(){
+  tlsActive = 0;
+  TLS_STEPS_DATA.forEach(s=>{ document.getElementById('tls'+s.n).className='tls-step'; });
+  for(let i=1;i<=TLS_STEPS_DATA.length;i++){
+    document.getElementById('tls'+i).className='tls-step active-tls';
+    document.getElementById('tls'+i).scrollIntoView({block:'nearest'});
+    await sleep(700);
+    document.getElementById('tls'+i).className='tls-step done-tls';
+  }
+}
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+
+// CDN
+function buildCDN(){
+  const servers = [
+    {loc:'New York',flag:'🇺🇸',lat:'8ms',cache:'98%',color:'var(--green)',nearest:true},
+    {loc:'London',flag:'🇬🇧',lat:'82ms',cache:'95%',color:'var(--cyan)',nearest:false},
+    {loc:'Tokyo',flag:'🇯🇵',lat:'178ms',cache:'92%',color:'var(--purple)',nearest:false},
+    {loc:'Sydney',flag:'🇦🇺',lat:'224ms',cache:'88%',color:'var(--orange)',nearest:false},
+    {loc:'São Paulo',flag:'🇧🇷',lat:'196ms',cache:'90%',color:'var(--yellow)',nearest:false},
+    {loc:'Singapore',flag:'🇸🇬',lat:'159ms',cache:'94%',color:'var(--pink)',nearest:false},
+  ];
+  document.getElementById('cdnMap').innerHTML = servers.map((s,i)=>`
+    <div class="cdn-server ${s.nearest?'nearest':''}" style="border-color:${s.color}44;background:${s.color}0a;color:${s.color};" onclick="selectCDN(${i})">
+      <div style="font-size:18px;">${s.flag}</div>
+      <div class="srv-loc">${s.loc}</div>
+      <div class="srv-lat">📶 ${s.lat}</div>
+      <div class="srv-cache">💾 cache:${s.cache}</div>
+      ${s.nearest?`<div style="font-size:9px;margin-top:4px;color:var(--green);">★ NEAREST</div>`:''}
+    </div>
+  `).join('');
+}
+
+function selectCDN(i){
+  const servers=[
+    {loc:'New York',lat:'8ms',cache:'HIT',color:'var(--green)',saving:'112ms'},
+    {loc:'London',lat:'82ms',cache:'HIT',color:'var(--cyan)',saving:'38ms'},
+    {loc:'Tokyo',lat:'178ms',cache:'MISS → origin',color:'var(--purple)',saving:'0ms'},
+    {loc:'Sydney',lat:'224ms',cache:'HIT',color:'var(--orange)',saving:'-104ms'},
+    {loc:'São Paulo',lat:'196ms',cache:'MISS → origin',color:'var(--yellow)',saving:'-76ms'},
+    {loc:'Singapore',lat:'159ms',cache:'HIT',color:'var(--pink)',saving:'-39ms'},
+  ];
+  const s=servers[i];
+  const hit=s.cache.startsWith('HIT');
+  document.getElementById('cdnResult').style.color=hit?'var(--green)':'var(--yellow)';
+  document.getElementById('cdnResult').style.borderColor=hit?'rgba(0,255,127,0.3)':'rgba(245,166,35,0.3)';
+  document.getElementById('cdnResult').textContent=
+    `${hit?'✓ Cache HIT':'⚠ Cache MISS'} · ${s.loc} PoP · Latency: ${s.lat} · ${hit?'Saved vs origin: '+s.saving:'Fetching from origin...'}`;
+}
+
+// HTTP/2
+function buildHTTP2(){
+  const resources=[
+    {name:'index.html',size:'12KB',color:'var(--green)',time:100},
+    {name:'style.css',size:'45KB',color:'var(--yellow)',time:80},
+    {name:'app.js',size:'180KB',color:'var(--purple)',time:95},
+    {name:'logo.png',size:'22KB',color:'var(--cyan)',time:60},
+  ];
+
+  // HTTP/1.1 — sequential
+  let offset = 0;
+  document.getElementById('h1streams').innerHTML = `<div style="position:relative;height:${resources.length*28+8}px;">` +
+    resources.map((r,i)=>{
+      const w = (r.time/180)*100;
+      const div = `<div style="position:absolute;top:${i*28}px;left:0;right:0;display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:9px;">
+        <span style="color:${r.color};width:70px;">${r.name}</span>
+        <div style="flex:1;height:14px;background:rgba(255,255,255,0.04);border-radius:2px;overflow:hidden;position:relative;">
+          <div style="position:absolute;left:${offset}%;width:${w}%;height:100%;background:${r.color}88;border-radius:2px;"></div>
+        </div>
+        <span style="color:var(--muted);width:28px;">${r.time}ms</span>
+      </div>`;
+      offset += w;
+      return div;
+    }).join('') + '</div>';
+
+  // HTTP/2 — parallel
+  document.getElementById('h2streams').innerHTML = `<div style="position:relative;height:${resources.length*28+8}px;">` +
+    resources.map((r,i)=>{
+      const w = (r.time/180)*100;
+      return `<div style="position:absolute;top:${i*28}px;left:0;right:0;display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:9px;">
+        <span style="color:${r.color};width:70px;">${r.name}</span>
+        <div style="flex:1;height:14px;background:rgba(255,255,255,0.04);border-radius:2px;overflow:hidden;">
+          <div style="width:${w}%;height:100%;background:${r.color}88;border-radius:2px;animation:h2fill 1s ease forwards;"></div>
+        </div>
+        <span style="color:var(--muted);width:28px;">${r.time}ms</span>
+      </div>`;
+    }).join('') + '</div>';
+
+  const features=[
+    {f:'Multiplexing',d:'Multiple streams, 1 TCP conn',c:'var(--green)'},
+    {f:'HPACK',d:'Header compression',c:'var(--cyan)'},
+    {f:'Server Push',d:'Proactively send resources',c:'var(--yellow)'},
+    {f:'Prioritization',d:'Weight streams 1-256',c:'var(--purple)'},
+    {f:'Binary Framing',d:'Not text like HTTP/1.1',c:'var(--orange)'},
+    {f:'Flow Control',d:'Per-stream + connection',c:'var(--pink)'},
+  ];
+  document.getElementById('http2Features').innerHTML = features.map(f=>`
+    <div style="border:1px solid ${f.c}44;border-radius:4px;padding:6px 10px;background:${f.c}0e;min-width:100px;">
+      <div style="font-family:'Orbitron',monospace;font-size:10px;color:${f.c};font-weight:700;">${f.f}</div>
+      <div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:2px;">${f.d}</div>
+    </div>
+  `).join('');
+}
+
+// ════════════════════════════════════════════════════
+// SHOW STEP
+// ════════════════════════════════════════════════════
+function showStep(n){
+  currentStep=n;
+  document.querySelectorAll('.step-view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-'+n).classList.add('active');
+
+  const step=STEPS[n-1];
+  document.getElementById('stepNum').textContent=n;
+  const badge=document.getElementById('stepBadge');
+  badge.textContent='🔒 '+step.name;
+  badge.style.borderColor=step.badgeColor;
+  badge.style.color=step.badgeColor;
+  badge.style.background=step.badgeColor+'12';
+  document.getElementById('mapLabel').textContent=step.mapLabel;
+
+  // subtitle
+  document.querySelectorAll('.t-sub span').forEach(s=>{
+    s.classList.remove('active-sub');
+    if(s.id==='sub-'+step.sub) s.classList.add('active-sub');
+  });
+
+  // Info
+  document.getElementById('infoCard').innerHTML=`
+    <div class="info-title">${step.title}</div>
+    <div class="info-body">${step.body}</div>
+    <div class="info-fact">${step.fact}</div>
+  `;
+
+  // Facts
+  document.getElementById('factsRow').innerHTML=step.facts.map(f=>`
+    <div class="fact-box ${f.cls}"><div class="fact-top">${f.val}</div><div class="fact-label">${f.label}</div></div>
+  `).join('');
+
+  // Terminal
+  document.getElementById('termLines').innerHTML=step.logs.map(l=>`
+    <div class="tl"><span class="tl-t">&gt;</span><span class="${l.c}">${l.t}</span></div>
+  `).join('');
+  document.getElementById('termCmd').textContent=step.cmd;
+  document.getElementById('termTitle').textContent=step.cmd.split(' ')[0]+'.sim — bash — 80×24';
+
+  document.getElementById('mainBtn').textContent=n<7?'▶ NEXT STEP':'↺ RESTART';
+  updateDots();
+
+  // Rebuild packets
+  packets=[];
+  for(let i=0;i<3;i++) setTimeout(spawnPacket,i*400);
+}
+
+function advanceStep(){
+  showStep(currentStep<7?currentStep+1:1);
+}
+
+document.getElementById('btnNext').onclick=()=>{if(currentStep<7)showStep(currentStep+1);};
+document.getElementById('btnPrev').onclick=()=>{if(currentStep>1)showStep(currentStep-1);};
+
+function buildDots(){
+  document.getElementById('dotsRow').innerHTML=STEPS.map((_,i)=>`
+    <button class="dot-btn" id="dot${i+1}" onclick="showStep(${i+1})"></button>
+  `).join('');
+}
+function updateDots(){
+  STEPS.forEach((_,i)=>{
+    document.getElementById('dot'+(i+1)).classList.toggle('active',i+1===currentStep);
+  });
+}
+
+// ════════════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════════════
+function init(){
+  resizeCanvas();
+  buildDots();
+  buildDNS();
+  buildTCP();
+  buildPackets();
+  buildBGP();
+  buildTLS();
+  buildCDN();
+  buildHTTP2();
+  showStep(1);
+  requestAnimationFrame(animNet);
+}
+
+window.addEventListener('resize',()=>{
+  resizeCanvas();
+  drawNet();
+});
+
+init();
+</script>
+
+<style>
+@keyframes h2fill{from{width:0}to{width:var(--w,100%)}}
+</style>
+</body>
+</html>
