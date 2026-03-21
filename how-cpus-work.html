@@ -1,0 +1,1277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>How CPUs Work</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#060810;
+  --card:#0c1018;
+  --card2:#0f1520;
+  --border:#1a2535;
+  --yellow:#f5a623;
+  --cyan:#00e5ff;
+  --green:#39ff14;
+  --purple:#c77dff;
+  --pink:#ff4da6;
+  --red:#ff4444;
+  --orange:#ff8800;
+  --blue:#4da6ff;
+  --white:#e8f4ff;
+  --mono:'Share Tech Mono',monospace;
+  --muted:#2a4060;
+  --text:#8ab4cc;
+}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:'Inter',sans-serif;
+  min-height:100vh;
+  padding:28px 16px 60px;
+  max-width:860px;
+  margin:0 auto;
+}
+
+/* ── TITLE ── */
+.title-wrap{text-align:center;margin-bottom:28px;}
+.t-how{font-family:'Orbitron',monospace;font-size:36px;font-weight:400;color:var(--white);letter-spacing:8px;display:block;}
+.t-cpu{font-family:'Orbitron',monospace;font-size:68px;font-weight:900;color:var(--yellow);letter-spacing:4px;
+  text-shadow:0 0 40px rgba(245,166,35,0.5),0 0 80px rgba(245,166,35,0.2);
+  display:block;line-height:1;}
+.t-work{font-family:'Orbitron',monospace;font-size:36px;font-weight:400;color:var(--white);letter-spacing:8px;display:block;}
+.t-sub{
+  display:flex;justify-content:center;gap:14px;flex-wrap:wrap;
+  margin-top:12px;
+  font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:2px;
+}
+.t-sub span.active-sub{color:var(--cyan);text-shadow:0 0 12px rgba(0,229,255,0.5);}
+
+/* ── STEP NAV ── */
+.step-nav{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:16px;
+}
+.step-label{font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:3px;}
+.step-badge{
+  font-family:'Orbitron',monospace;font-size:14px;font-weight:700;
+  letter-spacing:3px;
+  padding:10px 28px;
+  border:2px solid var(--cyan);
+  color:var(--cyan);
+  background:rgba(0,229,255,0.08);
+  box-shadow:0 0 20px rgba(0,229,255,0.15), inset 0 0 20px rgba(0,229,255,0.03);
+}
+.step-arrows{display:flex;gap:8px;}
+.step-arrows button{
+  background:rgba(255,255,255,0.04);
+  border:1px solid var(--border);
+  color:var(--muted);
+  width:32px;height:32px;
+  cursor:pointer;font-size:16px;
+  border-radius:4px;transition:all 0.15s;
+  display:flex;align-items:center;justify-content:center;
+}
+.step-arrows button:hover{border-color:var(--cyan);color:var(--cyan);}
+
+/* ── MAIN DIAGRAM CARD ── */
+.main-card{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:24px;
+  margin-bottom:14px;
+  min-height:400px;
+  position:relative;
+  overflow:hidden;
+}
+.main-card::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse 50% 40% at 50% 0%, rgba(0,229,255,0.04) 0%, transparent 70%);
+  pointer-events:none;
+}
+
+/* ── INSTRUCTION REGISTER ── */
+.ir-box{
+  border:1.5px solid var(--cyan);
+  background:rgba(0,229,255,0.05);
+  border-radius:6px;
+  padding:12px 20px;
+  margin-bottom:20px;
+  position:relative;
+  box-shadow:0 0 20px rgba(0,229,255,0.08);
+}
+.ir-label{
+  font-family:var(--mono);font-size:9px;letter-spacing:3px;
+  color:var(--cyan);opacity:0.7;margin-bottom:6px;
+}
+.ir-content{
+  font-family:var(--mono);font-size:22px;
+  color:var(--cyan);letter-spacing:6px;
+  text-shadow:0 0 16px rgba(0,229,255,0.4);
+  text-align:center;
+}
+.ir-content .reg{color:var(--white);}
+.ir-content .op{color:var(--yellow);}
+.ir-bits{
+  display:flex;gap:2px;margin-top:8px;justify-content:center;flex-wrap:wrap;
+}
+.bit-group{display:flex;flex-direction:column;align-items:center;gap:3px;}
+.bit-cells{display:flex;gap:1px;}
+.bit-cell{
+  width:18px;height:18px;
+  background:rgba(0,229,255,0.08);
+  border:1px solid rgba(0,229,255,0.2);
+  font-family:var(--mono);font-size:9px;
+  color:var(--cyan);
+  display:flex;align-items:center;justify-content:center;
+  border-radius:2px;
+  transition:all 0.3s;
+}
+.bit-cell.hi{background:rgba(0,229,255,0.25);color:var(--cyan);box-shadow:0 0 6px rgba(0,229,255,0.3);}
+.bit-group-label{font-family:var(--mono);font-size:8px;color:var(--muted);letter-spacing:1px;}
+
+/* ── ARROW DOWN ── */
+.arrow-down{
+  display:flex;justify-content:center;margin:8px 0;
+  position:relative;
+}
+.arrow-down svg{color:var(--cyan);}
+
+/* ── DECODER BOX ── */
+.decoder-box{
+  background:rgba(245,166,35,0.1);
+  border:2px solid var(--yellow);
+  border-radius:8px;
+  padding:12px 32px;
+  text-align:center;
+  width:fit-content;
+  margin:0 auto 20px;
+  box-shadow:0 0 24px rgba(245,166,35,0.15);
+}
+.decoder-title{
+  font-family:'Orbitron',monospace;font-size:14px;font-weight:700;
+  color:var(--yellow);letter-spacing:3px;
+}
+.decoder-sub{font-family:var(--mono);font-size:10px;color:rgba(245,166,35,0.6);margin-top:3px;}
+
+/* ── CONTROL SIGNALS ── */
+.signals-grid{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:8px;
+  margin-bottom:20px;
+}
+.signal-box{
+  border:1.5px solid;
+  border-radius:6px;
+  padding:10px 8px;
+  text-align:center;
+  font-family:var(--mono);font-size:11px;
+  font-weight:600;
+  transition:all 0.4s;
+  position:relative;
+  cursor:help;
+}
+.signal-box::after{
+  content:attr(data-tip);
+  position:absolute;bottom:calc(100%+8px);left:50%;transform:translateX(-50%);
+  background:#0c1018;border:1px solid var(--border);
+  color:var(--text);font-size:10px;padding:6px 10px;
+  white-space:nowrap;border-radius:4px;
+  opacity:0;pointer-events:none;transition:opacity 0.2s;z-index:10;
+  font-family:var(--mono);
+}
+.signal-box:hover::after{opacity:1;}
+
+/* signal colors */
+.sig-yellow{color:var(--yellow);border-color:rgba(245,166,35,0.4);background:rgba(245,166,35,0.06);}
+.sig-green {color:var(--green); border-color:rgba(57,255,20,0.4); background:rgba(57,255,20,0.06);}
+.sig-cyan  {color:var(--cyan);  border-color:rgba(0,229,255,0.4); background:rgba(0,229,255,0.06);}
+.sig-purple{color:var(--purple);border-color:rgba(199,125,255,0.4);background:rgba(199,125,255,0.06);}
+.sig-pink  {color:var(--pink);  border-color:rgba(255,77,166,0.4); background:rgba(255,77,166,0.06);}
+.sig-orange{color:var(--orange);border-color:rgba(255,136,0,0.4);  background:rgba(255,136,0,0.06);}
+
+.signal-box.glow-yellow{box-shadow:0 0 16px rgba(245,166,35,0.4);}
+.signal-box.glow-green {box-shadow:0 0 16px rgba(57,255,20,0.4);}
+.signal-box.glow-cyan  {box-shadow:0 0 16px rgba(0,229,255,0.4);}
+.signal-box.glow-purple{box-shadow:0 0 16px rgba(199,125,255,0.4);}
+
+/* ── REGISTER FILE ── */
+.regfile-box{
+  border:1.5px solid var(--purple);
+  background:rgba(199,125,255,0.04);
+  border-radius:8px;
+  padding:14px 16px;
+  box-shadow:0 0 20px rgba(199,125,255,0.08);
+}
+.regfile-label{
+  font-family:var(--mono);font-size:9px;letter-spacing:3px;
+  color:var(--purple);opacity:0.8;margin-bottom:12px;text-align:center;
+}
+.regs-row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;}
+.reg-cell{
+  border:1.5px solid;
+  border-radius:6px;
+  padding:10px 14px;
+  text-align:center;min-width:80px;
+  transition:all 0.4s;
+  cursor:default;
+}
+.reg-cell .rname{font-family:'Orbitron',monospace;font-size:12px;font-weight:700;margin-bottom:4px;}
+.reg-cell .rval{font-family:var(--mono);font-size:13px;color:var(--white);}
+.reg-cell.active-reg{
+  box-shadow:0 0 20px rgba(245,166,35,0.4);
+  animation:regpulse 0.8s ease-out;
+}
+@keyframes regpulse{
+  0%{transform:scale(1);}
+  50%{transform:scale(1.06);}
+  100%{transform:scale(1);}
+}
+.regfile-note{
+  font-family:var(--mono);font-size:10px;color:var(--muted);
+  text-align:center;margin-top:10px;
+}
+
+/* ── ALU PANEL ── */
+.alu-wrap{display:flex;gap:14px;align-items:stretch;}
+.alu-box{
+  flex:1;
+  border:1.5px solid var(--yellow);
+  background:rgba(245,166,35,0.05);
+  border-radius:8px;padding:16px;
+  text-align:center;
+  box-shadow:0 0 20px rgba(245,166,35,0.1);
+}
+.alu-title{font-family:'Orbitron',monospace;font-size:12px;color:var(--yellow);letter-spacing:2px;margin-bottom:12px;}
+.alu-operands{display:flex;gap:8px;justify-content:center;margin-bottom:12px;}
+.alu-op{
+  border:1px solid rgba(245,166,35,0.4);
+  background:rgba(245,166,35,0.08);
+  border-radius:4px;padding:8px 14px;
+  font-family:var(--mono);font-size:14px;color:var(--yellow);
+}
+.alu-sym{font-size:20px;color:var(--white);display:flex;align-items:center;}
+.alu-result{
+  border:2px solid var(--green);
+  background:rgba(57,255,20,0.1);
+  border-radius:6px;padding:10px;
+  font-family:'Orbitron',monospace;font-size:16px;
+  color:var(--green);font-weight:700;
+  box-shadow:0 0 16px rgba(57,255,20,0.2);
+  animation:resultpop 0.5s ease-out;
+}
+@keyframes resultpop{
+  0%{transform:scale(0.8);opacity:0;}
+  100%{transform:scale(1);opacity:1;}
+}
+.alu-label{font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:6px;}
+
+/* ── PIPELINE DIAGRAM ── */
+.pipeline-stages{display:flex;gap:0;overflow:hidden;border-radius:8px;border:1px solid var(--border);}
+.pipe-stage{
+  flex:1;padding:14px 6px;text-align:center;
+  border-right:1px solid var(--border);
+  transition:all 0.4s;
+  position:relative;overflow:hidden;
+}
+.pipe-stage:last-child{border-right:none;}
+.pipe-stage.active-pipe{background:rgba(0,229,255,0.08);}
+.pipe-stage.done-pipe{background:rgba(57,255,20,0.05);}
+.pipe-stage.stall-pipe{background:rgba(255,68,68,0.05);}
+.pipe-stage .ps-name{font-family:'Orbitron',monospace;font-size:9px;letter-spacing:2px;margin-bottom:6px;}
+.pipe-stage .ps-instr{font-family:var(--mono);font-size:10px;color:var(--muted);transition:all 0.3s;}
+.pipe-stage.active-pipe .ps-instr{color:var(--cyan);}
+.pipe-stage.done-pipe .ps-instr{color:var(--green);}
+.pipe-stage.stall-pipe .ps-instr{color:var(--red);}
+
+.pipe-packet{
+  position:absolute;top:50%;left:-20px;
+  width:14px;height:14px;border-radius:50%;
+  transform:translateY(-50%);
+  background:var(--cyan);
+  box-shadow:0 0 12px var(--cyan);
+  transition:left 0.5s cubic-bezier(0.4,0,0.2,1);
+}
+
+/* ── CACHE ── */
+.cache-grid{
+  display:grid;grid-template-columns:repeat(8,1fr);gap:4px;
+  margin-bottom:12px;
+}
+.cache-cell{
+  height:36px;border-radius:4px;
+  border:1px solid var(--border);
+  background:var(--card2);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  font-family:var(--mono);font-size:8px;
+  transition:all 0.4s;cursor:default;
+}
+.cache-cell .cc-addr{color:var(--muted);}
+.cache-cell .cc-val{color:var(--text);}
+.cache-cell.cache-hit{
+  border-color:rgba(57,255,20,0.5);
+  background:rgba(57,255,20,0.1);
+  box-shadow:0 0 10px rgba(57,255,20,0.2);
+}
+.cache-cell.cache-hit .cc-addr{color:var(--green);}
+.cache-cell.cache-hit .cc-val{color:var(--green);}
+.cache-cell.cache-miss{
+  border-color:rgba(255,68,68,0.5);
+  background:rgba(255,68,68,0.08);
+}
+.cache-cell.cache-miss .cc-addr{color:var(--red);}
+.cache-miss-anim{animation:missflash 0.5s ease;}
+@keyframes missflash{0%{transform:scale(1.1);}100%{transform:scale(1);}}
+
+.cache-stats{
+  display:flex;gap:16px;justify-content:center;
+  font-family:var(--mono);font-size:12px;margin-bottom:12px;
+}
+.cs-hit{color:var(--green);}
+.cs-miss{color:var(--red);}
+.cs-ratio{color:var(--yellow);}
+
+/* ── BRANCH ── */
+.branch-diagram{
+  display:flex;gap:16px;align-items:flex-start;
+  margin-bottom:16px;
+}
+.branch-left{flex:1;}
+.branch-box{
+  border:1.5px solid;border-radius:6px;padding:12px 14px;
+  font-family:var(--mono);font-size:11px;margin-bottom:8px;
+  transition:all 0.4s;
+}
+.branch-box.taken{border-color:rgba(57,255,20,0.5);background:rgba(57,255,20,0.07);color:var(--green);}
+.branch-box.not-taken{border-color:rgba(255,68,68,0.5);background:rgba(255,68,68,0.07);color:var(--red);}
+.branch-box.predict{border-color:rgba(245,166,35,0.4);background:rgba(245,166,35,0.06);color:var(--yellow);}
+.branch-box.neutral{border-color:var(--border);background:var(--card2);color:var(--muted);}
+.btb-table{
+  border:1px solid var(--border);border-radius:6px;overflow:hidden;
+  font-family:var(--mono);font-size:10px;
+}
+.btb-row{display:flex;border-bottom:1px solid var(--border);}
+.btb-row:last-child{border-bottom:none;}
+.btb-cell{flex:1;padding:6px 8px;border-right:1px solid var(--border);}
+.btb-cell:last-child{border-right:none;}
+.btb-head{background:rgba(255,255,255,0.03);color:var(--muted);font-size:9px;letter-spacing:1px;}
+.btb-taken{color:var(--green);}
+.btb-not{color:var(--red);}
+
+/* ── STEP SPECIFIC VIEWS ── */
+.step-view{display:none;}
+.step-view.active{display:block;}
+
+/* ── INFO CARD ── */
+.info-card{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:20px 22px;
+  margin-bottom:14px;
+}
+.info-title{
+  font-family:var(--mono);font-size:15px;font-weight:600;
+  color:var(--cyan);margin-bottom:8px;
+}
+.info-body{font-size:13px;color:#5a7a8a;line-height:1.7;margin-bottom:12px;}
+.info-body strong{color:var(--text);}
+.info-fact{
+  font-family:var(--mono);font-size:10px;color:var(--muted);
+  display:flex;align-items:flex-start;gap:8px;
+}
+.info-fact::before{content:'•';color:var(--cyan);flex-shrink:0;}
+
+/* ── KEY FACTS ROW ── */
+.facts-row{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:8px;
+  margin-bottom:14px;
+}
+.fact-box{
+  border:1.5px solid;border-radius:8px;padding:12px 10px;text-align:center;
+  cursor:default;transition:all 0.2s;
+}
+.fact-box:hover{transform:translateY(-2px);}
+.fact-top{font-family:'Orbitron',monospace;font-size:12px;font-weight:700;margin-bottom:3px;}
+.fact-label{font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:1px;}
+.fb-yellow{border-color:rgba(245,166,35,0.4);background:rgba(245,166,35,0.05);}
+.fb-yellow .fact-top{color:var(--yellow);}
+.fb-green{border-color:rgba(57,255,20,0.35);background:rgba(57,255,20,0.04);}
+.fb-green .fact-top{color:var(--green);}
+.fb-cyan{border-color:rgba(0,229,255,0.35);background:rgba(0,229,255,0.04);}
+.fb-cyan .fact-top{color:var(--cyan);}
+.fb-purple{border-color:rgba(199,125,255,0.35);background:rgba(199,125,255,0.04);}
+.fb-purple .fact-top{color:var(--purple);}
+
+/* ── TERMINAL ── */
+.terminal{
+  background:#080b10;
+  border:1px solid var(--border);
+  border-radius:10px;
+  overflow:hidden;
+  margin-bottom:14px;
+}
+.term-head{
+  background:#0c1018;
+  padding:9px 14px;
+  display:flex;align-items:center;gap:7px;
+  border-bottom:1px solid var(--border);
+}
+.td{width:12px;height:12px;border-radius:50%;}
+.td1{background:#ff5f56;}.td2{background:#ffbd2e;}.td3{background:#27c93f;}
+.term-title-txt{flex:1;text-align:center;font-family:var(--mono);font-size:10px;color:var(--muted);}
+.term-lines{
+  padding:12px 16px 6px;
+  font-family:var(--mono);font-size:11px;line-height:2;
+  min-height:60px;
+}
+.tl{display:flex;gap:8px;}
+.tl-t{color:#1a3050;font-size:10px;flex-shrink:0;}
+.tc-c{color:var(--cyan);}
+.tc-y{color:var(--yellow);}
+.tc-g{color:var(--green);}
+.tc-r{color:var(--red);}
+.tc-d{color:#2a4060;}
+.tc-w{color:var(--white);}
+.term-prompt{
+  padding:0 16px 12px;
+  font-family:var(--mono);font-size:11px;
+  display:flex;align-items:center;gap:8px;
+}
+.tp-gt{color:var(--green);}
+.tp-cmd{color:var(--text);}
+.cursor{width:8px;height:13px;background:var(--green);display:inline-block;vertical-align:middle;animation:blink 1s step-end infinite;}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:0;}}
+
+/* ── DOTS ── */
+.dots-row{display:flex;justify-content:center;gap:7px;margin-top:20px;}
+.dot-btn{
+  width:10px;height:10px;border-radius:50%;
+  border:none;cursor:pointer;background:var(--border);
+  transition:all 0.2s;padding:0;
+}
+.dot-btn.active{background:var(--yellow);width:26px;border-radius:5px;}
+
+/* ── STEP BUTTON ── */
+.step-btn{
+  width:100%;margin-bottom:14px;
+  background:rgba(245,166,35,0.1);
+  border:1.5px solid rgba(245,166,35,0.45);
+  color:var(--yellow);
+  font-family:var(--mono);font-size:13px;
+  letter-spacing:2px;font-weight:600;
+  padding:13px;border-radius:8px;
+  cursor:pointer;transition:all 0.2s;
+}
+.step-btn:hover{background:rgba(245,166,35,0.2);box-shadow:0 0 24px rgba(245,166,35,0.15);}
+
+/* ── ANIMATED FLOW LINES ── */
+.flow-line{
+  height:2px;background:linear-gradient(90deg, transparent 0%, var(--cyan) 50%, transparent 100%);
+  background-size:200% 100%;
+  animation:flowAnim 2s linear infinite;
+  border-radius:1px;
+  margin:4px 0;
+}
+@keyframes flowAnim{
+  0%{background-position:200% 0}
+  100%{background-position:-200% 0}
+}
+
+/* dashed lines from decoder */
+.wire-row{
+  display:flex;justify-content:space-around;
+  position:relative;height:24px;margin:-8px 0 -2px;
+}
+.wire-line{
+  width:1px;
+  background:repeating-linear-gradient(to bottom,var(--yellow) 0px, var(--yellow) 4px, transparent 4px, transparent 8px);
+  opacity:0.5;
+  height:100%;
+}
+
+/* responsive */
+@media(max-width:600px){
+  .signals-grid{grid-template-columns:repeat(2,1fr);}
+  .facts-row{grid-template-columns:repeat(2,1fr);}
+  .t-cpu{font-size:48px;}
+  .regs-row{gap:6px;}
+  .reg-cell{min-width:64px;}
+}
+</style>
+</head>
+<body>
+
+<div class="title-wrap">
+  <span class="t-how">HOW</span>
+  <span class="t-cpu">CPUs</span>
+  <span class="t-work">WORK</span>
+  <div class="t-sub">
+    <span id="sub-fetch">fetch</span> <span>·</span>
+    <span id="sub-decode">decode</span> <span>·</span>
+    <span id="sub-execute">execute</span> <span>·</span>
+    <span id="sub-pipeline">pipeline</span> <span>·</span>
+    <span id="sub-cache">cache</span> <span>·</span>
+    <span id="sub-branch">branch</span> <span>·</span>
+    <span id="sub-modern">modern</span>
+  </div>
+</div>
+
+<div class="step-nav">
+  <span class="step-label">STEP <span id="stepNum">1</span> / 7</span>
+  <div class="step-badge" id="stepBadge">FETCH</div>
+  <div class="step-arrows">
+    <button id="btnPrev">‹</button>
+    <button id="btnNext">›</button>
+  </div>
+</div>
+
+<!-- ══════════════ STEP 1: FETCH ══════════════ -->
+<div class="main-card step-view" id="view-1">
+  <!-- PC + Memory -->
+  <div style="display:flex;gap:12px;margin-bottom:16px;">
+    <div style="background:rgba(0,229,255,0.06);border:1.5px solid rgba(0,229,255,0.3);border-radius:8px;padding:14px;flex:0 0 160px;text-align:center;">
+      <div style="font-family:var(--mono);font-size:9px;letter-spacing:3px;color:var(--cyan);margin-bottom:6px;">PROGRAM COUNTER</div>
+      <div style="font-family:'Orbitron',monospace;font-size:24px;font-weight:700;color:var(--cyan);text-shadow:0 0 20px rgba(0,229,255,0.5);">0x0004</div>
+      <div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:4px;">PC += 4 after fetch</div>
+    </div>
+    <div style="flex:1;border:1px solid var(--border);border-radius:8px;padding:14px;background:var(--card2);">
+      <div style="font-family:var(--mono);font-size:9px;letter-spacing:3px;color:var(--muted);margin-bottom:10px;">INSTRUCTION MEMORY</div>
+      <div id="mem-table" style="display:flex;flex-direction:column;gap:3px;"></div>
+    </div>
+  </div>
+
+  <!-- Instruction Register result -->
+  <div class="ir-box">
+    <div class="ir-label">INSTRUCTION REGISTER (IR) — fetched instruction</div>
+    <div class="ir-content"><span class="op">ADD</span>&nbsp;&nbsp;&nbsp;<span class="reg">R3,</span>&nbsp;&nbsp;<span class="reg">R1,</span>&nbsp;&nbsp;<span class="reg">R2</span></div>
+    <div style="margin-top:10px;">
+      <div style="font-family:var(--mono);font-size:9px;color:var(--muted);text-align:center;margin-bottom:6px;letter-spacing:2px;">32-BIT ENCODING</div>
+      <div class="ir-bits" id="irBits"></div>
+    </div>
+  </div>
+
+  <div class="flow-line" id="fetchFlow"></div>
+
+  <div style="text-align:center;font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:8px;">
+    PC=0x0004 → Memory[0x0004] → IR &nbsp;·&nbsp; Next: PC = 0x0008
+  </div>
+</div>
+
+<!-- ══════════════ STEP 2: DECODE ══════════════ -->
+<div class="main-card step-view" id="view-2">
+  <div class="ir-box" style="margin-bottom:12px;">
+    <div class="ir-label">INSTRUCTION REGISTER</div>
+    <div class="ir-content"><span class="op">ADD</span>&nbsp;&nbsp;&nbsp;<span class="reg">R3,</span>&nbsp;&nbsp;<span class="reg">R1,</span>&nbsp;&nbsp;<span class="reg">R2</span></div>
+  </div>
+
+  <div class="arrow-down">
+    <svg width="20" height="28" viewBox="0 0 20 28" fill="none">
+      <line x1="10" y1="0" x2="10" y2="20" stroke="currentColor" stroke-width="2" stroke-dasharray="4 3"/>
+      <path d="M3 20 L10 28 L17 20" stroke="currentColor" stroke-width="2" fill="none"/>
+    </svg>
+  </div>
+
+  <div class="decoder-box">
+    <div class="decoder-title">DECODER</div>
+    <div class="decoder-sub">Control Unit</div>
+  </div>
+
+  <div class="wire-row" id="wireRow">
+    <div class="wire-line"></div><div class="wire-line"></div>
+    <div class="wire-line"></div><div class="wire-line"></div>
+    <div class="wire-line"></div><div class="wire-line"></div>
+    <div class="wire-line"></div><div class="wire-line"></div>
+  </div>
+
+  <div class="signals-grid" id="signalsGrid">
+    <div class="signal-box sig-yellow glow-yellow" data-tip="ALU operation: 00=ADD, 01=SUB, 10=AND, 11=OR">ALUop = 00 (ADD)</div>
+    <div class="signal-box sig-green glow-green" data-tip="Write result back to register file">RegWrite = 1</div>
+    <div class="signal-box sig-cyan glow-cyan" data-tip="ALU second input: 0=register, 1=immediate">ALUSrc = 0 (reg)</div>
+    <div class="signal-box sig-purple" data-tip="Read from data memory (LOAD instruction)">MemRead = 0</div>
+    <div class="signal-box sig-pink" data-tip="Write to data memory (STORE instruction)">MemWrite = 0</div>
+    <div class="signal-box sig-yellow" data-tip="Destination register: R3">RegDst = 1 (R3)</div>
+    <div class="signal-box sig-orange" data-tip="Is this a branch instruction?">Branch = 0</div>
+    <div class="signal-box sig-green" data-tip="Write memory data (not ALU result) to register">MemToReg = 0</div>
+  </div>
+
+  <div class="regfile-box">
+    <div class="regfile-label">REGISTER FILE — reading operands</div>
+    <div class="regs-row" id="decodeRegs"></div>
+    <div class="regfile-note">R1=5 and R2=3 read from register file → sent to ALU</div>
+  </div>
+</div>
+
+<!-- ══════════════ STEP 3: EXECUTE ══════════════ -->
+<div class="main-card step-view" id="view-3">
+  <div class="alu-wrap">
+    <div style="flex:0 0 140px;border:1px solid var(--border);border-radius:8px;padding:14px;background:var(--card2);">
+      <div style="font-family:var(--mono);font-size:9px;letter-spacing:2px;color:var(--muted);margin-bottom:10px;">REGISTER FILE</div>
+      <div id="execRegs"></div>
+    </div>
+    <div style="display:flex;flex-direction:column;justify-content:center;gap:6px;flex-shrink:0;">
+      <div style="font-family:var(--mono);font-size:18px;color:var(--muted);">→</div>
+      <div style="font-family:var(--mono);font-size:18px;color:var(--muted);">→</div>
+    </div>
+    <div class="alu-box">
+      <div class="alu-title">⚡ ALU</div>
+      <div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-bottom:10px;">ARITHMETIC LOGIC UNIT</div>
+      <div class="alu-operands">
+        <div class="alu-op" id="op1">0x0005</div>
+        <div class="alu-sym">+</div>
+        <div class="alu-op" id="op2">0x0003</div>
+      </div>
+      <div class="alu-result" id="aluResult">= 0x0008</div>
+      <div class="alu-label">Result → Write to R3</div>
+      <div style="margin-top:12px;display:flex;gap:6px;justify-content:center;flex-wrap:wrap;" id="aluFlags"></div>
+    </div>
+  </div>
+
+  <div style="margin-top:16px;">
+    <div style="font-family:var(--mono);font-size:9px;letter-spacing:3px;color:var(--muted);margin-bottom:8px;">TRY DIFFERENT OPERATIONS</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;" id="aluOps"></div>
+  </div>
+</div>
+
+<!-- ══════════════ STEP 4: PIPELINE ══════════════ -->
+<div class="main-card step-view" id="view-4">
+  <div style="font-family:var(--mono);font-size:9px;letter-spacing:3px;color:var(--muted);margin-bottom:10px;">5-STAGE PIPELINE — CLOCK CYCLE <span id="cycleNum" style="color:var(--cyan);">1</span></div>
+
+  <div class="pipeline-stages" id="pipeStages"></div>
+
+  <div style="margin-top:16px;" id="pipeMatrix"></div>
+
+  <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;" id="pipeHazards"></div>
+
+  <div style="margin-top:14px;text-align:center;">
+    <button onclick="nextCycle()" style="background:rgba(0,229,255,0.08);border:1px solid rgba(0,229,255,0.3);color:var(--cyan);font-family:var(--mono);font-size:11px;padding:8px 20px;border-radius:6px;cursor:pointer;letter-spacing:2px;">
+      ⏱ NEXT CLOCK CYCLE
+    </button>
+  </div>
+</div>
+
+<!-- ══════════════ STEP 5: CACHE ══════════════ -->
+<div class="main-card step-view" id="view-5">
+  <div style="display:flex;gap:12px;margin-bottom:14px;">
+    <div style="flex:1;border:1px solid rgba(57,255,20,0.3);border-radius:8px;padding:14px;background:rgba(57,255,20,0.04);">
+      <div style="font-family:var(--mono);font-size:9px;color:var(--green);letter-spacing:3px;margin-bottom:8px;">L1 CACHE</div>
+      <div style="font-family:'Orbitron',monospace;font-size:22px;color:var(--green);font-weight:700;">1-4 ns</div>
+      <div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:4px;">32–64 KB · ~1 cycle</div>
+    </div>
+    <div style="flex:1;border:1px solid rgba(245,166,35,0.3);border-radius:8px;padding:14px;background:rgba(245,166,35,0.04);">
+      <div style="font-family:var(--mono);font-size:9px;color:var(--yellow);letter-spacing:3px;margin-bottom:8px;">L2 CACHE</div>
+      <div style="font-family:'Orbitron',monospace;font-size:22px;color:var(--yellow);font-weight:700;">4-12 ns</div>
+      <div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:4px;">256 KB–4 MB · ~10 cy</div>
+    </div>
+    <div style="flex:1;border:1px solid rgba(199,125,255,0.3);border-radius:8px;padding:14px;background:rgba(199,125,255,0.04);">
+      <div style="font-family:var(--mono);font-size:9px;color:var(--purple);letter-spacing:3px;margin-bottom:8px;">RAM</div>
+      <div style="font-family:'Orbitron',monospace;font-size:22px;color:var(--purple);font-weight:700;">60-100 ns</div>
+      <div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:4px;">GBs · ~100+ cycles</div>
+    </div>
+  </div>
+
+  <div style="font-family:var(--mono);font-size:9px;letter-spacing:3px;color:var(--muted);margin-bottom:8px;">CACHE SIMULATION — Click cells to access</div>
+  <div class="cache-stats">
+    <span class="cs-hit">HITS: <span id="cacheHits">0</span></span>
+    <span class="cs-miss">MISSES: <span id="cacheMisses">0</span></span>
+    <span class="cs-ratio">RATIO: <span id="cacheRatio">—</span></span>
+  </div>
+  <div class="cache-grid" id="cacheGrid"></div>
+  <div style="font-family:var(--mono);font-size:10px;color:var(--muted);text-align:center;" id="cacheMsg">Click any cell to simulate a memory access</div>
+</div>
+
+<!-- ══════════════ STEP 6: BRANCH ══════════════ -->
+<div class="main-card step-view" id="view-6">
+  <div class="branch-diagram">
+    <div class="branch-left">
+      <div style="font-family:var(--mono);font-size:9px;letter-spacing:3px;color:var(--muted);margin-bottom:10px;">BRANCH INSTRUCTION</div>
+      <div class="branch-box predict">
+        <div>BEQ R1, R2, +8</div>
+        <div style="font-size:9px;margin-top:3px;opacity:0.7;">if (R1 == R2) PC += 8</div>
+      </div>
+      <div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin:8px 0 6px;">PREDICTION</div>
+      <div class="branch-box" id="branchPred">
+        <div>Predict: NOT TAKEN</div>
+        <div style="font-size:9px;margin-top:3px;opacity:0.7;">Continue sequential execution</div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:10px;">
+        <button onclick="branchTaken()" style="flex:1;background:rgba(57,255,20,0.1);border:1px solid rgba(57,255,20,0.4);color:var(--green);font-family:var(--mono);font-size:10px;padding:8px;border-radius:4px;cursor:pointer;">TAKEN ✓</button>
+        <button onclick="branchNotTaken()" style="flex:1;background:rgba(255,68,68,0.1);border:1px solid rgba(255,68,68,0.4);color:var(--red);font-family:var(--mono);font-size:10px;padding:8px;border-radius:4px;cursor:pointer;">NOT TAKEN ✗</button>
+      </div>
+    </div>
+    <div style="flex:1;">
+      <div style="font-family:var(--mono);font-size:9px;letter-spacing:3px;color:var(--muted);margin-bottom:10px;">BRANCH TARGET BUFFER</div>
+      <div class="btb-table">
+        <div class="btb-row">
+          <div class="btb-cell btb-head">PC</div>
+          <div class="btb-cell btb-head">TARGET</div>
+          <div class="btb-cell btb-head">STATE</div>
+          <div class="btb-cell btb-head">PRED</div>
+        </div>
+        <div class="btb-row">
+          <div class="btb-cell">0x0010</div>
+          <div class="btb-cell">0x0028</div>
+          <div class="btb-cell btb-taken">Taken</div>
+          <div class="btb-cell btb-taken">T</div>
+        </div>
+        <div class="btb-row" id="btbRow2">
+          <div class="btb-cell">0x0018</div>
+          <div class="btb-cell">0x001C</div>
+          <div class="btb-cell btb-not">Not Taken</div>
+          <div class="btb-cell btb-not">N</div>
+        </div>
+        <div class="btb-row">
+          <div class="btb-cell">0x0020</div>
+          <div class="btb-cell">0x0040</div>
+          <div class="btb-cell">Weakly T</div>
+          <div class="btb-cell" style="color:var(--yellow);">WT</div>
+        </div>
+      </div>
+      <div style="margin-top:10px;font-family:var(--mono);font-size:9px;color:var(--muted);line-height:1.8;">
+        <div>2-bit saturating counter:</div>
+        <div style="display:flex;gap:6px;margin-top:4px;flex-wrap:wrap;">
+          <span style="border:1px solid rgba(255,68,68,0.4);color:var(--red);padding:2px 6px;border-radius:3px;font-size:9px;">00 ST</span>
+          <span style="border:1px solid rgba(255,136,0,0.4);color:var(--orange);padding:2px 6px;border-radius:3px;font-size:9px;">01 WN</span>
+          <span style="border:1px solid rgba(245,166,35,0.4);color:var(--yellow);padding:2px 6px;border-radius:3px;font-size:9px;">10 WT</span>
+          <span style="border:1px solid rgba(57,255,20,0.4);color:var(--green);padding:2px 6px;border-radius:3px;font-size:9px;">11 ST</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div id="branchResult" style="font-family:var(--mono);font-size:11px;color:var(--muted);text-align:center;padding:10px;border:1px solid var(--border);border-radius:6px;background:var(--card2);">
+    Choose TAKEN or NOT TAKEN to simulate branch resolution
+  </div>
+</div>
+
+<!-- ══════════════ STEP 7: MODERN ══════════════ -->
+<div class="main-card step-view" id="view-7">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
+    <div style="border:1.5px solid rgba(245,166,35,0.3);border-radius:8px;padding:14px;background:rgba(245,166,35,0.04);">
+      <div style="font-family:'Orbitron',monospace;font-size:11px;color:var(--yellow);letter-spacing:2px;margin-bottom:8px;">OUT-OF-ORDER EXEC</div>
+      <div style="font-family:var(--mono);font-size:10px;color:#5a7a8a;line-height:1.7;">
+        CPU reorders instructions to avoid stalls. <strong style="color:var(--text);">Tomasulo Algorithm</strong> tracks dependencies via reservation stations.
+      </div>
+    </div>
+    <div style="border:1.5px solid rgba(0,229,255,0.3);border-radius:8px;padding:14px;background:rgba(0,229,255,0.04);">
+      <div style="font-family:'Orbitron',monospace;font-size:11px;color:var(--cyan);letter-spacing:2px;margin-bottom:8px;">SUPERSCALAR</div>
+      <div style="font-family:var(--mono);font-size:10px;color:#5a7a8a;line-height:1.7;">
+        Multiple execution units run in <strong style="color:var(--text);">parallel</strong>. Modern CPUs fetch/decode 4–6 instructions per cycle.
+      </div>
+    </div>
+    <div style="border:1.5px solid rgba(57,255,20,0.3);border-radius:8px;padding:14px;background:rgba(57,255,20,0.04);">
+      <div style="font-family:'Orbitron',monospace;font-size:11px;color:var(--green);letter-spacing:2px;margin-bottom:8px;">SPECULATIVE EXEC</div>
+      <div style="font-family:var(--mono);font-size:10px;color:#5a7a8a;line-height:1.7;">
+        CPU executes instructions <strong style="color:var(--text);">before knowing</strong> if they're needed. Results discarded if prediction wrong (Spectre/Meltdown).
+      </div>
+    </div>
+    <div style="border:1.5px solid rgba(199,125,255,0.3);border-radius:8px;padding:14px;background:rgba(199,125,255,0.04);">
+      <div style="font-family:'Orbitron',monospace;font-size:11px;color:var(--purple);letter-spacing:2px;margin-bottom:8px;">SMT / HYPERTHREADING</div>
+      <div style="font-family:var(--mono);font-size:10px;color:#5a7a8a;line-height:1.7;">
+        Two logical cores share one physical core. Fills <strong style="color:var(--text);">pipeline stall slots</strong> with another thread's instructions.
+      </div>
+    </div>
+  </div>
+  <div style="border:1px solid var(--border);border-radius:8px;padding:14px;background:var(--card2);">
+    <div style="font-family:var(--mono);font-size:9px;letter-spacing:3px;color:var(--muted);margin-bottom:10px;">MODERN CPU ARCHITECTURE</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;" id="modernBlocks"></div>
+  </div>
+</div>
+
+<!-- Info card -->
+<div class="info-card" id="infoCard"></div>
+
+<!-- Key facts -->
+<div class="facts-row" id="factsRow"></div>
+
+<!-- Terminal -->
+<div class="terminal">
+  <div class="term-head">
+    <div class="td td1"></div><div class="td td2"></div><div class="td td3"></div>
+    <div class="term-title-txt">cpu.sim — bash — 80×24</div>
+  </div>
+  <div class="term-lines" id="termLines"></div>
+  <div class="term-prompt">
+    <span class="tp-gt">&gt;</span>
+    <span class="tp-cmd" id="termCmd">_</span>
+    <span class="cursor"></span>
+  </div>
+</div>
+
+<button class="step-btn" id="mainBtn" onclick="advanceStep()">▶ NEXT STEP</button>
+
+<div class="dots-row" id="dotsRow"></div>
+
+<script>
+// ════════════════════════════════════════════════════════
+//  DATA
+// ════════════════════════════════════════════════════════
+const STEPS = [
+  {
+    id:1, name:'FETCH', sub:'fetch',
+    title:'Instruction Fetch — PC → Memory → IR',
+    body:`The CPU reads the next instruction from memory using the <strong>Program Counter (PC)</strong>. The PC holds the address of the next instruction. After fetch, PC is incremented by 4 (32-bit instructions).`,
+    fact:'The fetch stage reads 32 bits (4 bytes) from instruction memory every clock cycle.',
+    facts:[
+      {val:'4 bytes',label:'INSTR SIZE',cls:'fb-cyan'},
+      {val:'1 cycle',label:'FETCH TIME',cls:'fb-yellow'},
+      {val:'I-Cache',label:'SOURCE',cls:'fb-green'},
+      {val:'PC + 4',label:'NEXT ADDR',cls:'fb-purple'},
+    ],
+    logs:[
+      {c:'tc-c',t:'PC = 0x0004 → fetch from instruction cache'},
+      {c:'tc-y',t:'Memory[0x0004] = 0x00221820 (ADD R3,R1,R2)'},
+      {c:'tc-g',t:'IR ← 0x00221820'},
+      {c:'tc-c',t:'PC ← 0x0008'},
+    ],
+    cmd:'sim> fetch --addr 0x0004'
+  },
+  {
+    id:2, name:'DECODE', sub:'decode',
+    title:'Instruction Decode — Opcode → Control Signals',
+    body:`The decoder reads the opcode bits and generates <strong>control signals</strong> telling each part of the CPU what to do. Register file is read: R1=5, R2=3. ALU mode set to ADD.`,
+    fact:'Control unit fires 12+ signals simultaneously · 1 cycle · Microcode on complex CPUs',
+    facts:[
+      {val:'opcode',label:'DECODE',cls:'fb-yellow'},
+      {val:'8 sigs',label:'CTRL OUT',cls:'fb-cyan'},
+      {val:'R1,R2',label:'REG READ',cls:'fb-green'},
+      {val:'1 cycle',label:'DURATION',cls:'fb-purple'},
+    ],
+    logs:[
+      {c:'tc-c',t:'Opcode[31:26] = 000000 (R-type)'},
+      {c:'tc-y',t:'Funct[5:0]   = 100000 → ADD'},
+      {c:'tc-g',t:'rs=R1(01), rt=R2(02), rd=R3(03)'},
+      {c:'tc-c',t:'RegWrite=1 ALUSrc=0 ALUop=ADD'},
+      {c:'tc-g',t:'RegFile: R1=0x0005, R2=0x0003'},
+    ],
+    cmd:'sim> decode 0x00221820'
+  },
+  {
+    id:3, name:'EXECUTE', sub:'execute',
+    title:'Execute — ALU Computation',
+    body:`The <strong>Arithmetic Logic Unit (ALU)</strong> performs the operation. For ADD R3,R1,R2: it computes R1 + R2 = 5 + 3 = 8. Flags (Zero, Negative, Carry, Overflow) are set based on the result.`,
+    fact:'Modern CPUs have multiple ALUs running in parallel for different data types (INT, FPU, SIMD)',
+    facts:[
+      {val:'1 cycle',label:'INT ADD',cls:'fb-yellow'},
+      {val:'3-5 cy',label:'INT MUL',cls:'fb-cyan'},
+      {val:'10-20',label:'FP DIV',cls:'fb-green'},
+      {val:'SIMD',label:'256/512b',cls:'fb-purple'},
+    ],
+    logs:[
+      {c:'tc-c',t:'ALU operand A = R1 = 0x0005'},
+      {c:'tc-c',t:'ALU operand B = R2 = 0x0003'},
+      {c:'tc-y',t:'ALUop = ADD (00)'},
+      {c:'tc-g',t:'Result = 0x0005 + 0x0003 = 0x0008'},
+      {c:'tc-g',t:'Flags: Z=0 N=0 C=0 V=0'},
+      {c:'tc-g',t:'R3 ← 0x0008'},
+    ],
+    cmd:'sim> execute ADD 0x0005 0x0003'
+  },
+  {
+    id:4, name:'PIPELINE', sub:'pipeline',
+    title:'Pipeline — Instruction-Level Parallelism',
+    body:`Pipelining overlaps execution of multiple instructions. While one instruction executes, the next is decoded and the one after is being fetched. Ideal throughput: <strong>1 instruction per cycle</strong>.`,
+    fact:'Hazards: Data hazard (RAW), Control hazard (branch), Structural hazard (resource conflict)',
+    facts:[
+      {val:'5',label:'STAGES',cls:'fb-yellow'},
+      {val:'1 IPC',label:'IDEAL',cls:'fb-cyan'},
+      {val:'stall',label:'HAZARD',cls:'fb-green'},
+      {val:'fwd',label:'BYPASS',cls:'fb-purple'},
+    ],
+    logs:[
+      {c:'tc-c',t:'Cycle 1: I1=IF'},
+      {c:'tc-c',t:'Cycle 2: I1=ID  I2=IF'},
+      {c:'tc-g',t:'Cycle 3: I1=EX  I2=ID  I3=IF'},
+      {c:'tc-y',t:'Cycle 4: I1=MEM I2=EX  I3=ID  I4=IF'},
+      {c:'tc-g',t:'Cycle 5: I1=WB  I2=MEM I3=EX  I4=ID  I5=IF'},
+    ],
+    cmd:'sim> pipeline --cycles 8 --instrs 5'
+  },
+  {
+    id:5, name:'CACHE', sub:'cache',
+    title:'Cache Memory — Locality of Reference',
+    body:`Cache exploits <strong>spatial and temporal locality</strong>. Recently used data is kept in fast SRAM near the CPU. An L1 cache miss penalty can cost 200+ cycles waiting for RAM.`,
+    fact:'Cache miss on a modern CPU: L1≈4cy, L2≈12cy, L3≈40cy, RAM≈200cy',
+    facts:[
+      {val:'95%',label:'HIT RATE',cls:'fb-green'},
+      {val:'64B',label:'CACHE LINE',cls:'fb-yellow'},
+      {val:'FIFO/LRU',label:'REPLACE',cls:'fb-cyan'},
+      {val:'write-back',label:'POLICY',cls:'fb-purple'},
+    ],
+    logs:[
+      {c:'tc-c',t:'LW R4, 0(R1) → addr=0x1000'},
+      {c:'tc-g',t:'L1 HIT → data=0xABCD (4 cycles)'},
+      {c:'tc-c',t:'LW R5, 4(R1) → addr=0x1004'},
+      {c:'tc-g',t:'L1 HIT (spatial locality) (4 cycles)'},
+      {c:'tc-c',t:'LW R6, 0(R9) → addr=0x8000'},
+      {c:'tc-r',t:'L1 MISS → L2 MISS → RAM fetch (210 cycles)'},
+    ],
+    cmd:'sim> cache --access 0x1000'
+  },
+  {
+    id:6, name:'BRANCH', sub:'branch',
+    title:'Branch Prediction — Avoiding Pipeline Flush',
+    body:`When a branch is encountered, the CPU doesn't know the next instruction. A wrong prediction causes a <strong>pipeline flush</strong> (10-20 cycle penalty). Modern predictors achieve >95% accuracy.`,
+    fact:'Tournament predictors combine local + global history. TAGE predictor used in modern CPUs',
+    facts:[
+      {val:'>95%',label:'ACCURACY',cls:'fb-green'},
+      {val:'10-20cy',label:'MISPRED',cls:'fb-yellow'},
+      {val:'BTB',label:'BUFFER',cls:'fb-cyan'},
+      {val:'TAGE',label:'MODERN',cls:'fb-purple'},
+    ],
+    logs:[
+      {c:'tc-c',t:'BEQ R1, R2, +8 at PC=0x0018'},
+      {c:'tc-y',t:'BTB lookup: predict NOT TAKEN'},
+      {c:'tc-c',t:'Speculatively fetch PC=0x001C'},
+      {c:'tc-g',t:'R1=R2 → branch TAKEN → FLUSH'},
+      {c:'tc-r',t:'Pipeline flush: 3 instructions squashed'},
+      {c:'tc-y',t:'BTB update: NOT TAKEN → TAKEN'},
+    ],
+    cmd:'sim> branch --pc 0x0018 --predict'
+  },
+  {
+    id:7, name:'MODERN', sub:'modern',
+    title:'Modern CPU Techniques',
+    body:`Today's CPUs use dozens of techniques: <strong>out-of-order execution</strong>, superscalar dispatch, register renaming, speculative execution, SMT (hyperthreading), and SIMD vector units.`,
+    fact:'Apple M4: 4 P-cores + 6 E-cores + Neural Engine + GPU all on one die (3nm)',
+    facts:[
+      {val:'4 GHz+',label:'CLOCK',cls:'fb-yellow'},
+      {val:'5nm/3nm',label:'PROCESS',cls:'fb-cyan'},
+      {val:'100B+',label:'TRANSISTORS',cls:'fb-green'},
+      {val:'6-wide',label:'DECODE',cls:'fb-purple'},
+    ],
+    logs:[
+      {c:'tc-c',t:'Superscalar: 4 instr/cycle decoded'},
+      {c:'tc-g',t:'OoO: ROB size = 256 entries'},
+      {c:'tc-y',t:'Rename: 256 physical registers'},
+      {c:'tc-g',t:'Speculative: 200+ inflight instructions'},
+      {c:'tc-c',t:'SMT: 2 threads share 1 physical core'},
+    ],
+    cmd:'sim> cpuid --features'
+  },
+];
+
+let currentStep = 1;
+let pipelineCycle = 1;
+let cacheHits = 0, cacheMisses = 0;
+const cacheState = {};
+
+function init(){
+  buildDots();
+  buildFetch();
+  buildDecodeRegs();
+  buildExecRegs();
+  buildExecAluOps();
+  buildPipeline();
+  buildCache();
+  buildModernBlocks();
+  showStep(1);
+}
+
+// ── FETCH ──
+function buildFetch(){
+  const mem = [
+    {addr:'0x0000', instr:'0x8C210000', asm:'LW R1, 0(R1)'},
+    {addr:'0x0004', instr:'0x00221820', asm:'ADD R3, R1, R2', active:true},
+    {addr:'0x0008', instr:'0x00431020', asm:'ADD R2, R2, R3'},
+    {addr:'0x000C', instr:'0x1022FFFD', asm:'BEQ R1, R2, -3'},
+  ];
+  const mt = document.getElementById('mem-table');
+  mt.innerHTML = mem.map(r=>`
+    <div style="display:flex;gap:8px;align-items:center;padding:4px 6px;border-radius:4px;${r.active?'background:rgba(0,229,255,0.1);border:1px solid rgba(0,229,255,0.3);':'border:1px solid transparent;'}">
+      <span style="font-family:var(--mono);font-size:10px;color:${r.active?'var(--cyan)':'var(--muted)'};">${r.addr}</span>
+      <span style="font-family:var(--mono);font-size:10px;color:${r.active?'var(--yellow)':'#2a4060'};">${r.instr}</span>
+      <span style="font-family:var(--mono);font-size:10px;color:${r.active?'var(--white)':'var(--muted)'};">${r.asm}</span>
+      ${r.active?'<span style="font-family:var(--mono);font-size:9px;color:var(--cyan);margin-left:auto;">← PC</span>':''}
+    </div>
+  `).join('');
+
+  // Bit encoding
+  const bits = document.getElementById('irBits');
+  const fields = [
+    {label:'opcode',bits:'000000',color:'var(--yellow)'},
+    {label:'rs(R1)',bits:'00001',color:'var(--cyan)'},
+    {label:'rt(R2)',bits:'00010',color:'var(--green)'},
+    {label:'rd(R3)',bits:'00011',color:'var(--purple)'},
+    {label:'shamt',bits:'00000',color:'var(--muted)'},
+    {label:'funct',bits:'100000',color:'var(--orange)'},
+  ];
+  bits.innerHTML = fields.map(f=>`
+    <div class="bit-group">
+      <div class="bit-cells">${[...f.bits].map(b=>`<div class="bit-cell ${b==='1'?'hi':''}" style="border-color:${f.color}40;color:${b==='1'?f.color:'var(--muted)'};">${b}</div>`).join('')}</div>
+      <div class="bit-group-label" style="color:${f.color};">${f.label}</div>
+    </div>
+  `).join('');
+}
+
+// ── DECODE REGS ──
+const REG_VALS = {R1:{val:'0x0005',color:'var(--yellow)',active:true},R2:{val:'0x0003',color:'var(--green)',active:true},R3:{val:'—',color:'var(--muted)',active:false,dest:true},R4:{val:'0x1000',color:'var(--muted)'},R5:{val:'0xFF00',color:'var(--muted)'},R6:{val:'0x0000',color:'var(--muted)'}};
+
+function buildDecodeRegs(){
+  const cont = document.getElementById('decodeRegs');
+  cont.innerHTML = Object.entries(REG_VALS).map(([name, r])=>`
+    <div class="reg-cell ${r.active?'active-reg':''}" style="border-color:${r.active?r.color+'66':'var(--border)'};background:${r.active?'rgba('+hexToRgb(r.color)+',0.08)':'var(--card2)'}">
+      <div class="rname" style="color:${r.active?r.color:'var(--muted)'}">${name}${r.dest?' (dst)':''}</div>
+      <div class="rval">${r.val}</div>
+    </div>
+  `).join('');
+}
+
+function hexToRgb(cssVar){
+  const map={'var(--yellow)':'245,166,35','var(--green)':'57,255,20','var(--muted)':'42,64,96','var(--cyan)':'0,229,255','var(--purple)':'199,125,255'};
+  return map[cssVar]||'255,255,255';
+}
+
+// ── EXECUTE ──
+const ALU_OPS = [
+  {name:'ADD',sym:'+',a:5,b:3,res:8,flags:{Z:0,N:0,C:0,V:0},color:'var(--yellow)'},
+  {name:'SUB',sym:'−',a:5,b:3,res:2,flags:{Z:0,N:0,C:0,V:0},color:'var(--cyan)'},
+  {name:'AND',sym:'&',a:0b0101,b:0b0011,res:0b0001,hex:true,flags:{Z:0,N:0,C:0,V:0},color:'var(--green)'},
+  {name:'OR', sym:'|',a:0b0101,b:0b0011,res:0b0111,hex:true,flags:{Z:0,N:0,C:0,V:0},color:'var(--purple)'},
+  {name:'SLT',sym:'<',a:3,b:5,res:1,flags:{Z:0,N:0,C:0,V:0},color:'var(--orange)'},
+  {name:'SUB=0',sym:'−',a:3,b:3,res:0,flags:{Z:1,N:0,C:0,V:0},color:'var(--pink)'},
+];
+let aluIdx=0;
+
+function buildExecRegs(){
+  const c = document.getElementById('execRegs');
+  c.innerHTML = ['R1','R2'].map((r,i)=>`
+    <div style="margin-bottom:8px;border:1px solid rgba(245,166,35,0.3);border-radius:4px;padding:8px;background:rgba(245,166,35,0.06);">
+      <div style="font-family:'Orbitron',monospace;font-size:11px;color:var(--yellow);">${r}</div>
+      <div style="font-family:var(--mono);font-size:12px;color:var(--white);margin-top:2px;">${r==='R1'?'0x0005':'0x0003'}</div>
+    </div>
+  `).join('');
+}
+
+function buildExecAluOps(){
+  const c = document.getElementById('aluOps');
+  c.innerHTML = ALU_OPS.map((op,i)=>`
+    <button onclick="selectAluOp(${i})" style="background:rgba(${hexToRgb(op.color)},0.08);border:1px solid rgba(${hexToRgb(op.color)},0.35);color:${op.color};font-family:var(--mono);font-size:10px;padding:6px 12px;border-radius:4px;cursor:pointer;letter-spacing:1px;transition:all 0.2s;">${op.name}</button>
+  `).join('');
+  updateAluDisplay();
+}
+
+function selectAluOp(i){
+  aluIdx = i;
+  updateAluDisplay();
+}
+
+function updateAluDisplay(){
+  const op = ALU_OPS[aluIdx];
+  const fmt = v => op.hex ? '0x'+v.toString(16).toUpperCase().padStart(4,'0') : '0x'+v.toString(16).toUpperCase().padStart(4,'0');
+  document.getElementById('op1').textContent = fmt(op.a);
+  document.getElementById('op2').textContent = fmt(op.b);
+  document.getElementById('aluResult').textContent = '= ' + fmt(op.res);
+  document.getElementById('aluResult').style.color = op.res===0 ? 'var(--cyan)' : 'var(--green)';
+  const flags = document.getElementById('aluFlags');
+  flags.innerHTML = Object.entries(op.flags).map(([k,v])=>`
+    <div style="border:1px solid ${v?'rgba(57,255,20,0.4)':'var(--border)'};border-radius:3px;padding:3px 8px;font-family:var(--mono);font-size:9px;color:${v?'var(--green)':'var(--muted)'};">${k}=${v}</div>
+  `).join('');
+}
+
+// ── PIPELINE ──
+const PIPE_STAGES = ['IF','ID','EX','MEM','WB'];
+const PIPE_INSTRS = ['ADD R3,R1,R2','SUB R4,R3,R2','LW R5,4(R1)','BEQ R1,R0,+4','AND R6,R1,R2'];
+const PIPE_COLORS = ['var(--cyan)','var(--yellow)','var(--green)','var(--purple)','var(--orange)'];
+
+function buildPipeline(){
+  const ps = document.getElementById('pipeStages');
+  ps.innerHTML = PIPE_STAGES.map((s,i)=>`
+    <div class="pipe-stage" id="ps${i}">
+      <div class="ps-name" style="color:var(--muted);">${s}</div>
+      <div class="ps-instr" id="psi${i}">—</div>
+    </div>
+  `).join('');
+  updatePipeline();
+}
+
+function updatePipeline(){
+  // Each instruction moves through stages cycle by cycle
+  PIPE_STAGES.forEach((s,si)=>{
+    const instrIdx = pipelineCycle - 1 - si;
+    const psi = document.getElementById('psi'+si);
+    const ps = document.getElementById('ps'+si);
+    if(instrIdx>=0 && instrIdx<PIPE_INSTRS.length){
+      psi.textContent = PIPE_INSTRS[instrIdx];
+      psi.style.color = PIPE_COLORS[instrIdx];
+      ps.className = 'pipe-stage active-pipe';
+    } else {
+      psi.textContent = '—';
+      ps.className = 'pipe-stage';
+    }
+  });
+  document.getElementById('cycleNum').textContent = pipelineCycle;
+
+  // Matrix
+  const mat = document.getElementById('pipeMatrix');
+  const maxCycle = pipelineCycle;
+  const startCycle = Math.max(1, maxCycle-4);
+  mat.innerHTML = `
+    <div style="font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:2px;margin-bottom:6px;">PIPELINE MATRIX — LAST 5 CYCLES</div>
+    <div style="overflow-x:auto;">
+      <table style="border-collapse:collapse;width:100%;font-family:var(--mono);font-size:10px;">
+        <tr>
+          <td style="padding:3px 6px;color:var(--muted);">Instr</td>
+          ${Array.from({length:5},(_, i)=>`<td style="padding:3px 8px;color:var(--cyan);text-align:center;">C${startCycle+i}</td>`).join('')}
+        </tr>
+        ${PIPE_INSTRS.slice(0,Math.min(PIPE_INSTRS.length,pipelineCycle)).map((instr,ii)=>`
+          <tr>
+            <td style="padding:3px 6px;color:${PIPE_COLORS[ii]};white-space:nowrap;">${instr.substring(0,12)}</td>
+            ${Array.from({length:5},(_,ci)=>{
+              const c = startCycle + ci;
+              const stage = c - ii - 1;
+              if(stage>=0 && stage<5) return `<td style="padding:3px 8px;text-align:center;color:${PIPE_COLORS[ii]};background:rgba(${hexToRgb(PIPE_COLORS[ii])},0.08);border:1px solid rgba(${hexToRgb(PIPE_COLORS[ii])},0.2);">${PIPE_STAGES[stage]}</td>`;
+              return `<td style="padding:3px 8px;text-align:center;color:var(--muted);">—</td>`;
+            }).join('')}
+          </tr>
+        `).join('')}
+      </table>
+    </div>
+  `;
+}
+
+function nextCycle(){
+  pipelineCycle = (pipelineCycle % 10) + 1;
+  updatePipeline();
+}
+
+// ── CACHE ──
+function buildCache(){
+  const grid = document.getElementById('cacheGrid');
+  const addrs = Array.from({length:16},(_,i)=>`0x${(i*4).toString(16).toUpperCase().padStart(4,'0')}`);
+  grid.innerHTML = addrs.map((addr,i)=>`
+    <div class="cache-cell" id="cc${i}" onclick="accessCache(${i},'${addr}')">
+      <div class="cc-addr">${addr}</div>
+      <div class="cc-val">—</div>
+    </div>
+  `).join('');
+}
+
+function accessCache(i, addr){
+  const cell = document.getElementById('cc'+i);
+  if(cacheState[i]){
+    cacheHits++;
+    cell.className='cache-cell cache-hit';
+    document.getElementById('cacheMsg').textContent = `✓ CACHE HIT: ${addr} found in L1 cache (4 cycles)`;
+    document.getElementById('cacheMsg').style.color='var(--green)';
+  } else {
+    cacheMisses++;
+    cacheState[i]=true;
+    cell.className='cache-cell cache-miss cache-miss-anim';
+    cell.querySelector('.cc-val').textContent='0x'+Math.floor(Math.random()*0xFFFF).toString(16).toUpperCase().padStart(4,'0');
+    document.getElementById('cacheMsg').textContent = `✗ CACHE MISS: ${addr} loaded from RAM (200+ cycles)`;
+    document.getElementById('cacheMsg').style.color='var(--red)';
+    setTimeout(()=>{cell.className='cache-cell cache-hit';},600);
+  }
+  document.getElementById('cacheHits').textContent=cacheHits;
+  document.getElementById('cacheMisses').textContent=cacheMisses;
+  const total=cacheHits+cacheMisses;
+  document.getElementById('cacheRatio').textContent=total?Math.round(cacheHits/total*100)+'%':'—';
+}
+
+// ── BRANCH ──
+function branchTaken(){
+  document.getElementById('branchPred').className='branch-box taken';
+  document.getElementById('branchPred').innerHTML='<div>RESULT: TAKEN</div><div style="font-size:9px;margin-top:3px;opacity:0.7;">PC ← 0x0020</div>';
+  document.getElementById('branchResult').style.color='var(--green)';
+  document.getElementById('branchResult').textContent='✓ Predicted NOT TAKEN but TAKEN → Pipeline FLUSH! 3 instructions squashed. +3 cycle penalty.';
+  document.getElementById('branchResult').style.borderColor='rgba(255,68,68,0.4)';
+}
+function branchNotTaken(){
+  document.getElementById('branchPred').className='branch-box not-taken';
+  document.getElementById('branchPred').innerHTML='<div>RESULT: NOT TAKEN</div><div style="font-size:9px;margin-top:3px;opacity:0.7;">PC ← 0x001C (sequential)</div>';
+  document.getElementById('branchResult').style.color='var(--green)';
+  document.getElementById('branchResult').textContent='✓ Correctly predicted NOT TAKEN. No flush needed. Execution continues normally.';
+  document.getElementById('branchResult').style.borderColor='rgba(57,255,20,0.4)';
+}
+
+// ── MODERN BLOCKS ──
+function buildModernBlocks(){
+  const blocks = [
+    {n:'Front End',c:'var(--cyan)'},
+    {n:'Branch Pred',c:'var(--yellow)'},
+    {n:'I-Cache',c:'var(--cyan)'},
+    {n:'Decode ×6',c:'var(--green)'},
+    {n:'Register Rename',c:'var(--purple)'},
+    {n:'ROB (256)',c:'var(--yellow)'},
+    {n:'Int ALU ×4',c:'var(--orange)'},
+    {n:'FP Unit ×2',c:'var(--cyan)'},
+    {n:'Load/Store',c:'var(--green)'},
+    {n:'D-Cache L1',c:'var(--cyan)'},
+    {n:'L2 Cache',c:'var(--yellow)'},
+    {n:'L3 Cache',c:'var(--purple)'},
+  ];
+  document.getElementById('modernBlocks').innerHTML = blocks.map(b=>`
+    <div style="border:1px solid rgba(${hexToRgb(b.c)},0.3);border-radius:4px;padding:6px 10px;background:rgba(${hexToRgb(b.c)},0.05);font-family:var(--mono);font-size:9px;color:${b.c};white-space:nowrap;">${b.n}</div>
+  `).join('');
+}
+
+// ── STEP CONTROL ──
+function showStep(n){
+  currentStep=n;
+  // Hide all views
+  document.querySelectorAll('.step-view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-'+n).classList.add('active');
+
+  const step = STEPS[n-1];
+  document.getElementById('stepNum').textContent=n;
+  document.getElementById('stepBadge').textContent=step.name;
+
+  // subtitle highlight
+  document.querySelectorAll('.t-sub span').forEach(s=>{
+    s.classList.remove('active-sub');
+    if(s.id==='sub-'+step.sub) s.classList.add('active-sub');
+  });
+
+  // Info card
+  document.getElementById('infoCard').innerHTML=`
+    <div class="info-title">${step.title}</div>
+    <div class="info-body">${step.body}</div>
+    <div class="info-fact">${step.fact}</div>
+  `;
+
+  // Facts
+  document.getElementById('factsRow').innerHTML=step.facts.map(f=>`
+    <div class="fact-box ${f.cls}">
+      <div class="fact-top">${f.val}</div>
+      <div class="fact-label">${f.label}</div>
+    </div>
+  `).join('');
+
+  // Terminal
+  const tl = document.getElementById('termLines');
+  tl.innerHTML = step.logs.map(l=>`<div class="tl"><span class="tl-t">&gt;</span><span class="${l.c}">${l.t}</span></div>`).join('');
+  document.getElementById('termCmd').textContent = step.cmd;
+
+  // Button text
+  document.getElementById('mainBtn').textContent = n<7 ? '▶ NEXT STEP' : '↺ RESTART';
+
+  updateDots();
+}
+
+function advanceStep(){
+  if(currentStep<7) showStep(currentStep+1);
+  else showStep(1);
+}
+
+document.getElementById('btnNext').onclick=()=>{if(currentStep<7)showStep(currentStep+1);};
+document.getElementById('btnPrev').onclick=()=>{if(currentStep>1)showStep(currentStep-1);};
+
+function buildDots(){
+  document.getElementById('dotsRow').innerHTML=STEPS.map((_,i)=>`
+    <button class="dot-btn" id="dot${i+1}" onclick="showStep(${i+1})"></button>
+  `).join('');
+}
+
+function updateDots(){
+  STEPS.forEach((_,i)=>{
+    const d=document.getElementById('dot'+(i+1));
+    d.classList.toggle('active',i+1===currentStep);
+  });
+}
+
+init();
+</script>
+</body>
+</html>
