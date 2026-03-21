@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dijkstra Algoritması</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #050a0f;
+    --panel: #0a1520;
+    --border: #0d2a3f;
+    --accent: #00e5ff;
+    --accent2: #ff6b35;
+    --green: #39ff14;
+    --yellow: #ffd700;
+    --purple: #bf5fff;
+    --text: #c8e6f7;
+    --muted: #3a6080;
+    --node-default: #0d2a3f;
+    --node-visited: #003d4d;
+    --node-current: #004455;
+    --node-path: #001a1a;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background: 
+      radial-gradient(ellipse 60% 40% at 20% 20%, rgba(0,229,255,0.04) 0%, transparent 60%),
+      radial-gradient(ellipse 40% 60% at 80% 80%, rgba(255,107,53,0.04) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  header {
+    padding: 24px 40px 16px;
+    border-bottom: 1px solid var(--border);
+    position: relative; z-index: 1;
+    display: flex; align-items: center; gap: 20px;
+  }
+
+  header h1 {
+    font-family: 'Orbitron', monospace;
+    font-weight: 900;
+    font-size: 22px;
+    letter-spacing: 3px;
+    color: var(--accent);
+    text-shadow: 0 0 30px rgba(0,229,255,0.5);
+  }
+
+  header .sub {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .badge {
+    background: rgba(0,229,255,0.1);
+    border: 1px solid rgba(0,229,255,0.3);
+    color: var(--accent);
+    padding: 4px 12px;
+    font-size: 10px;
+    letter-spacing: 2px;
+    border-radius: 2px;
+  }
+
+  .main {
+    display: grid;
+    grid-template-columns: 1fr 280px;
+    gap: 0;
+    height: calc(100vh - 73px);
+    position: relative; z-index: 1;
+  }
+
+  .canvas-wrap {
+    position: relative;
+    padding: 20px;
+    overflow: hidden;
+  }
+
+  canvas {
+    width: 100%;
+    height: 100%;
+    cursor: default;
+  }
+
+  .sidebar {
+    border-left: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    overflow: hidden;
+  }
+
+  .panel {
+    padding: 20px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .panel-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+
+  .controls { display: flex; flex-direction: column; gap: 8px; }
+
+  button {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 1px;
+    padding: 10px 16px;
+    border: 1px solid;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+    border-radius: 2px;
+  }
+
+  .btn-primary {
+    background: rgba(0,229,255,0.1);
+    border-color: rgba(0,229,255,0.5);
+    color: var(--accent);
+  }
+  .btn-primary:hover {
+    background: rgba(0,229,255,0.2);
+    box-shadow: 0 0 20px rgba(0,229,255,0.2);
+  }
+  .btn-primary:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+
+  .btn-secondary {
+    background: rgba(255,107,53,0.08);
+    border-color: rgba(255,107,53,0.4);
+    color: var(--accent2);
+  }
+  .btn-secondary:hover {
+    background: rgba(255,107,53,0.15);
+    box-shadow: 0 0 20px rgba(255,107,53,0.15);
+  }
+
+  .btn-ghost {
+    background: transparent;
+    border-color: var(--border);
+    color: var(--muted);
+  }
+  .btn-ghost:hover {
+    border-color: var(--muted);
+    color: var(--text);
+  }
+
+  .speed-row {
+    display: flex; align-items: center; gap: 8px;
+    margin-top: 4px;
+  }
+  .speed-row label { font-size: 10px; color: var(--muted); flex: 1; }
+  input[type=range] {
+    flex: 2;
+    accent-color: var(--accent);
+  }
+
+  .dist-table {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 20px 20px;
+  }
+  .dist-table::-webkit-scrollbar { width: 4px; }
+  .dist-table::-webkit-scrollbar-track { background: transparent; }
+  .dist-table::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .dist-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 0;
+    border-bottom: 1px solid rgba(13,42,63,0.5);
+    transition: all 0.3s;
+    font-size: 12px;
+  }
+  .dist-row.updated { animation: flash 0.4s ease; }
+
+  @keyframes flash {
+    0% { background: rgba(0,229,255,0.15); }
+    100% { background: transparent; }
+  }
+
+  .dist-node {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Orbitron', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    border: 1.5px solid;
+    flex-shrink: 0;
+  }
+
+  .dist-val {
+    flex: 1;
+    text-align: right;
+    font-weight: 700;
+  }
+
+  .dist-prev {
+    color: var(--muted);
+    font-size: 10px;
+    width: 40px;
+    text-align: right;
+  }
+
+  .log-panel {
+    padding: 14px 20px;
+    border-top: 1px solid var(--border);
+    max-height: 140px;
+    overflow-y: auto;
+    font-size: 10px;
+    line-height: 1.8;
+    color: var(--muted);
+  }
+  .log-panel::-webkit-scrollbar { width: 3px; }
+  .log-panel::-webkit-scrollbar-thumb { background: var(--border); }
+
+  .log-entry { display: flex; gap: 8px; }
+  .log-entry.highlight { color: var(--accent); }
+  .log-entry.path { color: var(--green); }
+  .log-entry.warn { color: var(--yellow); }
+
+  .status-bar {
+    position: absolute;
+    bottom: 24px; left: 24px;
+    display: flex; gap: 16px;
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 1px;
+  }
+
+  .status-bar span { display: flex; align-items: center; gap: 6px; }
+  .dot { width: 6px; height: 6px; border-radius: 50%; }
+
+  .legend {
+    display: flex; flex-wrap: wrap; gap: 10px;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 10px; color: var(--muted); }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid; }
+
+  .step-counter {
+    font-family: 'Orbitron', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    text-align: center;
+    padding: 8px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>DIJKSTRA</h1>
+    <div class="sub">En Kısa Yol Algoritması</div>
+  </div>
+  <div class="badge">CANLI ANİMASYON</div>
+</header>
+
+<div class="main">
+  <div class="canvas-wrap">
+    <canvas id="c"></canvas>
+    <div class="status-bar">
+      <span><div class="dot" style="background:#00e5ff"></div> Başlangıç Düğümü: A</span>
+      <span id="stepInfo">Hazır</span>
+    </div>
+  </div>
+
+  <div class="sidebar">
+    <div class="panel">
+      <div class="panel-title">Kontroller</div>
+      <div class="controls">
+        <button class="btn-primary" id="btnStart">▶ Algoritmayı Başlat</button>
+        <button class="btn-primary" id="btnStep" disabled>⏭ Adım Adım</button>
+        <button class="btn-secondary" id="btnReset">↺ Sıfırla</button>
+        <button class="btn-ghost" id="btnRandom">⟳ Yeni Graf</button>
+        <div class="speed-row">
+          <label>Hız</label>
+          <input type="range" id="speed" min="100" max="1500" value="700" step="100">
+        </div>
+      </div>
+    </div>
+
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="border-color:#00e5ff;background:rgba(0,229,255,0.2)"></div>Başlangıç</div>
+      <div class="legend-item"><div class="legend-dot" style="border-color:#ff6b35;background:rgba(255,107,53,0.2)"></div>Aktif</div>
+      <div class="legend-item"><div class="legend-dot" style="border-color:#3a6080;background:#0d2a3f"></div>Ziyaret Edilmedi</div>
+      <div class="legend-item"><div class="legend-dot" style="border-color:#39ff14;background:rgba(57,255,20,0.15)"></div>En Kısa Yol</div>
+    </div>
+
+    <div class="panel-title" style="padding:14px 20px 0;">Mesafe Tablosu</div>
+    <div class="dist-table" id="distTable"></div>
+
+    <div class="step-counter" id="stepCounter"></div>
+    <div class="log-panel" id="logPanel"></div>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+// ── Graf tanımı ──────────────────────────────────────
+const LABELS = ['A','B','C','D','E','F','G','H'];
+let nodes = [], edges = [];
+
+function generateGraph() {
+  const W = canvas.parentElement.clientWidth - 40;
+  const H = canvas.parentElement.clientHeight - 40;
+  canvas.width = W;
+  canvas.height = H;
+
+  const cx = W / 2, cy = H / 2;
+  const r = Math.min(W, H) * 0.36;
+
+  nodes = LABELS.map((label, i) => {
+    const angle = (i / LABELS.length) * Math.PI * 2 - Math.PI / 2;
+    return {
+      id: i,
+      label,
+      x: cx + Math.cos(angle) * r,
+      y: cy + Math.sin(angle) * r,
+      dist: Infinity,
+      prev: null,
+      visited: false,
+      current: false,
+      inPath: false,
+    };
+  });
+
+  // Rastgele ağırlıklı kenarlar
+  edges = [];
+  const possibleEdges = [
+    [0,1],[0,2],[0,7],[1,2],[1,3],[2,3],[2,5],[3,4],[3,6],[4,5],[4,6],[5,6],[5,7],[6,7],[1,7],[0,4]
+  ];
+  const chosen = possibleEdges.filter(() => Math.random() > 0.3);
+  // En az bağlı bir graf garantisi
+  const connected = new Set([0]);
+  while (connected.size < nodes.length) {
+    for (const [a,b] of chosen) {
+      if (connected.has(a) && !connected.has(b)) connected.add(b);
+      if (connected.has(b) && !connected.has(a)) connected.add(a);
+    }
+    if (connected.size < nodes.length) {
+      const missing = nodes.find(n => !connected.has(n.id));
+      const from = [...connected][Math.floor(Math.random() * connected.size)];
+      chosen.push([from, missing.id]);
+      connected.add(missing.id);
+    }
+  }
+
+  for (const [a, b] of chosen) {
+    const w = Math.floor(Math.random() * 12) + 1;
+    edges.push({ from: a, to: b, weight: w, active: false, inPath: false });
+  }
+}
+
+// ── Dijkstra durumu ──────────────────────────────────
+let steps = [], stepIndex = 0, running = false, animTimer = null;
+
+function buildSteps() {
+  const dist = new Array(nodes.length).fill(Infinity);
+  const prev = new Array(nodes.length).fill(null);
+  const visited = new Set();
+  dist[0] = 0;
+  const events = [];
+
+  events.push({ type: 'init', node: 0 });
+
+  while (true) {
+    // En küçük dist'li ziyaret edilmemiş düğüm
+    let u = -1;
+    for (let i = 0; i < nodes.length; i++) {
+      if (!visited.has(i) && (u === -1 || dist[i] < dist[u])) u = i;
+    }
+    if (u === -1 || dist[u] === Infinity) break;
+
+    events.push({ type: 'select', node: u, dist: dist[u] });
+    visited.add(u);
+
+    const neighbors = edges.filter(e => e.from === u || e.to === u);
+    for (const e of neighbors) {
+      const v = e.from === u ? e.to : e.from;
+      if (visited.has(v)) continue;
+      const newDist = dist[u] + e.weight;
+      events.push({ type: 'relax', from: u, to: v, edge: e, newDist, oldDist: dist[v] });
+      if (newDist < dist[v]) {
+        dist[v] = newDist;
+        prev[v] = u;
+        events.push({ type: 'update', node: v, dist: newDist, prev: u });
+      }
+    }
+
+    events.push({ type: 'done', node: u });
+  }
+
+  // En kısa yolları işaretle
+  events.push({ type: 'paths', dist, prev });
+  return events;
+}
+
+// ── Render ───────────────────────────────────────────
+const NODE_R = 28;
+
+const nodeColors = {
+  default:  { fill: 'rgba(13,42,63,0.9)',   stroke: '#1a4a6a',  text: '#3a8090' },
+  source:   { fill: 'rgba(0,229,255,0.15)', stroke: '#00e5ff',  text: '#00e5ff' },
+  current:  { fill: 'rgba(255,107,53,0.2)', stroke: '#ff6b35',  text: '#ff6b35' },
+  visited:  { fill: 'rgba(0,60,80,0.8)',    stroke: '#0d4a5a',  text: '#1a8090' },
+  path:     { fill: 'rgba(57,255,20,0.1)',  stroke: '#39ff14',  text: '#39ff14' },
+};
+
+function getNodeColor(n) {
+  if (n.inPath) return nodeColors.path;
+  if (n.id === 0) return nodeColors.source;
+  if (n.current) return nodeColors.current;
+  if (n.visited) return nodeColors.visited;
+  return nodeColors.default;
+}
+
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Kenarlar
+  for (const e of edges) {
+    const a = nodes[e.from], b = nodes[e.to];
+    const dx = b.x - a.x, dy = b.y - a.y;
+    const len = Math.sqrt(dx*dx+dy*dy);
+    const mx = (a.x+b.x)/2, my = (a.y+b.y)/2;
+
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y);
+    ctx.lineTo(b.x, b.y);
+
+    if (e.inPath) {
+      ctx.strokeStyle = '#39ff14';
+      ctx.lineWidth = 3;
+      ctx.shadowColor = '#39ff14';
+      ctx.shadowBlur = 12;
+    } else if (e.active) {
+      ctx.strokeStyle = '#ff6b35';
+      ctx.lineWidth = 2;
+      ctx.shadowColor = '#ff6b35';
+      ctx.shadowBlur = 10;
+    } else {
+      ctx.strokeStyle = '#0d2a3f';
+      ctx.lineWidth = 1.5;
+      ctx.shadowBlur = 0;
+    }
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // Ağırlık etiketi
+    const perpX = -dy/len * 14, perpY = dx/len * 14;
+    ctx.fillStyle = e.inPath ? '#39ff14' : e.active ? '#ff6b35' : '#1a4a5a';
+    ctx.font = '11px JetBrains Mono';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(e.weight, mx + perpX, my + perpY);
+  }
+
+  // Düğümler
+  for (const n of nodes) {
+    const c = getNodeColor(n);
+
+    // Glow
+    if (n.current || n.inPath || n.id === 0) {
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, NODE_R + 8, 0, Math.PI*2);
+      const grad = ctx.createRadialGradient(n.x, n.y, NODE_R, n.x, n.y, NODE_R+12);
+      const col = n.inPath ? '57,255,20' : n.current ? '255,107,53' : '0,229,255';
+      grad.addColorStop(0, `rgba(${col},0.3)`);
+      grad.addColorStop(1, 'transparent');
+      ctx.fillStyle = grad;
+      ctx.fill();
+    }
+
+    ctx.beginPath();
+    ctx.arc(n.x, n.y, NODE_R, 0, Math.PI*2);
+    ctx.fillStyle = c.fill;
+    ctx.fill();
+    ctx.strokeStyle = c.stroke;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Etiket
+    ctx.fillStyle = c.text;
+    ctx.font = 'bold 14px Orbitron';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(n.label, n.x, n.y - 5);
+
+    // Mesafe
+    const dv = n.dist === Infinity ? '∞' : n.dist;
+    ctx.fillStyle = n.dist === Infinity ? '#1a4a5a' : c.text;
+    ctx.font = '10px JetBrains Mono';
+    ctx.fillText(dv, n.x, n.y + 9);
+  }
+}
+
+// ── Adım uygulama ────────────────────────────────────
+let logs = [];
+function log(msg, cls='') {
+  logs.unshift({ msg, cls });
+  if (logs.length > 30) logs.pop();
+  const p = document.getElementById('logPanel');
+  p.innerHTML = logs.map(l =>
+    `<div class="log-entry ${l.cls}">› ${l.msg}</div>`
+  ).join('');
+}
+
+function applyStep(ev) {
+  switch(ev.type) {
+    case 'init':
+      nodes[ev.node].dist = 0;
+      log(`Başlangıç: ${nodes[ev.node].label}, mesafe = 0`, 'highlight');
+      break;
+    case 'select':
+      nodes.forEach(n => { n.current = false; });
+      edges.forEach(e => { e.active = false; });
+      nodes[ev.node].current = true;
+      document.getElementById('stepInfo').textContent = `İşleniyor: ${nodes[ev.node].label} (d=${ev.dist})`;
+      log(`Seçildi: ${nodes[ev.node].label} → mesafe ${ev.dist}`, 'highlight');
+      break;
+    case 'relax':
+      ev.edge.active = true;
+      log(`Kenar kontrol: ${nodes[ev.from].label}→${nodes[ev.to].label} ağırlık ${ev.edge.weight} → toplam ${ev.newDist}`);
+      break;
+    case 'update':
+      nodes[ev.node].dist = ev.dist;
+      nodes[ev.node].prev = ev.prev;
+      log(`Güncellendi: ${nodes[ev.node].label} = ${ev.dist} (önceki: ${nodes[ev.prev].label})`, 'warn');
+      updateDistTable(ev.node);
+      break;
+    case 'done':
+      nodes[ev.node].visited = true;
+      nodes[ev.node].current = false;
+      edges.forEach(e => { e.active = false; });
+      log(`Tamamlandı: ${nodes[ev.node].label}`);
+      break;
+    case 'paths':
+      // Tüm yolları işaretle
+      nodes.forEach(n => { n.inPath = false; });
+      edges.forEach(e => { e.inPath = false; });
+      for (let i = 1; i < nodes.length; i++) {
+        if (ev.dist[i] === Infinity) continue;
+        let cur = i;
+        while (ev.prev[cur] !== null) {
+          nodes[cur].inPath = true;
+          const from = ev.prev[cur];
+          const e = edges.find(e =>
+            (e.from===from&&e.to===cur)||(e.to===from&&e.from===cur));
+          if (e) e.inPath = true;
+          cur = from;
+        }
+        nodes[0].inPath = true;
+      }
+      document.getElementById('stepInfo').textContent = '✓ Tamamlandı!';
+      log('─── En kısa yollar bulundu ───', 'path');
+      updateAllDist();
+      break;
+  }
+  draw();
+  document.getElementById('stepCounter').textContent =
+    stepIndex > 0 ? `Adım ${stepIndex} / ${steps.length}` : '';
+}
+
+function updateDistTable(nodeId) {
+  const row = document.getElementById('drow-' + nodeId);
+  if (!row) { buildDistTable(); return; }
+  const n = nodes[nodeId];
+  row.querySelector('.dist-val').textContent = n.dist === Infinity ? '∞' : n.dist;
+  row.querySelector('.dist-prev').textContent = n.prev !== null ? `← ${nodes[n.prev].label}` : '';
+  row.classList.remove('updated');
+  void row.offsetWidth;
+  row.classList.add('updated');
+}
+
+function updateAllDist() { buildDistTable(); }
+
+function buildDistTable() {
+  const tbl = document.getElementById('distTable');
+  tbl.innerHTML = '';
+  const colors = ['#00e5ff','#bf5fff','#ff6b35','#ffd700','#39ff14','#00b8ff','#ff4d8b','#ff9c00'];
+  nodes.forEach((n, i) => {
+    const row = document.createElement('div');
+    row.className = 'dist-row';
+    row.id = 'drow-' + i;
+    const col = colors[i];
+    row.innerHTML = `
+      <div class="dist-node" style="border-color:${col};color:${col}">${n.label}</div>
+      <div class="dist-val" style="color:${n.dist===Infinity?'#1a4a5a':'#c8e6f7'}">${n.dist===Infinity?'∞':n.dist}</div>
+      <div class="dist-prev" style="color:#3a6080">${n.prev!==null?`← ${nodes[n.prev].label}`:''}</div>
+    `;
+    tbl.appendChild(row);
+  });
+}
+
+// ── Kontroller ───────────────────────────────────────
+function resetState() {
+  clearTimeout(animTimer);
+  running = false;
+  stepIndex = 0;
+  steps = [];
+  nodes.forEach(n => { n.dist=Infinity; n.prev=null; n.visited=false; n.current=false; n.inPath=false; });
+  edges.forEach(e => { e.active=false; e.inPath=false; });
+  logs = [];
+  document.getElementById('logPanel').innerHTML = '';
+  document.getElementById('stepInfo').textContent = 'Hazır';
+  document.getElementById('stepCounter').textContent = '';
+  document.getElementById('btnStart').disabled = false;
+  document.getElementById('btnStep').disabled = true;
+  buildDistTable();
+  draw();
+}
+
+function init() {
+  steps = buildSteps();
+  stepIndex = 0;
+  document.getElementById('btnStep').disabled = false;
+  document.getElementById('btnStart').disabled = false;
+}
+
+document.getElementById('btnStart').addEventListener('click', () => {
+  if (steps.length === 0) init();
+  running = true;
+  document.getElementById('btnStart').disabled = true;
+
+  function next() {
+    if (stepIndex >= steps.length) { running=false; return; }
+    applyStep(steps[stepIndex++]);
+    if (stepIndex < steps.length) {
+      const delay = 1600 - parseInt(document.getElementById('speed').value);
+      animTimer = setTimeout(next, Math.max(80, delay));
+    }
+  }
+  next();
+});
+
+document.getElementById('btnStep').addEventListener('click', () => {
+  if (steps.length === 0) init();
+  if (stepIndex < steps.length) applyStep(steps[stepIndex++]);
+});
+
+document.getElementById('btnReset').addEventListener('click', resetState);
+
+document.getElementById('btnRandom').addEventListener('click', () => {
+  clearTimeout(animTimer);
+  generateGraph();
+  resetState();
+});
+
+// ── Init ─────────────────────────────────────────────
+window.addEventListener('resize', () => {
+  generateGraph();
+  resetState();
+});
+
+generateGraph();
+resetState();
+</script>
+</body>
+</html>
