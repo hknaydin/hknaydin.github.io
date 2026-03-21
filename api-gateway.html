@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>API Gateway</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Inter:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#0b0f14;
+  --card:#111820;
+  --card2:#141d28;
+  --border:#1e2d3d;
+  --green:#00ff7f;
+  --cyan:#00e5ff;
+  --purple:#a855f7;
+  --yellow:#fbbf24;
+  --red:#f87171;
+  --orange:#fb923c;
+  --blue:#60a5fa;
+  --text:#c8dce8;
+  --muted:#3a5570;
+  --mono:'JetBrains Mono',monospace;
+}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:'Inter',sans-serif;
+  min-height:100vh;
+  padding:24px 16px 40px;
+  max-width:780px;
+  margin:0 auto;
+}
+
+/* ── TITLE ── */
+.title-block{text-align:center;margin-bottom:28px;}
+h1{
+  font-size:52px;font-weight:900;line-height:1;
+  color:#fff;letter-spacing:-2px;
+  margin-bottom:10px;
+}
+h1 span{color:var(--green);}
+.subtitle{
+  font-family:var(--mono);font-size:12px;
+  color:var(--muted);letter-spacing:2px;
+  display:flex;justify-content:center;gap:12px;flex-wrap:wrap;
+}
+.subtitle span{color:#4a7090;}
+
+/* ── SCENARIO BAR ── */
+.scenario-row{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:16px;
+  font-family:var(--mono);font-size:11px;
+  color:var(--muted);letter-spacing:2px;
+}
+.scenario-badge{
+  background:transparent;
+  border:1.5px solid var(--yellow);
+  color:var(--yellow);
+  padding:7px 18px;
+  font-family:var(--mono);font-size:13px;
+  border-radius:40px;
+  font-weight:500;
+  letter-spacing:0.5px;
+}
+.scenario-nav{display:flex;gap:6px;}
+.scenario-nav button{
+  background:rgba(255,255,255,0.05);
+  border:1px solid var(--border);
+  color:var(--muted);
+  width:28px;height:28px;
+  border-radius:4px;cursor:pointer;
+  font-size:14px;
+  transition:all 0.15s;
+  display:flex;align-items:center;justify-content:center;
+}
+.scenario-nav button:hover{border-color:#3a5570;color:var(--text);}
+
+/* ── REQUEST BAR ── */
+.request-bar{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:14px 18px;
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:14px;
+  gap:12px;
+}
+.method-badge{
+  font-family:var(--mono);font-size:12px;font-weight:700;
+  padding:5px 12px;border-radius:6px;
+  flex-shrink:0;
+  letter-spacing:1px;
+}
+.method-GET{background:rgba(0,255,127,0.15);color:var(--green);}
+.method-POST{background:rgba(251,191,36,0.15);color:var(--yellow);}
+.method-DELETE{background:rgba(248,113,113,0.15);color:var(--red);}
+.method-PUT{background:rgba(251,146,60,0.15);color:var(--orange);}
+
+.req-path{
+  font-family:var(--mono);font-size:14px;
+  color:var(--text);flex:1;
+}
+.token-badge{
+  font-family:var(--mono);font-size:12px;
+  padding:5px 14px;border-radius:20px;
+  flex-shrink:0;cursor:pointer;
+  transition:all 0.2s;
+  border:1.5px solid;
+}
+.token-valid{color:var(--green);border-color:rgba(0,255,127,0.4);background:rgba(0,255,127,0.08);}
+.token-invalid{color:var(--red);border-color:rgba(248,113,113,0.4);background:rgba(248,113,113,0.08);}
+.token-badge:hover{opacity:0.8;}
+
+/* ── PIPELINE DIAGRAM ── */
+.diagram-card{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:20px;
+  margin-bottom:14px;
+  position:relative;
+  overflow:hidden;
+}
+
+.diagram{
+  display:flex;align-items:center;justify-content:flex-start;
+  gap:0;
+  margin-bottom:16px;
+  position:relative;
+}
+
+/* Client */
+.d-client{
+  display:flex;flex-direction:column;align-items:center;gap:6px;
+  flex-shrink:0;
+}
+.d-client-icon{
+  width:44px;height:44px;
+  background:var(--card2);border:1px solid var(--border);
+  border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:20px;
+}
+.d-client-label{font-family:var(--mono);font-size:10px;color:var(--muted);}
+
+/* Arrow */
+.d-arrow{
+  flex:0 0 30px;
+  height:2px;
+  background:var(--border);
+  position:relative;
+  overflow:visible;
+}
+.d-arrow::after{
+  content:'';
+  position:absolute;right:-1px;top:-4px;
+  border:5px solid transparent;
+  border-left-color:var(--border);
+}
+.d-arrow .packet{
+  position:absolute;
+  top:-5px;left:0;
+  width:10px;height:10px;
+  border-radius:50%;
+  background:var(--green);
+  box-shadow:0 0 8px var(--green);
+  opacity:0;
+  transition:none;
+}
+
+/* Gateway box */
+.d-gateway{
+  flex:1;
+  border:2px solid var(--purple);
+  border-radius:10px;
+  padding:10px 8px 8px;
+  background:rgba(168,85,247,0.05);
+  position:relative;
+}
+.d-gw-title{
+  text-align:center;
+  font-family:var(--mono);font-size:9px;
+  color:var(--purple);letter-spacing:2px;
+  margin-bottom:8px;
+}
+.d-stages{
+  display:flex;gap:6px;justify-content:center;
+}
+.d-stage{
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+  padding:8px 6px;
+  background:var(--card2);
+  border:1.5px solid var(--border);
+  border-radius:8px;
+  min-width:58px;
+  transition:all 0.3s;
+  cursor:default;
+}
+.d-stage.active{
+  border-color:var(--purple);
+  background:rgba(168,85,247,0.12);
+  box-shadow:0 0 16px rgba(168,85,247,0.2);
+}
+.d-stage.pass{border-color:rgba(0,255,127,0.5);background:rgba(0,255,127,0.06);}
+.d-stage.fail{border-color:rgba(248,113,113,0.5);background:rgba(248,113,113,0.08);}
+.d-stage-icon{font-size:18px;}
+.d-stage-label{font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:0.5px;text-align:center;line-height:1.2;}
+
+/* Right side services */
+.d-services{
+  display:flex;flex-direction:column;gap:6px;
+  flex-shrink:0;margin-left:0;
+}
+.d-service{
+  font-family:var(--mono);font-size:10px;
+  color:var(--muted);padding:4px 10px;
+  border:1px solid var(--border);
+  border-radius:4px;
+  background:var(--card2);
+  transition:all 0.3s;
+  white-space:nowrap;
+}
+.d-service.lit{color:var(--cyan);border-color:rgba(0,229,255,0.3);background:rgba(0,229,255,0.06);}
+
+/* Status line */
+.status-line{
+  display:flex;align-items:center;gap:10px;
+  background:var(--card2);
+  border:1px solid var(--border);
+  border-radius:6px;
+  padding:10px 14px;
+  font-family:var(--mono);font-size:12px;
+  min-height:42px;
+  position:relative;
+  overflow:hidden;
+}
+.status-dot{
+  width:8px;height:8px;border-radius:50%;
+  background:var(--muted);flex-shrink:0;
+  transition:all 0.3s;
+}
+.status-dot.idle{background:var(--muted);}
+.status-dot.running{background:var(--yellow);animation:pulse 0.8s infinite;}
+.status-dot.ok{background:var(--green);}
+.status-dot.err{background:var(--red);}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
+
+.status-text{flex:1;color:#5a8aaa;}
+.status-text.active{color:var(--text);}
+.status-collapse{
+  background:transparent;border:none;
+  color:var(--muted);cursor:pointer;
+  font-size:14px;padding:2px 6px;
+  font-family:var(--mono);
+}
+
+/* ── PIPELINE STAGES ── */
+.stages-card{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:18px 20px;
+  margin-bottom:14px;
+}
+.stages-title{
+  font-family:var(--mono);font-size:10px;
+  letter-spacing:3px;color:var(--muted);
+  text-transform:uppercase;margin-bottom:14px;
+}
+.stage-row{
+  display:flex;align-items:center;gap:14px;
+  padding:10px 0;
+  border-bottom:1px solid rgba(30,45,61,0.6);
+  transition:all 0.3s;
+}
+.stage-row:last-child{border-bottom:none;}
+.stage-checkbox{
+  width:22px;height:22px;
+  border:2px solid var(--border);
+  border-radius:5px;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;
+  font-size:12px;
+  transition:all 0.3s;
+}
+.stage-checkbox.pass{border-color:var(--green);background:rgba(0,255,127,0.1);color:var(--green);}
+.stage-checkbox.fail{border-color:var(--red);background:rgba(248,113,113,0.1);color:var(--red);}
+.stage-checkbox.active{border-color:var(--yellow);animation:pulse 0.8s infinite;}
+.stage-name{
+  font-size:16px;font-weight:600;
+  color:var(--muted);
+  transition:color 0.3s;
+  flex:1;
+}
+.stage-name.pass{color:var(--green);}
+.stage-name.fail{color:var(--red);}
+.stage-name.active{color:var(--yellow);}
+.stage-detail{
+  font-family:var(--mono);font-size:10px;
+  color:var(--muted);
+  max-width:200px;text-align:right;
+}
+.stage-detail.pass{color:rgba(0,255,127,0.6);}
+.stage-detail.fail{color:rgba(248,113,113,0.6);}
+
+/* ── HTTP STATUS BUTTONS ── */
+.status-codes{
+  display:grid;grid-template-columns:repeat(6,1fr);
+  gap:8px;margin-bottom:14px;
+}
+.code-btn{
+  background:var(--card);
+  border:1.5px solid var(--border);
+  border-radius:10px;
+  padding:14px 8px;
+  cursor:pointer;
+  transition:all 0.2s;
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+  font-family:var(--mono);
+}
+.code-btn:hover{transform:translateY(-2px);border-color:#3a5570;}
+.code-btn.active{transform:translateY(-2px);}
+.code-num{font-size:22px;font-weight:700;line-height:1;}
+.code-label{font-size:9px;color:var(--muted);letter-spacing:0.5px;}
+.c200{color:#00ff7f;} .c200.active{border-color:rgba(0,255,127,0.5);background:rgba(0,255,127,0.05);}
+.c401{color:#fbbf24;} .c401.active{border-color:rgba(251,191,36,0.5);background:rgba(251,191,36,0.05);}
+.c404{color:#60a5fa;} .c404.active{border-color:rgba(96,165,250,0.5);background:rgba(96,165,250,0.05);}
+.c429{color:#f97316;} .c429.active{border-color:rgba(249,115,22,0.5);background:rgba(249,115,22,0.05);}
+.c500{color:#a855f7;} .c500.active{border-color:rgba(168,85,247,0.5);background:rgba(168,85,247,0.05);}
+.c503{color:#f87171;} .c503.active{border-color:rgba(248,113,113,0.5);background:rgba(248,113,113,0.05);}
+
+/* ── TERMINAL ── */
+.terminal{
+  background:#0a0e12;
+  border:1px solid var(--border);
+  border-radius:10px;
+  overflow:hidden;
+}
+.term-header{
+  background:#111820;
+  padding:10px 16px;
+  display:flex;align-items:center;gap:8px;
+  border-bottom:1px solid var(--border);
+}
+.term-dot{width:12px;height:12px;border-radius:50%;}
+.td1{background:#ff5f56;} .td2{background:#ffbd2e;} .td3{background:#27c93f;}
+.term-title{
+  flex:1;text-align:center;
+  font-family:var(--mono);font-size:11px;
+  color:var(--muted);
+}
+.term-body{
+  padding:14px 16px;
+  min-height:160px;max-height:220px;
+  overflow-y:auto;
+  font-family:var(--mono);font-size:12px;
+  line-height:1.9;
+}
+.term-body::-webkit-scrollbar{width:3px;}
+.term-body::-webkit-scrollbar-thumb{background:#1e2d3d;border-radius:2px;}
+
+.tl{display:flex;gap:10px;align-items:flex-start;}
+.tl-time{color:#2a4560;flex-shrink:0;font-size:11px;}
+.tl-msg{}
+.tl-arrow-in{color:#60a5fa;}
+.tl-arrow-out{color:#f87171;}
+.tl-ok{color:var(--green);}
+.tl-warn{color:var(--yellow);}
+.tl-err{color:var(--red);}
+.tl-dim{color:#2a4560;}
+.tl-bright{color:var(--text);}
+.tl-latency{color:#4a7090;}
+
+.term-prompt{
+  display:flex;align-items:center;gap:6px;
+  padding:0 16px 14px;
+  font-family:var(--mono);font-size:12px;
+}
+.term-prompt .ps{color:var(--green);}
+.term-prompt .cmd{color:var(--text);}
+.cursor{
+  width:8px;height:14px;
+  background:var(--green);
+  animation:blink 1s infinite;
+  display:inline-block;
+  vertical-align:middle;
+}
+@keyframes blink{0%,50%{opacity:1;}51%,100%{opacity:0;}}
+
+/* ── RUN BUTTON ── */
+.run-btn{
+  width:100%;margin-top:14px;
+  background:rgba(0,255,127,0.12);
+  border:1.5px solid rgba(0,255,127,0.4);
+  color:var(--green);
+  font-family:var(--mono);font-size:13px;
+  letter-spacing:2px;font-weight:600;
+  padding:13px;border-radius:8px;
+  cursor:pointer;
+  transition:all 0.2s;
+}
+.run-btn:hover{background:rgba(0,255,127,0.2);box-shadow:0 0 24px rgba(0,255,127,0.15);}
+.run-btn:disabled{opacity:0.4;cursor:not-allowed;}
+
+/* ── SCENARIO DOTS ── */
+.dots-row{
+  display:flex;justify-content:center;gap:8px;
+  margin-top:20px;
+}
+.dot-btn{
+  width:10px;height:10px;border-radius:50%;
+  border:none;cursor:pointer;
+  background:var(--border);transition:all 0.2s;padding:0;
+}
+.dot-btn.active{background:var(--green);width:28px;border-radius:5px;}
+
+/* ── INFO TOOLTIP ── */
+.info-tooltip{
+  position:fixed;
+  background:#111820;
+  border:1px solid var(--border);
+  padding:14px 16px;
+  border-radius:8px;
+  font-family:var(--mono);font-size:11px;
+  line-height:1.7;
+  max-width:280px;
+  z-index:1000;
+  pointer-events:none;
+  opacity:0;
+  transition:opacity 0.2s;
+  color:var(--text);
+}
+</style>
+</head>
+<body>
+
+<div class="title-block">
+  <h1>API <span>Gateway</span></h1>
+  <div class="subtitle">
+    <span>one entry point</span><span>·</span>
+    <span>auth</span><span>·</span>
+    <span>rate limit</span><span>·</span>
+    <span>route</span><span>·</span>
+    <span>transform</span>
+  </div>
+</div>
+
+<!-- Scenario bar -->
+<div class="scenario-row">
+  <span>SCENARIO <span id="scNum">1</span> / 6</span>
+  <div class="scenario-badge" id="scenarioBadge">GET /api/users/42</div>
+  <div class="scenario-nav">
+    <button id="scPrev">‹</button>
+    <button id="scNext">›</button>
+  </div>
+</div>
+
+<!-- Request bar -->
+<div class="request-bar">
+  <div class="method-badge method-GET" id="methodBadge">GET</div>
+  <div class="req-path" id="reqPath">/api/users/42</div>
+  <div class="token-badge token-valid" id="tokenBadge" onclick="toggleToken()">🔑 token ✓</div>
+</div>
+
+<!-- Diagram -->
+<div class="diagram-card">
+  <div class="diagram" id="diagram">
+    <div class="d-client">
+      <div class="d-client-icon">☰</div>
+      <div class="d-client-label">client</div>
+    </div>
+
+    <div class="d-arrow" id="arrowIn">
+      <div class="packet" id="pktIn"></div>
+    </div>
+
+    <div class="d-gateway">
+      <div class="d-gw-title">✦ API GATEWAY ✦</div>
+      <div class="d-stages">
+        <div class="d-stage" id="ds-auth">
+          <div class="d-stage-icon">🔒</div>
+          <div class="d-stage-label">Auth</div>
+        </div>
+        <div class="d-stage" id="ds-rate">
+          <div class="d-stage-icon">⚡</div>
+          <div class="d-stage-label">Rate<br>Limit</div>
+        </div>
+        <div class="d-stage" id="ds-route">
+          <div class="d-stage-icon">⇄</div>
+          <div class="d-stage-label">Route</div>
+        </div>
+        <div class="d-stage" id="ds-transform">
+          <div class="d-stage-icon">⚙</div>
+          <div class="d-stage-label">Trans<br>form</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="d-arrow" id="arrowOut">
+      <div class="packet" id="pktOut"></div>
+    </div>
+
+    <div class="d-services" id="dServices">
+      <div class="d-service" id="svc-user">user-service</div>
+      <div class="d-service" id="svc-product">product-service</div>
+      <div class="d-service" id="svc-auth">auth-service</div>
+    </div>
+  </div>
+
+  <div class="status-line">
+    <div class="status-dot idle" id="statusDot"></div>
+    <div class="status-text" id="statusText">awaiting request...</div>
+    <button class="status-collapse">—</button>
+  </div>
+</div>
+
+<!-- Pipeline stages -->
+<div class="stages-card">
+  <div class="stages-title">Pipeline Stages</div>
+  <div class="stage-row" id="row-auth">
+    <div class="stage-checkbox" id="cb-auth"></div>
+    <div class="stage-name" id="sn-auth">Auth</div>
+    <div class="stage-detail" id="sd-auth"></div>
+  </div>
+  <div class="stage-row" id="row-rate">
+    <div class="stage-checkbox" id="cb-rate"></div>
+    <div class="stage-name" id="sn-rate">Rate Limit</div>
+    <div class="stage-detail" id="sd-rate"></div>
+  </div>
+  <div class="stage-row" id="row-route">
+    <div class="stage-checkbox" id="cb-route"></div>
+    <div class="stage-name" id="sn-route">Routing</div>
+    <div class="stage-detail" id="sd-route"></div>
+  </div>
+  <div class="stage-row" id="row-transform">
+    <div class="stage-checkbox" id="cb-transform"></div>
+    <div class="stage-name" id="sn-transform">Transform</div>
+    <div class="stage-detail" id="sd-transform"></div>
+  </div>
+</div>
+
+<!-- HTTP Status codes -->
+<div class="status-codes">
+  <div class="code-btn c200" data-code="200" onclick="triggerCode(200)">
+    <div class="code-num">200</div><div class="code-label">OK</div>
+  </div>
+  <div class="code-btn c401" data-code="401" onclick="triggerCode(401)">
+    <div class="code-num">401</div><div class="code-label">Unauth</div>
+  </div>
+  <div class="code-btn c404" data-code="404" onclick="triggerCode(404)">
+    <div class="code-num">404</div><div class="code-label">Not Found</div>
+  </div>
+  <div class="code-btn c429" data-code="429" onclick="triggerCode(429)">
+    <div class="code-num">429</div><div class="code-label">Rate Limit</div>
+  </div>
+  <div class="code-btn c500" data-code="500" onclick="triggerCode(500)">
+    <div class="code-num">500</div><div class="code-label">Srv Error</div>
+  </div>
+  <div class="code-btn c503" data-code="503" onclick="triggerCode(503)">
+    <div class="code-num">503</div><div class="code-label">Unavail</div>
+  </div>
+</div>
+
+<!-- Terminal -->
+<div class="terminal">
+  <div class="term-header">
+    <div class="term-dot td1"></div>
+    <div class="term-dot td2"></div>
+    <div class="term-dot td3"></div>
+    <div class="term-title">gateway.log — bash — 80×24</div>
+  </div>
+  <div class="term-body" id="termBody"></div>
+  <div class="term-prompt">
+    <span class="ps">$</span>
+    <span class="cmd" id="termCmd">curl -X GET api.example.com/api/users/42</span>
+    <span class="cursor"></span>
+  </div>
+</div>
+
+<button class="run-btn" id="runBtn" onclick="runRequest()">▶ SEND REQUEST</button>
+
+<!-- Scenario dots -->
+<div class="dots-row" id="dotsRow"></div>
+
+<div class="info-tooltip" id="tooltip"></div>
+
+<script>
+// ════════════════════════════════════════════════════════
+//  SCENARIOS
+// ════════════════════════════════════════════════════════
+const SCENARIOS = [
+  {
+    name:'GET /api/users/42',
+    badge:'GET /users → ✓ 200 OK',
+    method:'GET', path:'/api/users/42', hasToken:true,
+    desc:'Normal authenticated request',
+    stages:[
+      {id:'auth',     result:'pass', detail:'JWT valid · sub:42 · exp:+1h'},
+      {id:'rate',     result:'pass', detail:'12/100 req/min'},
+      {id:'route',    result:'pass', detail:'→ user-service:3001'},
+      {id:'transform',result:'pass', detail:'camelCase → snake_case'},
+    ],
+    service:'svc-user',
+    code:200,
+    logs:[
+      {cls:'tl-arrow-in',  msg:'→ GET /api/users/42'},
+      {cls:'tl-ok',        msg:'✓ JWT verified · user_id=42'},
+      {cls:'tl-ok',        msg:'✓ Rate limit OK [12/100]'},
+      {cls:'tl-ok',        msg:'✓ Routed → user-service:3001'},
+      {cls:'tl-ok',        msg:'✓ Transform: response normalized'},
+      {cls:'tl-arrow-out', msg:'← 200 OK · {"id":42,"name":"Alice"}'},
+      {cls:'tl-latency',   msg:'Latency: 23ms'},
+    ]
+  },
+  {
+    name:'POST /api/orders',
+    badge:'POST /orders → ✓ 201',
+    method:'POST', path:'/api/orders', hasToken:true,
+    desc:'Create a new order',
+    stages:[
+      {id:'auth',     result:'pass', detail:'Bearer token valid · role:user'},
+      {id:'rate',     result:'pass', detail:'5/50 writes/min'},
+      {id:'route',    result:'pass', detail:'→ order-service:3002'},
+      {id:'transform',result:'pass', detail:'Add X-Request-ID header'},
+    ],
+    service:'svc-product',
+    code:200,
+    logs:[
+      {cls:'tl-arrow-in',  msg:'→ POST /api/orders · body:138B'},
+      {cls:'tl-ok',        msg:'✓ Auth passed · role=user'},
+      {cls:'tl-ok',        msg:'✓ Write rate OK [5/50]'},
+      {cls:'tl-ok',        msg:'✓ Routed → order-service:3002'},
+      {cls:'tl-ok',        msg:'✓ X-Request-ID injected'},
+      {cls:'tl-arrow-out', msg:'← 201 Created · order_id=9871'},
+      {cls:'tl-latency',   msg:'Latency: 41ms'},
+    ]
+  },
+  {
+    name:'GET /api/users/42 (no token)',
+    badge:'/users → ⚠ throttled',
+    method:'GET', path:'/api/users/42', hasToken:false,
+    desc:'Missing or invalid token → 401',
+    stages:[
+      {id:'auth',     result:'fail', detail:'Authorization header missing'},
+      {id:'rate',     result:'skip', detail:'—'},
+      {id:'route',    result:'skip', detail:'—'},
+      {id:'transform',result:'skip', detail:'—'},
+    ],
+    service:null,
+    code:401,
+    logs:[
+      {cls:'tl-arrow-in',  msg:'→ GET /api/users/42'},
+      {cls:'tl-err',       msg:'✗ Authorization header missing/invalid'},
+      {cls:'tl-arrow-out', msg:'← 401 Unauthorized — no token'},
+      {cls:'tl-latency',   msg:'Latency: 7ms'},
+    ]
+  },
+  {
+    name:'GET /api/users/42 (rate limit)',
+    badge:'/users → 429 Too Many',
+    method:'GET', path:'/api/users/42', hasToken:true,
+    desc:'Too many requests from this client',
+    stages:[
+      {id:'auth',     result:'pass', detail:'JWT valid · user_id=42'},
+      {id:'rate',     result:'fail', detail:'100/100 req/min exceeded!'},
+      {id:'route',    result:'skip', detail:'—'},
+      {id:'transform',result:'skip', detail:'—'},
+    ],
+    service:null,
+    code:429,
+    logs:[
+      {cls:'tl-arrow-in', msg:'→ GET /api/users/42'},
+      {cls:'tl-ok',       msg:'✓ Auth passed'},
+      {cls:'tl-err',      msg:'✗ Rate limit exceeded [100/100]'},
+      {cls:'tl-warn',     msg:'⚠ Retry-After: 60s'},
+      {cls:'tl-arrow-out',msg:'← 429 Too Many Requests'},
+      {cls:'tl-latency',  msg:'Latency: 4ms'},
+    ]
+  },
+  {
+    name:'GET /api/notfound',
+    badge:'/notfound → 404',
+    method:'GET', path:'/api/notfound', hasToken:true,
+    desc:'Route not matched by gateway',
+    stages:[
+      {id:'auth',     result:'pass', detail:'JWT valid'},
+      {id:'rate',     result:'pass', detail:'8/100 req/min'},
+      {id:'route',    result:'fail', detail:'No matching route found'},
+      {id:'transform',result:'skip', detail:'—'},
+    ],
+    service:null,
+    code:404,
+    logs:[
+      {cls:'tl-arrow-in', msg:'→ GET /api/notfound'},
+      {cls:'tl-ok',       msg:'✓ Auth passed'},
+      {cls:'tl-ok',       msg:'✓ Rate limit OK'},
+      {cls:'tl-err',      msg:'✗ No route match for /api/notfound'},
+      {cls:'tl-arrow-out',msg:'← 404 Not Found'},
+      {cls:'tl-latency',  msg:'Latency: 6ms'},
+    ]
+  },
+  {
+    name:'GET /api/users/42 (srv down)',
+    badge:'/users → 503 Down',
+    method:'GET', path:'/api/users/42', hasToken:true,
+    desc:'Upstream service unavailable',
+    stages:[
+      {id:'auth',     result:'pass', detail:'JWT valid'},
+      {id:'rate',     result:'pass', detail:'3/100 req/min'},
+      {id:'route',    result:'pass', detail:'→ user-service:3001'},
+      {id:'transform',result:'fail', detail:'upstream timeout 5000ms'},
+    ],
+    service:'svc-user',
+    code:503,
+    logs:[
+      {cls:'tl-arrow-in', msg:'→ GET /api/users/42'},
+      {cls:'tl-ok',       msg:'✓ Auth OK'},
+      {cls:'tl-ok',       msg:'✓ Rate limit OK'},
+      {cls:'tl-ok',       msg:'✓ Routed → user-service:3001'},
+      {cls:'tl-err',      msg:'✗ Upstream timeout after 5000ms'},
+      {cls:'tl-err',      msg:'✗ Circuit breaker OPEN'},
+      {cls:'tl-arrow-out',msg:'← 503 Service Unavailable'},
+      {cls:'tl-latency',  msg:'Latency: 5001ms'},
+    ]
+  }
+];
+
+let currentScenario = 0;
+let tokenOverride = null;
+let running = false;
+
+function getScenario(){ return SCENARIOS[currentScenario]; }
+
+function loadScenario(idx, animate=false){
+  currentScenario = idx;
+  tokenOverride = null;
+  const sc = getScenario();
+
+  document.getElementById('scNum').textContent = idx+1;
+  document.getElementById('scenarioBadge').textContent = sc.badge;
+
+  const mb = document.getElementById('methodBadge');
+  mb.textContent = sc.method;
+  mb.className = 'method-badge method-'+sc.method;
+
+  document.getElementById('reqPath').textContent = sc.path;
+  document.getElementById('termCmd').textContent =
+    `curl -X ${sc.method} api.example.com${sc.path}` +
+    (sc.hasToken ? ' -H "Authorization: Bearer ..."' : '');
+
+  const tb = document.getElementById('tokenBadge');
+  if(sc.hasToken){
+    tb.className='token-badge token-valid';
+    tb.textContent='🔑 token ✓';
+  } else {
+    tb.className='token-badge token-invalid';
+    tb.textContent='⛔ no token';
+  }
+
+  // Reset stages
+  resetStages();
+  resetDiagram();
+  clearTerminal();
+  document.getElementById('termBody').innerHTML =
+    `<div class="tl"><span class="tl-time">&gt;</span><span class="tl-dim">awaiting request...</span></div>`;
+
+  setStatus('idle','awaiting request...');
+  updateDots();
+  document.getElementById('runBtn').disabled = false;
+}
+
+function resetStages(){
+  ['auth','rate','route','transform'].forEach(s => {
+    setStage(s,'');
+  });
+}
+
+function resetDiagram(){
+  ['ds-auth','ds-rate','ds-route','ds-transform'].forEach(id => {
+    const el = document.getElementById(id);
+    el.className = 'd-stage';
+  });
+  ['svc-user','svc-product','svc-auth'].forEach(id => {
+    document.getElementById(id).className = 'd-service';
+  });
+}
+
+function clearTerminal(){
+  document.getElementById('termBody').innerHTML = '';
+}
+
+function setStage(name, state, detail=''){
+  const cb = document.getElementById('cb-'+name);
+  const sn = document.getElementById('sn-'+name);
+  const sd = document.getElementById('sd-'+name);
+  cb.className = 'stage-checkbox ' + state;
+  sn.className = 'stage-name ' + state;
+  sd.className = 'stage-detail ' + state;
+  if(state==='pass') cb.textContent = '✓';
+  else if(state==='fail') cb.textContent = '✗';
+  else if(state==='active') cb.textContent = '···';
+  else cb.textContent = '';
+  sd.textContent = detail;
+
+  const ds = document.getElementById('ds-'+name);
+  if(ds){
+    ds.className = 'd-stage' + (state==='active'?' active':state==='pass'?' pass':state==='fail'?' fail':'');
+  }
+}
+
+function setStatus(type, msg){
+  const dot = document.getElementById('statusDot');
+  const txt = document.getElementById('statusText');
+  dot.className = 'status-dot ' + type;
+  txt.textContent = msg;
+  txt.className = 'status-text' + (type!=='idle'?' active':'');
+}
+
+function addLog(cls, msg, delay=0){
+  return new Promise(res => {
+    setTimeout(() => {
+      const tb = document.getElementById('termBody');
+      const ts = new Date().toLocaleTimeString('en',{hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'});
+      const ms = String(Math.floor(Math.random()*999)).padStart(3,'0');
+      const div = document.createElement('div');
+      div.className = 'tl';
+      div.innerHTML = `<span class="tl-time">${ts}.${ms}</span><span class="${cls}">${msg}</span>`;
+      tb.appendChild(div);
+      tb.scrollTop = tb.scrollHeight;
+      res();
+    }, delay);
+  });
+}
+
+// ── Packet animation ──
+function animatePacket(id, fromPct, toPct, duration, color='#00ff7f'){
+  const el = document.getElementById(id);
+  if(!el) return new Promise(r=>r());
+  el.style.background = color;
+  el.style.boxShadow = `0 0 8px ${color}`;
+  el.style.opacity = '1';
+  el.style.left = fromPct + '%';
+  el.style.transition = `left ${duration}ms linear`;
+  return new Promise(res => {
+    setTimeout(() => { el.style.left = toPct + '%'; }, 20);
+    setTimeout(() => { el.style.opacity = '0'; res(); }, duration + 40);
+  });
+}
+
+// ── Main run ──
+async function runRequest(){
+  if(running) return;
+  running = true;
+  document.getElementById('runBtn').disabled = true;
+
+  const sc = getScenario();
+  const hasToken = tokenOverride !== null ? tokenOverride : sc.hasToken;
+
+  resetStages();
+  resetDiagram();
+  clearTerminal();
+  setStatus('running', 'Processing request...');
+
+  // Packet in
+  animatePacket('pktIn', 0, 100, 400);
+  await sleep(200);
+  addLog('tl-arrow-in', `→ ${sc.method} ${sc.path}`);
+  await sleep(350);
+
+  let blocked = false;
+  const STAGE_IDS = ['auth','rate','route','transform'];
+  const failColor = '#f87171';
+  const passColor = '#00ff7f';
+  const skipColor = '#2a4560';
+
+  for(let i=0; i<sc.stages.length; i++){
+    const stage = sc.stages[i];
+    const result = (stage.id==='auth' && tokenOverride===false) ? 'fail' :
+                   (stage.id==='auth' && tokenOverride===true)  ? 'pass' :
+                   stage.result;
+
+    if(blocked || result==='skip'){
+      setStage(stage.id, '', '—');
+      continue;
+    }
+
+    setStage(stage.id, 'active', '...');
+    setStatus('running', `Running ${stage.id} check...`);
+    await sleep(420);
+
+    if(result==='pass'){
+      setStage(stage.id, 'pass', stage.detail);
+      await addLog('tl-ok', `✓ ${capitalize(stage.id)} passed · ${stage.detail}`, 0);
+    } else {
+      setStage(stage.id, 'fail', stage.detail);
+      await addLog('tl-err', `✗ ${capitalize(stage.id)} failed · ${stage.detail}`, 0);
+      blocked = true;
+    }
+    await sleep(180);
+  }
+
+  // Show service
+  if(!blocked && sc.service){
+    document.getElementById(sc.service).className = 'd-service lit';
+    animatePacket('pktOut', 0, 100, 400);
+    await sleep(300);
+  }
+
+  // Response
+  const code = blocked ?
+    (sc.stages.find(s=>s.result==='fail')?.id==='auth' ? 401 :
+     sc.stages.find(s=>s.result==='fail')?.id==='rate' ? 429 :
+     sc.stages.find(s=>s.result==='fail')?.id==='route' ? 404 : 503)
+    : sc.code;
+
+  const codeClass = code<300?'tl-ok':code<500?'tl-warn':'tl-err';
+  const codeMsg = {200:'OK · {"id":42,"name":"Alice"}', 201:'Created', 401:'Unauthorized', 404:'Not Found', 429:'Too Many Requests', 500:'Internal Server Error', 503:'Service Unavailable'};
+  await addLog('tl-arrow-out', `← ${code} ${codeMsg[code]||''}`, 0);
+  await addLog('tl-latency', `Latency: ${blocked ? Math.floor(Math.random()*30)+2 : Math.floor(Math.random()*80)+15}ms`, 100);
+
+  // Highlight status code button
+  document.querySelectorAll('.code-btn').forEach(b=>b.classList.remove('active'));
+  const cb = document.querySelector(`.c${code}`);
+  if(cb) cb.classList.add('active');
+
+  const statusMsg = code===200||code===201 ? '✓ Request completed successfully' :
+                    code===401 ? '⚠ Authentication required' :
+                    code===429 ? '⚠ Rate limit exceeded' :
+                    code===404 ? '⚠ Route not found' :
+                    code===503 ? '✗ Service unavailable' : `Response: ${code}`;
+  setStatus(code<300?'ok':'err', statusMsg);
+
+  await sleep(200);
+  running = false;
+  document.getElementById('runBtn').disabled = false;
+}
+
+function capitalize(s){ return s.charAt(0).toUpperCase()+s.slice(1); }
+function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+
+function toggleToken(){
+  const sc = getScenario();
+  const current = tokenOverride!==null ? tokenOverride : sc.hasToken;
+  tokenOverride = !current;
+  const tb = document.getElementById('tokenBadge');
+  if(tokenOverride){
+    tb.className='token-badge token-valid';
+    tb.textContent='🔑 token ✓';
+  } else {
+    tb.className='token-badge token-invalid';
+    tb.textContent='⛔ no token';
+  }
+  resetStages();
+  clearTerminal();
+  setStatus('idle','Token changed — send request to test');
+}
+
+function triggerCode(code){
+  // Find scenario with that code
+  const idx = SCENARIOS.findIndex(s => {
+    const blocked = s.stages.some(st=>st.result==='fail');
+    if(!blocked && s.code===code) return true;
+    const failStage = s.stages.find(st=>st.result==='fail');
+    if(!failStage) return false;
+    const fc = failStage.id==='auth'?401:failStage.id==='rate'?429:failStage.id==='route'?404:503;
+    return fc===code;
+  });
+  if(idx>=0) loadScenario(idx);
+}
+
+function updateDots(){
+  const row = document.getElementById('dotsRow');
+  row.innerHTML = SCENARIOS.map((s,i) =>
+    `<button class="dot-btn ${i===currentScenario?'active':''}" onclick="loadScenario(${i})"></button>`
+  ).join('');
+}
+
+document.getElementById('scNext').onclick = () => loadScenario((currentScenario+1)%SCENARIOS.length);
+document.getElementById('scPrev').onclick = () => loadScenario((currentScenario-1+SCENARIOS.length)%SCENARIOS.length);
+
+// ── Init ──
+loadScenario(0);
+</script>
+</body>
+</html>
