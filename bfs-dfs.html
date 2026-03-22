@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BFS vs DFS Visualizer</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#080b10;--card:#0f1419;--card2:#141c24;--border:#1a2535;
+  --blue:#4da6ff;--yellow:#f5c842;--green:#3ddc84;--red:#ff5c5c;
+  --purple:#b57bff;--cyan:#00e5ff;--orange:#ff8c42;
+  --text:#c9d1d9;--muted:#3a5570;--white:#f0f6fc;
+  --mono:'JetBrains Mono',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{
+  background:var(--bg);color:var(--text);
+  font-family:'Rajdhani',sans-serif;
+  min-height:100vh;overflow-x:hidden;
+}
+body::before{
+  content:'';position:fixed;inset:0;
+  background:
+    radial-gradient(ellipse 40% 40% at 15% 50%,rgba(77,166,255,.05) 0%,transparent 60%),
+    radial-gradient(ellipse 40% 40% at 85% 50%,rgba(245,200,66,.05) 0%,transparent 60%);
+  pointer-events:none;z-index:0;
+}
+
+/* ── HEADER ── */
+header{
+  text-align:center;padding:28px 20px 16px;
+  position:relative;z-index:1;
+}
+h1{
+  font-family:'Orbitron',monospace;font-weight:900;
+  font-size:clamp(28px,5vw,56px);letter-spacing:3px;
+  margin-bottom:8px;
+}
+h1 .bfs{color:var(--blue);text-shadow:0 0 30px rgba(77,166,255,.5);}
+h1 .vs{color:var(--muted);font-size:.6em;margin:0 12px;}
+h1 .dfs{color:var(--yellow);text-shadow:0 0 30px rgba(245,200,66,.5);}
+.subtitle{font-size:14px;color:var(--muted);letter-spacing:.5px;}
+
+/* ── CONTROLS ── */
+.controls{
+  display:flex;align-items:center;justify-content:center;
+  gap:12px;flex-wrap:wrap;padding:14px 20px;
+  position:relative;z-index:1;
+}
+.ctrl-group{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11px;color:var(--muted);}
+input[type=range]{accent-color:var(--blue);width:80px;}
+button.btn{
+  font-family:var(--mono);font-size:11px;letter-spacing:1px;
+  padding:8px 18px;border-radius:5px;cursor:pointer;
+  transition:all .15s;border:1px solid;
+}
+.btn-start{background:rgba(77,166,255,.1);border-color:rgba(77,166,255,.5);color:var(--blue);}
+.btn-start:hover{background:rgba(77,166,255,.2);box-shadow:0 0 16px rgba(77,166,255,.2);}
+.btn-step{background:rgba(61,220,132,.08);border-color:rgba(61,220,132,.4);color:var(--green);}
+.btn-step:hover{background:rgba(61,220,132,.16);}
+.btn-stop{background:rgba(255,92,92,.08);border-color:rgba(255,92,92,.35);color:var(--red);}
+.btn-reset{background:var(--card2);border-color:var(--border);color:var(--muted);}
+.btn-reset:hover{border-color:var(--muted);color:var(--text);}
+.btn-maze{background:rgba(181,123,255,.1);border-color:rgba(181,123,255,.4);color:var(--purple);}
+.btn-maze:hover{background:rgba(181,123,255,.2);}
+button.btn:disabled{opacity:.3;cursor:not-allowed;}
+.size-val{font-family:'Orbitron',monospace;font-size:14px;color:var(--text);width:30px;text-align:center;}
+
+/* ── GRIDS ── */
+.grids{
+  display:grid;grid-template-columns:1fr 1fr;gap:20px;
+  padding:0 20px 20px;max-width:1400px;margin:0 auto;
+  position:relative;z-index:1;
+}
+@media(max-width:760px){.grids{grid-template-columns:1fr;}}
+
+.grid-panel{
+  background:var(--card);border:1px solid var(--border);border-radius:14px;
+  overflow:hidden;
+}
+.grid-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 18px;border-bottom:1px solid var(--border);
+}
+.grid-title{
+  font-family:'Orbitron',monospace;font-size:16px;font-weight:700;letter-spacing:2px;
+}
+.grid-stats{font-family:var(--mono);font-size:11px;color:var(--muted);}
+.grid-stats span{font-weight:700;}
+.bfs-title{color:var(--blue);text-shadow:0 0 12px rgba(77,166,255,.4);}
+.dfs-title{color:var(--yellow);text-shadow:0 0 12px rgba(245,200,66,.4);}
+.bfs-stat span{color:var(--blue);}
+.dfs-stat span{color:var(--yellow);}
+
+.canvas-wrap{padding:10px;background:var(--card2);}
+canvas{display:block;width:100%;border-radius:6px;}
+
+/* ── INFO BAR ── */
+.info-bar{
+  display:grid;grid-template-columns:1fr 1fr;gap:0;
+  border-top:1px solid var(--border);
+  max-width:1400px;margin:0 auto;position:relative;z-index:1;
+  background:var(--card);border:1px solid var(--border);border-radius:12px;
+  overflow:hidden;margin:0 20px 20px;
+}
+.info-half{padding:14px 20px;border-right:1px solid var(--border);}
+.info-half:last-child{border-right:none;}
+.info-title{
+  font-family:'Orbitron',monospace;font-size:10px;letter-spacing:3px;
+  margin-bottom:10px;
+}
+.info-row{display:flex;align-items:flex-start;gap:8px;margin-bottom:7px;font-size:13px;line-height:1.5;}
+.info-row .dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;margin-top:3px;}
+.info-row .label{color:var(--text);font-weight:600;}
+.info-row .desc{color:var(--muted);font-size:12px;}
+
+/* ── CODE PANELS ── */
+.code-panels{
+  display:grid;grid-template-columns:1fr 1fr;gap:20px;
+  padding:0 20px 28px;max-width:1400px;margin:0 auto;
+  position:relative;z-index:1;
+}
+@media(max-width:760px){.code-panels{grid-template-columns:1fr;}}
+.code-card{
+  background:var(--card);border:1px solid var(--border);border-radius:12px;
+  overflow:hidden;
+}
+.code-header{
+  padding:11px 16px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:10px;
+  font-family:var(--mono);font-size:11px;letter-spacing:2px;
+}
+.code-dot{width:10px;height:10px;border-radius:50%;}
+.code-body{
+  padding:14px 16px;font-family:var(--mono);font-size:11px;
+  line-height:1.9;background:#010409;
+}
+.cl{padding:1px 6px;margin:0 -6px;border-radius:3px;transition:background .2s;}
+.cl.hl-b{background:rgba(77,166,255,.15);border-left:2px solid var(--blue);}
+.cl.hl-y{background:rgba(245,200,66,.12);border-left:2px solid var(--yellow);}
+.kw{color:#f87171;}.fn{color:#60a5fa;}.cm{color:#3a5570;}.st{color:var(--yellow);}.ds{color:var(--purple);}
+
+/* Legend */
+.legend{
+  display:flex;gap:16px;flex-wrap:wrap;
+  padding:10px 20px;justify-content:center;
+  position:relative;z-index:1;margin-bottom:8px;
+}
+.leg{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10px;color:var(--muted);}
+.leg-sq{width:14px;height:14px;border-radius:3px;}
+</style>
+</head>
+<body>
+
+<header>
+  <h1><span class="bfs">BFS</span><span class="vs">vs</span><span class="dfs">DFS</span></h1>
+  <div class="subtitle">Aynı labirent, farklı stratejiler — BFS katman katman genişler, DFS derinlere dalar</div>
+</header>
+
+<!-- Controls -->
+<div class="controls">
+  <div class="ctrl-group">
+    BOYUT
+    <button class="btn btn-reset" style="width:28px;height:28px;padding:0;font-size:16px;" onclick="changeSize(-1)">−</button>
+    <div class="size-val" id="sizeVal">25</div>
+    <button class="btn btn-reset" style="width:28px;height:28px;padding:0;font-size:16px;" onclick="changeSize(1)">+</button>
+  </div>
+  <div class="ctrl-group">
+    HIZ <input type="range" id="spd" min="1" max="20" value="8">
+    <span id="spdLbl" style="width:28px">8×</span>
+  </div>
+  <button class="btn btn-maze"  onclick="newMaze()">⟳ YENİ LABİRENT</button>
+  <button class="btn btn-start" id="btnGo"   onclick="startBoth()">▶ BAŞLAT</button>
+  <button class="btn btn-step"  id="btnStep" onclick="stepBoth()" disabled>⏭ ADIM</button>
+  <button class="btn btn-stop"  id="btnStop" onclick="stopBoth()" disabled>⏸ DUR</button>
+  <button class="btn btn-reset" onclick="resetBoth()">↺ SIFIRLA</button>
+</div>
+
+<!-- Legend -->
+<div class="legend">
+  <div class="leg"><div class="leg-sq" style="background:#3ddc84"></div>BAŞLANGIÇ</div>
+  <div class="leg"><div class="leg-sq" style="background:#ff5c5c"></div>BİTİŞ</div>
+  <div class="leg"><div class="leg-sq" style="background:#1a2535"></div>DUVAR</div>
+  <div class="leg"><div class="leg-sq" style="background:rgba(77,166,255,.35)"></div>BFS ZİYARET</div>
+  <div class="leg"><div class="leg-sq" style="background:rgba(245,200,66,.35)"></div>DFS ZİYARET</div>
+  <div class="leg"><div class="leg-sq" style="background:#4da6ff"></div>BFS SINIR</div>
+  <div class="leg"><div class="leg-sq" style="background:#f5c842"></div>DFS SINIR</div>
+  <div class="leg"><div class="leg-sq" style="background:#ffffff"></div>EN KISA YOL</div>
+</div>
+
+<!-- Grids -->
+<div class="grids">
+  <div class="grid-panel">
+    <div class="grid-header">
+      <div class="grid-title bfs-title">BFS</div>
+      <div class="grid-stats bfs-stat">
+        Ziyaret <span id="bfsV">0</span> · Yol <span id="bfsP">0</span> · Kuyruk <span id="bfsQ">0</span>
+      </div>
+    </div>
+    <div class="canvas-wrap"><canvas id="bfsCanvas"></canvas></div>
+  </div>
+  <div class="grid-panel">
+    <div class="grid-header">
+      <div class="grid-title dfs-title">DFS</div>
+      <div class="grid-stats dfs-stat">
+        Ziyaret <span id="dfsV">0</span> · Yol <span id="dfsP">0</span> · Yığın <span id="dfsQ">0</span>
+      </div>
+    </div>
+    <div class="canvas-wrap"><canvas id="dfsCanvas"></canvas></div>
+  </div>
+</div>
+
+<!-- Info -->
+<div class="info-bar">
+  <div class="info-half">
+    <div class="info-title" style="color:var(--blue)">BFS — GENİŞLİK ÖNCE ARAMA</div>
+    <div class="info-row">
+      <div class="dot" style="background:var(--blue)"></div>
+      <div><div class="label">Veri Yapısı: Kuyruk (Queue)</div>
+      <div class="desc">FIFO — ilk eklenen ilk işlenir</div></div>
+    </div>
+    <div class="info-row">
+      <div class="dot" style="background:var(--green)"></div>
+      <div><div class="label">Her zaman en kısa yolu bulur</div>
+      <div class="desc">Ağırlıksız graf için optimal</div></div>
+    </div>
+    <div class="info-row">
+      <div class="dot" style="background:var(--red)"></div>
+      <div><div class="label">O(V+E) bellek kullanır</div>
+      <div class="desc">Büyük grafta yavaş olabilir</div></div>
+    </div>
+    <div class="info-row">
+      <div class="dot" style="background:var(--yellow)"></div>
+      <div><div class="label">Dalga gibi yayılır</div>
+      <div class="desc">Eşit mesafeleri önce ziyaret eder</div></div>
+    </div>
+  </div>
+  <div class="info-half">
+    <div class="info-title" style="color:var(--yellow)">DFS — DERİNLİK ÖNCE ARAMA</div>
+    <div class="info-row">
+      <div class="dot" style="background:var(--yellow)"></div>
+      <div><div class="label">Veri Yapısı: Yığın (Stack)</div>
+      <div class="desc">LIFO — son eklenen ilk işlenir</div></div>
+    </div>
+    <div class="info-row">
+      <div class="dot" style="background:var(--orange)"></div>
+      <div><div class="label">En kısa yolu garanti etmez</div>
+      <div class="desc">İlk bulduğu yolu döndürür</div></div>
+    </div>
+    <div class="info-row">
+      <div class="dot" style="background:var(--green)"></div>
+      <div><div class="label">Az bellek kullanır</div>
+      <div class="desc">Yalnızca aktif yolu saklar</div></div>
+    </div>
+    <div class="info-row">
+      <div class="dot" style="background:var(--purple)"></div>
+      <div><div class="label">Derine dalar</div>
+      <div class="desc">Bir yolu sonuna kadar keşfeder</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Code panels -->
+<div class="code-panels">
+  <div class="code-card">
+    <div class="code-header" style="color:var(--blue);">
+      <div class="code-dot" style="background:var(--blue)"></div>
+      BFS — KUYRUK (QUEUE)
+    </div>
+    <div class="code-body" id="bfsCode">
+<div class="cl" id="bc0"><span class="kw">def</span> <span class="fn">bfs</span>(grid, start, end):</div>
+<div class="cl" id="bc1">  queue <span class="st">=</span> <span class="ds">deque</span>([start])  <span class="cm"># Kuyruk</span></div>
+<div class="cl" id="bc2">  visited <span class="st">=</span> {start}      <span class="cm"># Ziyaret edildi</span></div>
+<div class="cl" id="bc3">  parent <span class="st">=</span> {start: <span class="st">None</span>}</div>
+<div class="cl" id="bc4">&nbsp;</div>
+<div class="cl" id="bc5">  <span class="kw">while</span> queue:           <span class="cm"># Kuyruk doluysa</span></div>
+<div class="cl" id="bc6">    node <span class="st">=</span> queue.<span class="fn">popleft</span>() <span class="cm"># ← Sol'dan al</span></div>
+<div class="cl" id="bc7">    <span class="kw">if</span> node <span class="st">==</span> end: <span class="kw">break</span> <span class="cm"># Hedefe ulaştı!</span></div>
+<div class="cl" id="bc8">    <span class="kw">for</span> nb <span class="kw">in</span> <span class="fn">neighbors</span>(node):</div>
+<div class="cl" id="bc9">      <span class="kw">if</span> nb <span class="st">not in</span> visited:</div>
+<div class="cl" id="bc10">        visited.<span class="fn">add</span>(nb)    <span class="cm"># Ziyaret et</span></div>
+<div class="cl" id="bc11">        parent[nb] <span class="st">=</span> node</div>
+<div class="cl" id="bc12">        queue.<span class="fn">append</span>(nb)  <span class="cm"># Sağa ekle →</span></div>
+<div class="cl" id="bc13">  <span class="kw">return</span> <span class="fn">reconstruct</span>(parent)</div>
+    </div>
+  </div>
+  <div class="code-card">
+    <div class="code-header" style="color:var(--yellow);">
+      <div class="code-dot" style="background:var(--yellow)"></div>
+      DFS — YIĞIN (STACK)
+    </div>
+    <div class="code-body" id="dfsCode">
+<div class="cl" id="dc0"><span class="kw">def</span> <span class="fn">dfs</span>(grid, start, end):</div>
+<div class="cl" id="dc1">  stack <span class="st">=</span> [start]      <span class="cm"># Yığın (Stack)</span></div>
+<div class="cl" id="dc2">  visited <span class="st">=</span> {start}    <span class="cm"># Ziyaret edildi</span></div>
+<div class="cl" id="dc3">  parent <span class="st">=</span> {start: <span class="st">None</span>}</div>
+<div class="cl" id="dc4">&nbsp;</div>
+<div class="cl" id="dc5">  <span class="kw">while</span> stack:         <span class="cm"># Yığın doluysa</span></div>
+<div class="cl" id="dc6">    node <span class="st">=</span> stack.<span class="fn">pop</span>()  <span class="cm"># ← Üstten al</span></div>
+<div class="cl" id="dc7">    <span class="kw">if</span> node <span class="st">==</span> end: <span class="kw">break</span><span class="cm"># Hedefe ulaştı!</span></div>
+<div class="cl" id="dc8">    <span class="kw">for</span> nb <span class="kw">in</span> <span class="fn">neighbors</span>(node):</div>
+<div class="cl" id="dc9">      <span class="kw">if</span> nb <span class="st">not in</span> visited:</div>
+<div class="cl" id="dc10">        visited.<span class="fn">add</span>(nb)  <span class="cm"># Ziyaret et</span></div>
+<div class="cl" id="dc11">        parent[nb] <span class="st">=</span> node</div>
+<div class="cl" id="dc12">        stack.<span class="fn">append</span>(nb) <span class="cm"># Üste ekle ↑</span></div>
+<div class="cl" id="dc13">  <span class="kw">return</span> <span class="fn">reconstruct</span>(parent)</div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ══════════════════════════════════════════
+   CONFIG
+══════════════════════════════════════════ */
+let GRID_SIZE = 25;
+let grid = [];   // 0=open, 1=wall
+let START, END;
+
+const bfsC = document.getElementById("bfsCanvas");
+const dfsC = document.getElementById("dfsCanvas");
+const bx   = bfsC.getContext("2d");
+const dx   = dfsC.getContext("2d");
+
+/* Algo states */
+let bfsState=null, dfsState=null;
+let running=false, animTimer=null;
+let batchSize=4; // steps per frame
+
+/* ══════════════════════════════════════════
+   MAZE GENERATION (Recursive Backtracker)
+══════════════════════════════════════════ */
+function generateMaze(){
+  const G=GRID_SIZE;
+  grid=Array.from({length:G},()=>new Array(G).fill(1));
+
+  function carve(r,c){
+    const dirs=[[0,2],[2,0],[0,-2],[-2,0]].sort(()=>Math.random()-.5);
+    grid[r][c]=0;
+    for(const[dr,dc]of dirs){
+      const nr=r+dr,nc=c+dc;
+      if(nr>=0&&nr<G&&nc>=0&&nc<G&&grid[nr][nc]===1){
+        grid[r+dr/2][c+dc/2]=0;
+        carve(nr,nc);
+      }
+    }
+  }
+  carve(1,1);
+
+  // Ensure start/end open
+  START={r:1,c:1};
+  END={r:G-2,c:G-2};
+  grid[START.r][START.c]=0;
+  grid[END.r][END.c]=0;
+  // Open extra passages for richer maze
+  for(let i=0;i<Math.floor(G*G*0.04);i++){
+    const r=1+Math.floor(Math.random()*(G-2));
+    const c=1+Math.floor(Math.random()*(G-2));
+    grid[r][c]=0;
+  }
+}
+
+/* ══════════════════════════════════════════
+   INIT ALGO STATES
+══════════════════════════════════════════ */
+function initBFS(){
+  const key=`${START.r},${START.c}`;
+  return {
+    queue:[{r:START.r,c:START.c}],
+    visited:new Set([key]),
+    parent:{[key]:null},
+    frontier:new Set([key]),
+    path:[],
+    done:false,
+    found:false,
+    visitCount:0,
+    codeHL:1,
+  };
+}
+
+function initDFS(){
+  const key=`${START.r},${START.c}`;
+  return {
+    stack:[{r:START.r,c:START.c}],
+    visited:new Set([key]),
+    parent:{[key]:null},
+    frontier:new Set([key]),
+    path:[],
+    done:false,
+    found:false,
+    visitCount:0,
+    codeHL:1,
+  };
+}
+
+/* ══════════════════════════════════════════
+   STEP FUNCTIONS
+══════════════════════════════════════════ */
+const DIRS=[[0,1],[0,-1],[1,0],[-1,0]];
+function key(r,c){return`${r},${c}`;}
+function inBounds(r,c){return r>=0&&r<GRID_SIZE&&c>=0&&c<GRID_SIZE;}
+
+function stepBFS(state){
+  if(state.done||state.queue.length===0){state.done=true;return;}
+  const {r,c}=state.queue.shift();
+  const k=key(r,c);
+  state.frontier.delete(k);
+  state.visitCount++;
+  state.codeHL=6;
+
+  if(r===END.r&&c===END.c){
+    state.done=true;state.found=true;
+    state.path=reconstructPath(state.parent,key(END.r,END.c));
+    highlightCode("b",7);return;
+  }
+  highlightCode("b",8);
+
+  const newFrontier=[];
+  for(const[dr,dc]of DIRS){
+    const nr=r+dr,nc=c+dc;
+    if(!inBounds(nr,nc)||grid[nr][nc]===1) continue;
+    const nk=key(nr,nc);
+    if(!state.visited.has(nk)){
+      state.visited.add(nk);
+      state.parent[nk]=k;
+      state.queue.push({r:nr,c:nc});
+      state.frontier.add(nk);
+    }
+  }
+  highlightCode("b",12);
+  updateBFSStats(state);
+}
+
+function stepDFS(state){
+  if(state.done||state.stack.length===0){state.done=true;return;}
+  const {r,c}=state.stack.pop();
+  const k=key(r,c);
+  state.frontier.delete(k);
+  state.visitCount++;
+  state.codeHL=6;
+
+  if(r===END.r&&c===END.c){
+    state.done=true;state.found=true;
+    state.path=reconstructPath(state.parent,key(END.r,END.c));
+    highlightCode("d",7);return;
+  }
+  highlightCode("d",8);
+
+  for(const[dr,dc]of DIRS){
+    const nr=r+dr,nc=c+dc;
+    if(!inBounds(nr,nc)||grid[nr][nc]===1) continue;
+    const nk=key(nr,nc);
+    if(!state.visited.has(nk)){
+      state.visited.add(nk);
+      state.parent[nk]=k;
+      state.stack.push({r:nr,c:nc});
+      state.frontier.add(nk);
+    }
+  }
+  highlightCode("d",12);
+  updateDFSStats(state);
+}
+
+function reconstructPath(parent,endKey){
+  const path=[];let cur=endKey;
+  while(cur!==null){path.push(cur);cur=parent[cur];}
+  return path.reverse();
+}
+
+/* ══════════════════════════════════════════
+   DRAW
+══════════════════════════════════════════ */
+function setupCanvas(c){
+  const p=c.parentElement;
+  const sz=p.clientWidth-20;
+  c.width=c.height=sz;
+}
+
+function drawGrid(ctx,canvas,state,color){
+  const sz=canvas.width;
+  const cs=sz/GRID_SIZE;
+
+  // Background
+  ctx.fillStyle="#0d1520";
+  ctx.fillRect(0,0,sz,sz);
+
+  const frontColor  = color==="b" ? "#4da6ff" : "#f5c842";
+  const visitColor  = color==="b" ? "rgba(77,166,255,.45)" : "rgba(245,200,66,.42)";
+  const pathSet = state ? new Set(state.path) : new Set();
+
+  for(let r=0;r<GRID_SIZE;r++){
+    for(let c=0;c<GRID_SIZE;c++){
+      const x=c*cs, y=r*cs;
+      const k=key(r,c);
+
+      if(grid[r][c]===1){
+        // WALL — solid dark block with 3D feel
+        ctx.fillStyle="#07090d";
+        ctx.fillRect(x,y,cs,cs);
+        // top-left highlight
+        ctx.fillStyle="rgba(255,255,255,.06)";
+        ctx.fillRect(x,y,cs,1);
+        ctx.fillRect(x,y,1,cs);
+        // bottom-right shadow
+        ctx.fillStyle="rgba(0,0,0,.4)";
+        ctx.fillRect(x,y+cs-1,cs,1);
+        ctx.fillRect(x+cs-1,y,1,cs);
+        continue;
+      }
+
+      // OPEN CELL
+      let fill = "#1c2e40"; // default open path color
+
+      if(r===START.r&&c===START.c){
+        fill="#1a4a2a";
+      } else if(r===END.r&&c===END.c){
+        fill="#4a1a1a";
+      } else if(state && pathSet.has(k)){
+        fill= color==="b" ? "#0a2a4a" : "#3a2a08";
+      } else if(state && state.frontier.has(k)){
+        fill= color==="b" ? "#1a3a5a" : "#3a3010";
+      } else if(state && state.visited.has(k)){
+        fill= color==="b" ? "#122233" : "#26220a";
+      }
+
+      ctx.fillStyle=fill;
+      ctx.fillRect(x,y,cs,cs);
+
+      // Overlay color
+      if(state && pathSet.has(k) && r!==START.r&&r!==END.r){
+        ctx.fillStyle= color==="b" ? "rgba(77,166,255,.85)" : "rgba(245,200,66,.85)";
+        ctx.fillRect(x+cs*.15,y+cs*.15,cs*.7,cs*.7);
+      } else if(state && state.frontier.has(k)){
+        ctx.fillStyle=frontColor;
+        ctx.fillRect(x+cs*.1,y+cs*.1,cs*.8,cs*.8);
+        ctx.fillStyle="rgba(255,255,255,.3)";
+        ctx.fillRect(x+cs*.1,y+cs*.1,cs*.8,cs*.25);
+      } else if(state && state.visited.has(k)){
+        ctx.fillStyle=visitColor;
+        ctx.fillRect(x+cs*.2,y+cs*.2,cs*.6,cs*.6);
+      }
+
+      // START / END markers
+      if(r===START.r&&c===START.c){
+        ctx.fillStyle="#3ddc84";
+        ctx.fillRect(x+1,y+1,cs-2,cs-2);
+        ctx.fillStyle="#fff";
+        ctx.font=`bold ${Math.max(8,cs*.55)}px Rajdhani`;
+        ctx.textAlign="center";ctx.textBaseline="middle";
+        ctx.fillText("S",x+cs/2,y+cs/2);
+      } else if(r===END.r&&c===END.c){
+        ctx.fillStyle="#ff5c5c";
+        ctx.fillRect(x+1,y+1,cs-2,cs-2);
+        ctx.fillStyle="#fff";
+        ctx.font=`bold ${Math.max(8,cs*.55)}px Rajdhani`;
+        ctx.textAlign="center";ctx.textBaseline="middle";
+        ctx.fillText("E",x+cs/2,y+cs/2);
+      }
+    }
+  }
+
+  // Path glow line on top
+  if(state && state.path.length>1){
+    ctx.strokeStyle= color==="b" ? "rgba(77,166,255,.9)" : "rgba(245,200,66,.9)";
+    ctx.lineWidth=cs*.35;
+    ctx.lineCap="round";ctx.lineJoin="round";
+    ctx.shadowColor= color==="b" ? "#4da6ff" : "#f5c842";
+    ctx.shadowBlur=cs*.5;
+    ctx.beginPath();
+    state.path.forEach((k,i)=>{
+      const[pr,pc]=k.split(",").map(Number);
+      i===0?ctx.moveTo((pc+.5)*cs,(pr+.5)*cs):ctx.lineTo((pc+.5)*cs,(pr+.5)*cs);
+    });
+    ctx.stroke();
+    ctx.shadowBlur=0;
+  }
+}
+
+function drawBoth(){
+  drawGrid(bx,bfsC,bfsState,"b");
+  drawGrid(dx,dfsC,dfsState,"d");
+}
+
+/* ══════════════════════════════════════════
+   STATS
+══════════════════════════════════════════ */
+function updateBFSStats(s){
+  document.getElementById("bfsV").textContent=s.visitCount;
+  document.getElementById("bfsP").textContent=s.path.length;
+  document.getElementById("bfsQ").textContent=(s.queue||[]).length;
+}
+function updateDFSStats(s){
+  document.getElementById("dfsV").textContent=s.visitCount;
+  document.getElementById("dfsP").textContent=s.path.length;
+  document.getElementById("dfsQ").textContent=(s.stack||[]).length;
+}
+
+/* ══════════════════════════════════════════
+   CODE HIGHLIGHT
+══════════════════════════════════════════ */
+function highlightCode(which,line){
+  const pre=which==="b"?"bc":"dc";
+  const cls=which==="b"?"hl-b":"hl-y";
+  for(let i=0;i<=13;i++){const e=document.getElementById(pre+i);if(e)e.className="cl";}
+  const e=document.getElementById(pre+line);
+  if(e) e.className="cl "+cls;
+}
+
+/* ══════════════════════════════════════════
+   CONTROLS
+══════════════════════════════════════════ */
+function getDelay(){
+  const v=parseInt(document.getElementById("spd").value);
+  return Math.max(8,Math.round(300/(v*1.5)));
+}
+
+function tick(){
+  if(!running) return;
+  const bs=parseInt(document.getElementById("spd").value);
+  const batch=Math.ceil(bs/3);
+  for(let i=0;i<batch;i++){
+    if(bfsState&&!bfsState.done) stepBFS(bfsState);
+    if(dfsState&&!dfsState.done) stepDFS(dfsState);
+  }
+  drawBoth();
+  if((bfsState&&bfsState.done)&&(dfsState&&dfsState.done)){
+    onBothDone();return;
+  }
+  animTimer=setTimeout(tick,getDelay());
+}
+
+function startBoth(){
+  if(running) return;
+  if(!bfsState){bfsState=initBFS();dfsState=initDFS();}
+  running=true;
+  document.getElementById("btnGo").disabled=true;
+  document.getElementById("btnStop").disabled=false;
+  document.getElementById("btnStep").disabled=false;
+  tick();
+}
+
+function stepBoth(){
+  if(!bfsState){bfsState=initBFS();dfsState=initDFS();}
+  if(bfsState&&!bfsState.done) stepBFS(bfsState);
+  if(dfsState&&!dfsState.done) stepDFS(dfsState);
+  drawBoth();
+  updateBFSStats(bfsState);updateDFSStats(dfsState);
+}
+
+function stopBoth(){
+  running=false;clearTimeout(animTimer);
+  document.getElementById("btnGo").disabled=false;
+  document.getElementById("btnStop").disabled=true;
+}
+
+function onBothDone(){
+  running=false;clearTimeout(animTimer);
+  document.getElementById("btnGo").disabled=true;
+  document.getElementById("btnStop").disabled=true;
+  document.getElementById("btnStep").disabled=true;
+  updateBFSStats(bfsState);updateDFSStats(dfsState);
+  // Flash final stats
+  document.getElementById("bfsV").style.color=bfsState.found?"#3ddc84":"#ff5c5c";
+  document.getElementById("dfsV").style.color=dfsState.found?"#3ddc84":"#ff5c5c";
+}
+
+function resetBoth(){
+  running=false;clearTimeout(animTimer);
+  bfsState=null;dfsState=null;
+  document.getElementById("btnGo").disabled=false;
+  document.getElementById("btnStop").disabled=true;
+  document.getElementById("btnStep").disabled=true;
+  document.getElementById("bfsV").textContent=0;document.getElementById("bfsP").textContent=0;document.getElementById("bfsQ").textContent=0;
+  document.getElementById("dfsV").textContent=0;document.getElementById("dfsP").textContent=0;document.getElementById("dfsQ").textContent=0;
+  document.getElementById("bfsV").style.color="";document.getElementById("dfsV").style.color="";
+  for(let i=0;i<=13;i++){
+    const b=document.getElementById("bc"+i);if(b)b.className="cl";
+    const d=document.getElementById("dc"+i);if(d)d.className="cl";
+  }
+  drawBoth();
+}
+
+function newMaze(){
+  stopBoth();
+  generateMaze();
+  resetBoth();
+}
+
+function changeSize(d){
+  const nw=Math.max(15,Math.min(41,GRID_SIZE+d*2));
+  if(nw===GRID_SIZE) return;
+  GRID_SIZE=nw;
+  document.getElementById("sizeVal").textContent=GRID_SIZE;
+  stopBoth();
+  generateMaze();
+  setupCanvas(bfsC);setupCanvas(dfsC);
+  resetBoth();
+}
+
+document.getElementById("spd").addEventListener("input",function(){
+  document.getElementById("spdLbl").textContent=this.value+"×";
+});
+
+/* ══════════════════════════════════════════
+   INIT
+══════════════════════════════════════════ */
+window.addEventListener("resize",()=>{
+  setupCanvas(bfsC);setupCanvas(dfsC);drawBoth();
+});
+
+generateMaze();
+setupCanvas(bfsC);setupCanvas(dfsC);
+drawBoth();
+</script>
+</body>
+</html>
