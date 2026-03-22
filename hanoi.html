@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tower of Hanoi — Recursion Visualizer</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a0c0f; --card:#12161c; --card2:#181e27; --border:#1e2836;
+  --text:#c9d1d9; --muted:#3d4f61; --white:#f0f6fc;
+  --mono:'JetBrains Mono',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{
+  background:var(--bg);color:var(--text);
+  font-family:'Rajdhani',sans-serif;
+  min-height:100vh;overflow-x:hidden;
+}
+body::before{
+  content:'';position:fixed;inset:0;
+  background:
+    radial-gradient(ellipse 50% 40% at 20% 10%,rgba(139,92,246,.05) 0%,transparent 60%),
+    radial-gradient(ellipse 40% 50% at 80% 90%,rgba(16,185,129,.05) 0%,transparent 60%);
+  pointer-events:none;z-index:0;
+}
+
+/* ── HEADER ── */
+header{
+  text-align:center;padding:32px 20px 16px;
+  position:relative;z-index:1;
+}
+h1{
+  font-family:'Orbitron',monospace;font-weight:900;font-size:clamp(32px,6vw,64px);
+  letter-spacing:4px;
+  background:linear-gradient(135deg,#fff 30%,#a78bfa 70%,#34d399 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  margin-bottom:10px;
+}
+.tag{
+  display:inline-block;padding:5px 18px;border-radius:20px;
+  border:1.5px solid rgba(16,185,129,.5);color:#34d399;
+  font-family:var(--mono);font-size:11px;letter-spacing:3px;
+  background:rgba(16,185,129,.07);
+}
+
+/* ── MAIN ── */
+.main{
+  display:grid;grid-template-columns:1fr 380px;
+  gap:0;min-height:calc(100vh - 120px);
+  position:relative;z-index:1;
+}
+
+/* ── LEFT ── */
+.left{
+  display:flex;flex-direction:column;padding:20px 24px;gap:16px;
+}
+
+/* Stats */
+.stats{display:flex;gap:10px;flex-wrap:wrap;}
+.stat{
+  flex:1;min-width:110px;
+  background:var(--card);border:1px solid var(--border);border-radius:10px;
+  padding:14px 18px;
+}
+.stat-lbl{font-family:var(--mono);font-size:9px;letter-spacing:2px;color:var(--muted);margin-bottom:4px;}
+.stat-val{font-family:'Orbitron',monospace;font-size:22px;font-weight:700;}
+
+/* Controls */
+.controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+.n-row{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11px;color:var(--muted);}
+.n-btn{
+  width:30px;height:30px;border-radius:4px;background:var(--card2);
+  border:1px solid var(--border);color:var(--text);cursor:pointer;font-size:16px;
+  display:flex;align-items:center;justify-content:center;transition:all .15s;
+}
+.n-btn:hover{border-color:#a78bfa;color:#a78bfa;}
+.n-val{font-family:'Orbitron',monospace;font-size:18px;font-weight:700;color:#a78bfa;width:24px;text-align:center;}
+.spd-row{display:flex;align-items:center;gap:7px;font-family:var(--mono);font-size:11px;color:var(--muted);}
+input[type=range]{accent-color:#a78bfa;width:80px;}
+button.ctrl{
+  font-family:var(--mono);font-size:11px;letter-spacing:1px;
+  padding:8px 16px;border-radius:5px;cursor:pointer;transition:all .15s;border:1px solid;
+}
+.btn-go{background:rgba(139,92,246,.12);border-color:rgba(139,92,246,.5);color:#a78bfa;}
+.btn-go:hover{background:rgba(139,92,246,.24);box-shadow:0 0 16px rgba(139,92,246,.2);}
+.btn-step{background:rgba(52,211,153,.1);border-color:rgba(52,211,153,.4);color:#34d399;}
+.btn-step:hover{background:rgba(52,211,153,.2);}
+.btn-stop{background:rgba(248,113,113,.1);border-color:rgba(248,113,113,.4);color:#f87171;}
+.btn-reset{background:var(--card2);border-color:var(--border);color:var(--muted);}
+.btn-reset:hover{border-color:var(--muted);color:var(--text);}
+button.ctrl:disabled{opacity:.3;cursor:not-allowed;}
+
+/* Tower stage */
+.stage{
+  flex:1;background:var(--card);border:1px solid var(--border);border-radius:12px;
+  position:relative;overflow:hidden;min-height:320px;
+}
+.stage::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse 80% 60% at 50% 110%,rgba(139,92,246,.06) 0%,transparent 60%);
+  pointer-events:none;
+}
+#towerCanvas{display:block;width:100%;height:100%;}
+
+/* Status */
+.status-bar{
+  background:var(--card);border:1px solid var(--border);border-radius:8px;
+  padding:10px 16px;font-family:var(--mono);font-size:11px;
+  display:flex;align-items:center;gap:10px;
+}
+.s-dot{width:7px;height:7px;border-radius:50%;background:var(--muted);flex-shrink:0;}
+.s-dot.run{background:#a78bfa;animation:p .8s infinite;}
+.s-dot.move{background:#34d399;animation:p .4s infinite;}
+.s-dot.done{background:#fbbf24;}
+@keyframes p{0%,100%{opacity:1;}50%{opacity:.2;}}
+
+/* ── RIGHT ── */
+.right{
+  border-left:1px solid var(--border);
+  display:flex;flex-direction:column;background:var(--card);overflow:hidden;
+}
+.tabs{display:flex;border-bottom:1px solid var(--border);}
+.tab{
+  flex:1;padding:12px 6px;text-align:center;
+  font-family:var(--mono);font-size:10px;letter-spacing:1px;
+  color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;
+}
+.tab.active{color:#a78bfa;border-bottom-color:#a78bfa;}
+.tab:hover:not(.active){color:var(--text);}
+.tab-content{flex:1;overflow-y:auto;padding:16px;}
+.tab-content::-webkit-scrollbar{width:4px;}
+.tab-content::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+.tab-pane{display:none;}
+.tab-pane.active{display:block;}
+
+/* Code */
+.code-block{
+  background:#010409;border:1px solid var(--border);border-radius:6px;
+  padding:14px 16px;font-family:var(--mono);font-size:12px;line-height:2;
+  margin-bottom:10px;
+}
+.cl{padding:0 6px;margin:0 -6px;border-radius:3px;transition:background .2s;}
+.cl.hl{background:rgba(139,92,246,.15);border-left:2px solid #a78bfa;}
+.cl.hl-g{background:rgba(52,211,153,.12);border-left:2px solid #34d399;}
+.kw{color:#f87171;} .fn{color:#60a5fa;} .cm{color:#3d4f61;} .st{color:#fbbf24;} .nm{color:#a78bfa;}
+
+/* Stack */
+.stack-item{
+  background:var(--card2);border:1px solid var(--border);border-radius:5px;
+  padding:9px 12px;margin-bottom:6px;font-family:var(--mono);font-size:11px;
+  display:flex;align-items:center;gap:10px;transition:all .3s;
+}
+.stack-item.top{border-color:#a78bfa;background:rgba(139,92,246,.08);}
+.sk-badge{
+  width:24px;height:24px;border-radius:4px;font-size:11px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+
+/* Log */
+.log-e{
+  display:flex;gap:8px;padding:5px 0;border-bottom:1px solid rgba(30,40,54,.6);
+  font-family:var(--mono);font-size:10px;line-height:1.5;
+}
+.lt{color:var(--muted);flex-shrink:0;}
+.lm{color:#34d399;}
+.lb{color:#f87171;}
+.lr{color:#a78bfa;}
+
+/* Explain */
+.exp-box{
+  background:var(--card2);border:1px solid var(--border);border-radius:7px;
+  padding:13px 14px;margin-bottom:10px;
+}
+.exp-box h4{font-family:'Orbitron',monospace;font-size:9px;letter-spacing:2px;color:var(--muted);margin-bottom:7px;}
+.exp-box p{font-size:13px;line-height:1.65;color:#5a7a90;}
+.exp-box p strong{color:var(--text);}
+.ebadge{
+  display:inline-flex;align-items:center;gap:5px;padding:3px 9px;
+  border-radius:3px;font-family:var(--mono);font-size:10px;margin-top:6px;font-weight:600;
+}
+
+/* Move history table */
+.move-table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:11px;}
+.move-table th{color:var(--muted);font-size:9px;letter-spacing:2px;padding:6px 8px;
+  border-bottom:1px solid var(--border);text-align:left;}
+.move-table td{padding:5px 8px;border-bottom:1px solid rgba(30,40,54,.5);}
+.move-table tr.cur td{background:rgba(139,92,246,.1);color:#a78bfa;}
+.disc-badge{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:22px;height:22px;border-radius:50%;font-size:10px;font-weight:700;
+}
+
+@media(max-width:800px){
+  .main{grid-template-columns:1fr;}
+  .right{border-left:none;border-top:1px solid var(--border);}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>TOWER OF HANOI</h1>
+  <div class="tag">RECURSION VISUALIZED</div>
+</header>
+
+<div class="main">
+  <!-- LEFT -->
+  <div class="left">
+    <!-- Stats -->
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-lbl">DİSKLER</div>
+        <div class="stat-val" id="sv-n" style="color:#a78bfa">5</div>
+      </div>
+      <div class="stat">
+        <div class="stat-lbl">KARMAŞIKLIK</div>
+        <div class="stat-val" id="sv-cmp" style="color:var(--text);font-size:16px;margin-top:4px;">O(2ⁿ−1)</div>
+      </div>
+      <div class="stat">
+        <div class="stat-lbl">MİN HAMLE</div>
+        <div class="stat-val" id="sv-min" style="color:#fbbf24">31</div>
+      </div>
+      <div class="stat">
+        <div class="stat-lbl">YAPILAN</div>
+        <div class="stat-val" id="sv-done" style="color:#34d399">0</div>
+      </div>
+      <div class="stat">
+        <div class="stat-lbl">KALAN</div>
+        <div class="stat-val" id="sv-left" style="color:#f87171">31</div>
+      </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls">
+      <div class="n-row">
+        N =
+        <button class="n-btn" onclick="changeN(-1)">−</button>
+        <div class="n-val" id="nVal">5</div>
+        <button class="n-btn" onclick="changeN(1)">+</button>
+      </div>
+      <div class="spd-row">
+        HIZ <input type="range" id="spd" min="1" max="10" value="5">
+        <span id="spdLbl">5×</span>
+      </div>
+      <button class="ctrl btn-go"   id="btnGo"   onclick="goAnim()">▶ BAŞLAT</button>
+      <button class="ctrl btn-step" id="btnStep" onclick="doStep()" disabled>⏭ ADIM</button>
+      <button class="ctrl btn-stop" id="btnStop" onclick="stopAnim()" disabled>⏸ DUR</button>
+      <button class="ctrl btn-reset" onclick="resetAll()">↺ SIFIRLA</button>
+    </div>
+
+    <!-- Tower -->
+    <div class="stage">
+      <canvas id="towerCanvas"></canvas>
+    </div>
+
+    <!-- Status -->
+    <div class="status-bar">
+      <div class="s-dot" id="sDot"></div>
+      <span id="sMsg">Başlatmak için ▶ BAŞLAT butonuna basın</span>
+    </div>
+  </div>
+
+  <!-- RIGHT -->
+  <div class="right">
+    <div class="tabs">
+      <div class="tab active" onclick="showTab('algo',this)">KOD</div>
+      <div class="tab" onclick="showTab('stack',this)">STACK</div>
+      <div class="tab" onclick="showTab('moves',this)">HAMLELER</div>
+      <div class="tab" onclick="showTab('explain',this)">AÇIKLAMA</div>
+    </div>
+    <div class="tab-content">
+
+      <!-- ALGO -->
+      <div class="tab-pane active" id="tab-algo">
+        <div style="font-size:13px;line-height:1.7;color:#4a6478;margin-bottom:14px;">
+          <strong style="color:var(--text)">Hanoi Kulesi:</strong> N diski A'dan C'ye taşı. B yardımcı kule. Büyük disk küçüğün üstüne konamaz.
+        </div>
+        <div class="code-block" id="codeBlock">
+<div class="cl" id="cl0"><span class="kw">def</span> <span class="fn">hanoi</span>(n, src, aux, dst):</div>
+<div class="cl" id="cl1">  <span class="cm"># Base case: tek disk</span></div>
+<div class="cl" id="cl2">  <span class="kw">if</span> n <span class="st">==</span> <span class="nm">1</span>:</div>
+<div class="cl" id="cl3">    move(src <span class="st">→</span> dst)  <span class="cm"># ♟ Taşı</span></div>
+<div class="cl" id="cl4">    <span class="kw">return</span></div>
+<div class="cl" id="cl5">&nbsp;</div>
+<div class="cl" id="cl6">  <span class="cm"># Adım 1: Üst n-1 diski aux'a taşı</span></div>
+<div class="cl" id="cl7">  <span class="fn">hanoi</span>(n<span class="st">-1</span>, src, dst, aux)</div>
+<div class="cl" id="cl8">&nbsp;</div>
+<div class="cl" id="cl9">  <span class="cm"># Adım 2: En büyük diski dst'ye taşı</span></div>
+<div class="cl" id="cl10">  move(src <span class="st">→</span> dst)  <span class="cm"># ♟ En büyük</span></div>
+<div class="cl" id="cl11">&nbsp;</div>
+<div class="cl" id="cl12">  <span class="cm"># Adım 3: n-1 diski dst'ye taşı</span></div>
+<div class="cl" id="cl13">  <span class="fn">hanoi</span>(n<span class="st">-1</span>, aux, src, dst)</div>
+        </div>
+      </div>
+
+      <!-- STACK -->
+      <div class="tab-pane" id="tab-stack">
+        <div style="font-family:var(--mono);font-size:9px;letter-spacing:2px;color:var(--muted);margin-bottom:10px;">RECURSION CALL STACK</div>
+        <div id="stackList"></div>
+      </div>
+
+      <!-- MOVES -->
+      <div class="tab-pane" id="tab-moves">
+        <div style="font-family:var(--mono);font-size:9px;letter-spacing:2px;color:var(--muted);margin-bottom:10px;">TÜM HAMLELER (<span id="mvCount">0</span>)</div>
+        <table class="move-table">
+          <thead><tr><th>#</th><th>DİSK</th><th>KAYNAK</th><th>HEDEF</th></tr></thead>
+          <tbody id="moveBody"></tbody>
+        </table>
+      </div>
+
+      <!-- EXPLAIN -->
+      <div class="tab-pane" id="tab-explain">
+        <div class="exp-box">
+          <h4>PROBLEM</h4>
+          <p>N diski A kulesinden C kulesine taşı. <strong>Kural:</strong> Büyük disk küçüğün üstüne konamaz. B kule yardımcı olarak kullanılabilir.</p>
+        </div>
+        <div class="exp-box">
+          <h4>ÖZYINELEME MANTIĞI</h4>
+          <p><strong>1)</strong> Üst n−1 diski yardımcıya taşı<br>
+             <strong>2)</strong> En büyük diski hedefe taşı<br>
+             <strong>3)</strong> n−1 diski yardımcıdan hedefe taşı</p>
+          <div class="ebadge" style="background:rgba(139,92,246,.1);color:#a78bfa;border:1px solid rgba(139,92,246,.3);">T(n) = 2·T(n−1) + 1</div>
+        </div>
+        <div class="exp-box">
+          <h4>ZAMAN KARMAŞIKLİĞİ</h4>
+          <p>Minimum hamle: <strong>2ⁿ − 1</strong><br>
+          N=1→1 &nbsp; N=3→7 &nbsp; N=5→31 &nbsp; N=8→255</p>
+        </div>
+        <div id="curExp"></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════
+   CONFIG & STATE
+═══════════════════════════════════════ */
+let N = 5;
+// pegs[0]=A, [1]=B, [2]=C  →  each is array of disk sizes (bottom to top)
+let pegs = [[],[],[]];
+let steps = [];   // pre-computed steps
+let stepIdx = 0;
+let animTimer = null;
+let running = false;
+let moveCount = 0;
+let callStack = [];
+let moveHistory = [];
+
+// Flying disc animation
+let flyDisc = null; // {size, fromPeg, toPeg, progress, color}
+const FLY_STEPS = 24;
+
+/* ═══════════════════════════════════════
+   CANVAS
+═══════════════════════════════════════ */
+const canvas = document.getElementById("towerCanvas");
+const ctx = canvas.getContext("2d");
+
+const DISC_COLORS = [
+  "#7c3aed","#a78bfa",  // purple shades (smallest)
+  "#3b82f6","#60a5fa",
+  "#059669","#34d399",
+  "#d97706","#fbbf24",
+  "#dc2626","#f87171",  // red (largest)
+  "#0891b2","#22d3ee",
+  "#7c3aed","#c084fc",
+  "#be185d","#f472b6",
+];
+function discColor(size){ return DISC_COLORS[(N-size)%DISC_COLORS.length]; }
+
+function resizeCanvas(){
+  const stage = canvas.parentElement;
+  canvas.width  = stage.clientWidth;
+  canvas.height = stage.clientHeight;
+}
+
+/* ═══════════════════════════════════════
+   DRAW
+═══════════════════════════════════════ */
+function draw(){
+  const W=canvas.width, H=canvas.height;
+  ctx.clearRect(0,0,W,H);
+
+  const BASE_Y = H - 55;
+  const PEG_W  = 10;
+  const PEG_H  = H * 0.65;
+  const PEG_XS = [W*0.2, W*0.5, W*0.8];
+  const DISC_H = Math.min(32, Math.max(18, (PEG_H-20)/(N+1)));
+  const MAX_DISC_W = (W/3) - 20;
+  const MIN_DISC_W = DISC_H * 1.4;
+
+  function discWidth(size){ return MIN_DISC_W + (MAX_DISC_W-MIN_DISC_W)*(size-1)/(N-1||1); }
+
+  // Base platform
+  ctx.fillStyle="#1e2836";
+  ctx.beginPath();
+  ctx.roundRect(W*0.05, BASE_Y+2, W*0.9, 14, 6);
+  ctx.fill();
+  ctx.fillStyle="#253345";
+  ctx.beginPath();
+  ctx.roundRect(W*0.05, BASE_Y, W*0.9, 12, 6);
+  ctx.fill();
+
+  // Pegs
+  PEG_XS.forEach((px,i)=>{
+    // Shadow
+    ctx.shadowColor="rgba(139,92,246,.2)";ctx.shadowBlur=15;
+    const gr=ctx.createLinearGradient(px-PEG_W/2,0,px+PEG_W/2,0);
+    gr.addColorStop(0,"#1e2836");gr.addColorStop(.4,"#3d4f66");gr.addColorStop(1,"#1e2836");
+    ctx.fillStyle=gr;
+    ctx.beginPath();
+    ctx.roundRect(px-PEG_W/2, BASE_Y-PEG_H, PEG_W, PEG_H, [5,5,0,0]);
+    ctx.fill();
+    ctx.shadowBlur=0;
+
+    // Peg label
+    ctx.fillStyle="#4a6478";
+    ctx.font=`600 13px Rajdhani`;
+    ctx.textAlign="center";
+    ctx.fillText(["Rod A","Rod B","Rod C"][i], px, BASE_Y+32);
+  });
+
+  // Discs on pegs
+  PEG_XS.forEach((px,pi)=>{
+    pegs[pi].forEach((sz,di)=>{
+      // skip if this disc is flying
+      if(flyDisc && flyDisc.fromPeg===pi && flyDisc.size===sz && flyDisc.progress<1) return;
+      const dw=discWidth(sz);
+      const dy=BASE_Y - (di+1)*DISC_H - 2;
+      drawDisc(px, dy, dw, DISC_H-3, sz, false);
+    });
+  });
+
+  // Flying disc
+  if(flyDisc){
+    const fp=flyDisc.progress;
+    const fromX=PEG_XS[flyDisc.fromPeg];
+    const toX  =PEG_XS[flyDisc.toPeg];
+    const fromStackH = pegs[flyDisc.fromPeg].length;
+    const toStackH   = pegs[flyDisc.toPeg].length;
+    // rise from source, arc over, descend to dest
+    const srcY  = BASE_Y - fromStackH*DISC_H - DISC_H/2;
+    const dstY  = BASE_Y - (toStackH+1)*DISC_H - DISC_H/2;
+    const peakY = BASE_Y - PEG_H - 20;
+
+    let cx2,cy2;
+    if(fp < 0.4){
+      const t=fp/0.4;
+      cx2=fromX;
+      cy2=srcY + (peakY-srcY)*easeOut(t);
+    } else if(fp < 0.6){
+      const t=(fp-0.4)/0.2;
+      cx2=fromX + (toX-fromX)*t;
+      cy2=peakY;
+    } else {
+      const t=(fp-0.6)/0.4;
+      cx2=toX;
+      cy2=peakY + (dstY-peakY)*easeIn(t);
+    }
+
+    const dw=discWidth(flyDisc.size);
+    drawDisc(cx2, cy2-DISC_H/2, dw, DISC_H-3, flyDisc.size, true);
+  }
+
+  // Peg target highlight during fly
+  if(flyDisc && flyDisc.progress > 0.5){
+    const tx=PEG_XS[flyDisc.toPeg];
+    ctx.strokeStyle="rgba(52,211,153,.4)";
+    ctx.lineWidth=2;
+    ctx.setLineDash([4,4]);
+    ctx.beginPath();
+    ctx.moveTo(tx,BASE_Y-PEG_H);ctx.lineTo(tx,BASE_Y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+}
+
+function drawDisc(cx,y,dw,dh,size,flying){
+  const col=discColor(size);
+  const r=dh/2;
+
+  ctx.save();
+  if(flying){ctx.shadowColor=col;ctx.shadowBlur=20;}
+
+  // Disc body
+  const gr=ctx.createLinearGradient(cx-dw/2,y,cx-dw/2,y+dh);
+  gr.addColorStop(0,lighten(col,.3));
+  gr.addColorStop(.5,col);
+  gr.addColorStop(1,darken(col,.3));
+  ctx.fillStyle=gr;
+  ctx.beginPath();
+  ctx.roundRect(cx-dw/2, y, dw, dh, r);
+  ctx.fill();
+
+  // Highlight
+  ctx.fillStyle="rgba(255,255,255,.15)";
+  ctx.beginPath();
+  ctx.roundRect(cx-dw/2+4, y+2, dw-8, dh/2-2, [r*.8,r*.8,0,0]);
+  ctx.fill();
+
+  // Label
+  ctx.fillStyle="rgba(255,255,255,.9)";
+  ctx.font=`bold ${Math.max(10,dh*.55)}px Orbitron`;
+  ctx.textAlign="center";ctx.textBaseline="middle";
+  ctx.fillText(size, cx, y+dh/2+1);
+
+  ctx.restore();
+}
+
+function lighten(hex,amt){
+  const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+  return `rgb(${Math.min(255,r+amt*255)},${Math.min(255,g+amt*255)},${Math.min(255,b+amt*255)})`;
+}
+function darken(hex,amt){
+  const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+  return `rgb(${Math.max(0,r-amt*255)},${Math.max(0,g-amt*255)},${Math.max(0,b-amt*255)})`;
+}
+function easeOut(t){return 1-(1-t)*(1-t);}
+function easeIn(t){return t*t;}
+
+/* ═══════════════════════════════════════
+   COMPUTE STEPS
+═══════════════════════════════════════ */
+function computeSteps(){
+  steps=[];
+  const depth=[];
+
+  function hanoi(n,src,aux,dst){
+    depth.push({n,src,aux,dst});
+    steps.push({type:"call",n,src,aux,dst,stack:[...depth]});
+
+    if(n===1){
+      steps.push({type:"move",n,src,dst,codeLine:3});
+      depth.pop();
+      return;
+    }
+    // Step 1
+    steps.push({type:"step1",n,src,aux,dst,codeLine:7});
+    hanoi(n-1,src,dst,aux);
+    // Step 2
+    steps.push({type:"move",n,src,dst,codeLine:10});
+    // Step 3
+    steps.push({type:"step3",n,src,aux,dst,codeLine:13});
+    hanoi(n-1,aux,src,dst);
+
+    depth.pop();
+    steps.push({type:"return",n,src,aux,dst,stack:[...depth]});
+  }
+
+  hanoi(N,0,1,2);
+}
+
+/* ═══════════════════════════════════════
+   ANIMATION
+═══════════════════════════════════════ */
+let flyFrame=null;
+
+function applyStep(s,animated,onDone){
+  if(s.type==="move"){
+    const src=s.src, dst=s.dst;
+    const sz=pegs[src][pegs[src].length-1];
+    if(!animated){
+      pegs[src].pop();
+      pegs[dst].push(sz);
+      moveCount++;
+      updateMoveStats();
+      addMoveRow(sz,src,dst);
+      draw();
+      if(onDone) onDone();
+      return;
+    }
+    // Fly animation
+    pegs[src].pop();
+    flyDisc={size:sz,fromPeg:src,toPeg:dst,progress:0};
+    const totalFrames=FLY_STEPS;
+    let f=0;
+    function flyTick(){
+      f++;
+      flyDisc.progress=f/totalFrames;
+      draw();
+      if(f<totalFrames){flyFrame=requestAnimationFrame(flyTick);}
+      else{
+        flyDisc=null;
+        pegs[dst].push(sz);
+        moveCount++;
+        updateMoveStats();
+        addMoveRow(sz,src,dst);
+        highlightCode(s.codeLine,"g");
+        addLog(sz,src,dst);
+        setExplain("move",s,sz);
+        draw();
+        if(onDone) onDone();
+      }
+    }
+    flyFrame=requestAnimationFrame(flyTick);
+    return;
+  }
+
+  if(s.type==="call"){
+    callStack=[...s.stack];
+    renderStack();
+    highlightCode(s.n===1?2:0,"p");
+    setExplain("call",s);
+  } else if(s.type==="step1"){
+    highlightCode(7,"p");
+    setExplain("step1",s);
+  } else if(s.type==="step3"){
+    highlightCode(13,"p");
+    setExplain("step3",s);
+  } else if(s.type==="return"){
+    callStack=[...s.stack];
+    renderStack();
+  }
+
+  draw();
+  if(onDone) onDone();
+}
+
+function getDelay(){
+  const v=parseInt(document.getElementById("spd").value);
+  return Math.round(700/(v*v*.12+.88));
+}
+
+function tick(){
+  if(!running||stepIdx>=steps.length){if(stepIdx>=steps.length)onDone();return;}
+  applyStep(steps[stepIdx++],true,()=>{
+    if(running) animTimer=setTimeout(tick,getDelay());
+  });
+}
+
+function goAnim(){
+  if(running) return;
+  if(stepIdx===0){resetState();computeSteps();}
+  running=true;
+  document.getElementById("btnGo").disabled=true;
+  document.getElementById("btnStop").disabled=false;
+  document.getElementById("btnStep").disabled=false;
+  document.getElementById("sDot").className="s-dot run";
+  document.getElementById("sMsg").textContent="Animasyon çalışıyor...";
+  tick();
+}
+
+function stopAnim(){
+  running=false;
+  clearTimeout(animTimer);
+  document.getElementById("btnGo").disabled=false;
+  document.getElementById("btnStop").disabled=true;
+  document.getElementById("sDot").className="s-dot";
+  document.getElementById("sMsg").textContent="Duraklatıldı — devam için ▶ BAŞLAT";
+}
+
+function doStep(){
+  if(steps.length===0){computeSteps();}
+  if(stepIdx>=steps.length){onDone();return;}
+  document.getElementById("btnStep").disabled=false;
+  applyStep(steps[stepIdx++],true,()=>{});
+}
+
+function onDone(){
+  running=false;
+  clearTimeout(animTimer);
+  document.getElementById("btnGo").disabled=true;
+  document.getElementById("btnStop").disabled=true;
+  document.getElementById("sDot").className="s-dot done";
+  document.getElementById("sMsg").textContent=`✓ Tamamlandı! ${moveCount} hamle yapıldı. (Min: ${Math.pow(2,N)-1})`;
+}
+
+/* ═══════════════════════════════════════
+   CODE HIGHLIGHT
+═══════════════════════════════════════ */
+function highlightCode(line,type){
+  for(let i=0;i<=13;i++){const e=document.getElementById("cl"+i);if(e)e.className="cl";}
+  const e=document.getElementById("cl"+line);
+  if(e) e.className="cl "+(type==="g"?"hl-g":"hl");
+}
+
+/* ═══════════════════════════════════════
+   CALL STACK RENDER
+═══════════════════════════════════════ */
+function renderStack(){
+  const el=document.getElementById("stackList");
+  if(!el) return;
+  const rods=["A","B","C"];
+  const colors=["#a78bfa","#60a5fa","#34d399","#fbbf24","#f87171","#c084fc"];
+  el.innerHTML=callStack.slice().reverse().map((f,i)=>`
+    <div class="stack-item ${i===0?"top":""}">
+      <div class="sk-badge" style="background:${colors[f.n%colors.length]}22;color:${colors[f.n%colors.length]};border:1px solid ${colors[f.n%colors.length]}44;">${f.n}</div>
+      <div style="font-size:11px;">
+        <span style="color:#60a5fa">hanoi</span>(<span style="color:#a78bfa">n=${f.n}</span>, <span style="color:#34d399">${rods[f.src]}→${rods[f.dst]}</span>)
+        ${i===0?'<span style="color:#a78bfa;margin-left:6px">← AKTİF</span>':''}
+      </div>
+    </div>
+  `).join("");
+}
+
+/* ═══════════════════════════════════════
+   LOG + MOVE TABLE
+═══════════════════════════════════════ */
+function addLog(sz,src,dst){
+  const el=document.getElementById("logList");if(!el)return; // not shown
+}
+
+let moveRows=0;
+function addMoveRow(sz,src,dst){
+  moveRows++;
+  const rods=["A","B","C"];
+  const tbody=document.getElementById("moveBody");
+  const col=discColor(sz);
+  const tr=document.createElement("tr");
+  tr.id="mr"+moveRows;
+  // remove previous cur
+  document.querySelectorAll(".move-table tr.cur").forEach(r=>r.classList.remove("cur"));
+  tr.className="cur";
+  tr.innerHTML=`
+    <td style="color:var(--muted)">${moveRows}</td>
+    <td><div class="disc-badge" style="background:${col}22;color:${col};border:1px solid ${col}55">${sz}</div></td>
+    <td style="color:#f87171">${rods[src]}</td>
+    <td style="color:#34d399">${rods[dst]}</td>
+  `;
+  tbody.insertBefore(tr,tbody.firstChild);
+  document.getElementById("mvCount").textContent=moveRows;
+  // keep max 50 rows
+  if(tbody.children.length>50) tbody.removeChild(tbody.lastChild);
+}
+
+/* ═══════════════════════════════════════
+   EXPLAIN
+═══════════════════════════════════════ */
+function setExplain(type,s,sz){
+  const el=document.getElementById("curExp");if(!el)return;
+  const rods=["A","B","C"];
+  const msgs={
+    call:`<strong>hanoi(n=${s.n}, ${rods[s.src]}→${rods[s.dst]})</strong> çağrısı yapıldı. ${s.n} diski ${rods[s.src]}'dan ${rods[s.dst]}'ye taşıyacak.`,
+    step1:`<strong>1. Adım:</strong> Üst ${s.n-1} diski ${rods[s.src]}'dan ${rods[s.aux]}'ye taşımak için özyinelemeli çağrı yapılıyor.`,
+    move:`<strong>Disk ${sz}</strong> ${rods[s.src]}'dan ${rods[s.dst]}'ye taşındı! Bu ${moveCount}. hamle.`,
+    step3:`<strong>3. Adım:</strong> ${s.n-1} diski ${rods[s.aux]}'dan ${rods[s.dst]}'ye taşımak için özyinelemeli çağrı yapılıyor.`,
+  };
+  el.innerHTML=`<div class="exp-box" style="border-color:rgba(139,92,246,.3);background:rgba(139,92,246,.05)">
+    <h4>ŞU AN</h4><p>${msgs[type]||""}</p>
+  </div>`;
+}
+
+/* ═══════════════════════════════════════
+   STATS UPDATE
+═══════════════════════════════════════ */
+function updateMoveStats(){
+  const min=Math.pow(2,N)-1;
+  document.getElementById("sv-done").textContent=moveCount;
+  document.getElementById("sv-left").textContent=Math.max(0,min-moveCount);
+  document.getElementById("sDot").className="s-dot move";
+  document.getElementById("sMsg").textContent=`♟ Disk taşınıyor... (${moveCount}/${min})`;
+}
+
+/* ═══════════════════════════════════════
+   RESET & INIT
+═══════════════════════════════════════ */
+function initPegs(){
+  pegs=[[],[],[]];
+  for(let i=N;i>=1;i--) pegs[0].push(i);
+}
+
+function resetState(){
+  moveCount=0;moveRows=0;callStack=[];
+  document.getElementById("sv-done").textContent=0;
+  const min=Math.pow(2,N)-1;
+  document.getElementById("sv-left").textContent=min;
+  document.getElementById("stackList").innerHTML="";
+  document.getElementById("moveBody").innerHTML="";
+  document.getElementById("mvCount").textContent=0;
+  document.getElementById("curExp").innerHTML="";
+  for(let i=0;i<=13;i++){const e=document.getElementById("cl"+i);if(e)e.className="cl";}
+  initPegs();
+}
+
+function resetAll(){
+  running=false;clearTimeout(animTimer);
+  if(flyFrame)cancelAnimationFrame(flyFrame);flyDisc=null;
+  stepIdx=0;steps=[];
+  resetState();
+  document.getElementById("btnGo").disabled=false;
+  document.getElementById("btnStop").disabled=true;
+  document.getElementById("btnStep").disabled=true;
+  document.getElementById("sDot").className="s-dot";
+  document.getElementById("sMsg").textContent="Başlatmak için ▶ BAŞLAT butonuna basın";
+  draw();
+}
+
+function changeN(d){
+  const nw=Math.max(3,Math.min(10,N+d));
+  if(nw===N) return;
+  N=nw;
+  document.getElementById("nVal").textContent=N;
+  document.getElementById("sv-n").textContent=N;
+  const min=Math.pow(2,N)-1;
+  document.getElementById("sv-min").textContent=min;
+  resetAll();
+}
+
+function showTab(name,el){
+  document.querySelectorAll(".tab-pane").forEach(p=>p.classList.remove("active"));
+  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+  document.getElementById("tab-"+name).classList.add("active");
+  el.classList.add("active");
+}
+
+document.getElementById("spd").addEventListener("input",function(){
+  document.getElementById("spdLbl").textContent=this.value+"×";
+});
+
+/* ═══════════════════════════════════════
+   BOOT
+═══════════════════════════════════════ */
+window.addEventListener("resize",()=>{resizeCanvas();draw();});
+resizeCanvas();
+initPegs();
+draw();
+
+// Animate render loop for smooth flying
+(function rloop(){requestAnimationFrame(rloop);if(flyDisc) draw();})();
+</script>
+</body>
+</html>
