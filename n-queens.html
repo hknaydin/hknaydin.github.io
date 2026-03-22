@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>N-Queens — Backtracking Visualizer</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0d1117; --card:#161b22; --card2:#1c2330; --border:#21262d;
+  --green:#3fb950; --green2:#238636;
+  --red:#f85149; --yellow:#e3b341; --blue:#58a6ff;
+  --purple:#bc8cff; --cyan:#39d353;
+  --text:#c9d1d9; --muted:#484f58; --white:#f0f6fc;
+  --mono:'JetBrains Mono',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{
+  background:var(--bg);color:var(--text);
+  font-family:'Rajdhani',sans-serif;
+  min-height:100vh;overflow-x:hidden;
+}
+body::before{
+  content:'';position:fixed;inset:0;
+  background:radial-gradient(ellipse 60% 50% at 20% 20%,rgba(63,185,80,.04) 0%,transparent 60%),
+             radial-gradient(ellipse 40% 60% at 80% 80%,rgba(88,166,255,.04) 0%,transparent 60%);
+  pointer-events:none;z-index:0;
+}
+
+/* ── HEADER ── */
+header{
+  padding:20px 32px 16px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+  position:relative;z-index:1;
+  background:rgba(13,17,23,.9);backdrop-filter:blur(12px);
+}
+.logo{
+  font-family:'Orbitron',monospace;font-size:18px;font-weight:900;
+  letter-spacing:3px;color:var(--green);
+  text-shadow:0 0 20px rgba(63,185,80,.4);
+}
+.logo span{color:var(--blue);}
+.hdr-right{display:flex;align-items:center;gap:12px;}
+
+/* N selector */
+.n-row{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:12px;color:var(--muted);}
+.n-btn{
+  width:30px;height:30px;border-radius:4px;
+  background:var(--card2);border:1px solid var(--border);
+  color:var(--text);cursor:pointer;font-size:16px;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .15s;
+}
+.n-btn:hover{border-color:var(--green);color:var(--green);}
+.n-val{
+  font-family:'Orbitron',monospace;font-size:18px;font-weight:700;
+  color:var(--green);width:28px;text-align:center;
+}
+
+/* Speed */
+.spd-row{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11px;color:var(--muted);}
+input[type=range]{accent-color:var(--green);width:90px;}
+
+/* Buttons */
+button.ctrl{
+  font-family:var(--mono);font-size:11px;letter-spacing:1px;
+  padding:8px 16px;border-radius:4px;cursor:pointer;transition:all .15s;border:1px solid;
+}
+.btn-start{background:rgba(63,185,80,.12);border-color:rgba(63,185,80,.5);color:var(--green);}
+.btn-start:hover{background:rgba(63,185,80,.22);box-shadow:0 0 16px rgba(63,185,80,.2);}
+.btn-stop{background:rgba(248,81,73,.1);border-color:rgba(248,81,73,.4);color:var(--red);}
+.btn-stop:hover{background:rgba(248,81,73,.2);}
+.btn-step{background:rgba(88,166,255,.1);border-color:rgba(88,166,255,.4);color:var(--blue);}
+.btn-step:hover{background:rgba(88,166,255,.2);}
+.btn-reset{background:var(--card2);border-color:var(--border);color:var(--muted);}
+.btn-reset:hover{border-color:var(--muted);color:var(--text);}
+button.ctrl:disabled{opacity:.3;cursor:not-allowed;}
+
+/* ── MAIN LAYOUT ── */
+.main{
+  display:grid;grid-template-columns:1fr 360px;
+  gap:0;height:calc(100vh - 65px);
+  position:relative;z-index:1;
+}
+
+/* ── LEFT: BOARD + STATS ── */
+.left{
+  display:flex;flex-direction:column;
+  padding:24px;gap:16px;overflow:auto;
+}
+
+.stats-row{
+  display:flex;gap:12px;flex-wrap:wrap;
+}
+.stat-box{
+  background:var(--card);border:1px solid var(--border);border-radius:8px;
+  padding:12px 18px;display:flex;flex-direction:column;gap:3px;flex:1;min-width:110px;
+}
+.stat-val{font-family:'Orbitron',monospace;font-size:22px;font-weight:700;}
+.stat-lbl{font-family:var(--mono);font-size:9px;letter-spacing:2px;color:var(--muted);}
+
+.board-wrap{
+  flex:1;display:flex;align-items:center;justify-content:center;
+  position:relative;
+}
+#board{border-radius:4px;overflow:hidden;box-shadow:0 0 40px rgba(0,0,0,.6);}
+
+/* ── RIGHT PANEL ── */
+.right{
+  border-left:1px solid var(--border);
+  display:flex;flex-direction:column;overflow:hidden;
+  background:var(--card);
+}
+
+/* Tab bar */
+.tabs{display:flex;border-bottom:1px solid var(--border);}
+.tab{
+  flex:1;padding:12px 8px;text-align:center;
+  font-family:var(--mono);font-size:10px;letter-spacing:2px;
+  color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;
+  transition:all .15s;
+}
+.tab.active{color:var(--green);border-bottom-color:var(--green);}
+.tab:hover:not(.active){color:var(--text);}
+
+.tab-content{flex:1;overflow-y:auto;padding:16px;}
+.tab-content::-webkit-scrollbar{width:4px;}
+.tab-content::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+.tab-pane{display:none;}
+.tab-pane.active{display:block;}
+
+/* ── ALGORITHM PANEL ── */
+.algo-info{
+  font-size:13px;line-height:1.7;color:#6e7681;margin-bottom:16px;
+}
+.algo-info strong{color:var(--text);}
+
+/* Code block */
+.code-block{
+  background:#010409;border:1px solid var(--border);border-radius:6px;
+  padding:14px 16px;font-family:var(--mono);font-size:12px;
+  line-height:1.8;overflow-x:auto;position:relative;margin-bottom:12px;
+}
+.code-block .kw{color:var(--red);}
+.code-block .fn{color:var(--blue);}
+.code-block .cm{color:var(--muted);}
+.code-block .st{color:var(--yellow);}
+.code-block .nm{color:var(--purple);}
+.code-block .op{color:var(--cyan);}
+
+/* Highlight current line */
+.code-line{padding:0 8px;margin:0 -8px;border-radius:3px;transition:background .2s;}
+.code-line.hl{background:rgba(63,185,80,.12);border-left:2px solid var(--green);}
+.code-line.hl-red{background:rgba(248,81,73,.1);border-left:2px solid var(--red);}
+
+/* ── CALL STACK ── */
+.stack-item{
+  background:var(--card2);border:1px solid var(--border);border-radius:4px;
+  padding:8px 12px;margin-bottom:6px;font-family:var(--mono);font-size:11px;
+  display:flex;align-items:center;gap:10px;transition:all .3s;
+}
+.stack-item.current{border-color:var(--green);background:rgba(63,185,80,.08);}
+.stack-badge{
+  width:22px;height:22px;border-radius:3px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:10px;font-weight:700;flex-shrink:0;
+}
+
+/* ── LOG ── */
+.log-entry{
+  padding:5px 0;border-bottom:1px solid rgba(33,38,45,.6);
+  font-family:var(--mono);font-size:10px;display:flex;gap:8px;
+  line-height:1.5;
+}
+.log-t{color:var(--muted);flex-shrink:0;}
+.log-place{color:var(--green);}
+.log-back{color:var(--red);}
+.log-done{color:var(--yellow);}
+.log-try{color:var(--blue);}
+
+/* ── EXPLAIN PANEL ── */
+.explain-step{
+  background:var(--card2);border:1px solid var(--border);
+  border-radius:6px;padding:12px 14px;margin-bottom:10px;
+}
+.explain-step h4{
+  font-family:'Orbitron',monospace;font-size:10px;letter-spacing:2px;
+  color:var(--muted);margin-bottom:6px;
+}
+.explain-step p{font-size:13px;line-height:1.6;color:#6e7681;}
+.explain-step p strong{color:var(--text);}
+.explain-badge{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:3px 8px;border-radius:3px;font-family:var(--mono);font-size:10px;
+  margin-top:6px;font-weight:600;
+}
+
+/* ── SOLUTIONS GALLERY ── */
+.solutions-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px;}
+.sol-mini{
+  aspect-ratio:1;border-radius:4px;overflow:hidden;
+  cursor:pointer;transition:transform .15s;
+  border:1px solid var(--border);
+}
+.sol-mini:hover{transform:scale(1.05);border-color:var(--green);}
+.sol-mini canvas{display:block;width:100%;height:100%;}
+
+/* ── STATUS BAR ── */
+.status-bar{
+  padding:8px 16px;background:var(--card2);border-top:1px solid var(--border);
+  font-family:var(--mono);font-size:11px;color:var(--muted);
+  display:flex;align-items:center;gap:10px;
+}
+.status-dot{width:7px;height:7px;border-radius:50%;background:var(--muted);}
+.status-dot.running{background:var(--green);animation:pulse .8s infinite;}
+.status-dot.backtrack{background:var(--red);animation:pulse .8s infinite;}
+.status-dot.done{background:var(--yellow);}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+
+/* ── ATTACK OVERLAY ── */
+.attack-line{position:absolute;pointer-events:none;z-index:10;opacity:.4;}
+
+/* queen emoji size */
+.queen-emoji{font-size:calc(var(--qs,32px));line-height:1;}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div>
+    <div class="logo">N<span>-</span>QUEENS <span style="color:var(--muted);font-size:12px;letter-spacing:2px;">BACKTRACKING VISUALIZER</span></div>
+  </div>
+  <div class="hdr-right" style="gap:16px;flex-wrap:wrap;">
+    <div class="n-row">
+      N =
+      <button class="n-btn" onclick="changeN(-1)">−</button>
+      <div class="n-val" id="nVal">8</div>
+      <button class="n-btn" onclick="changeN(1)">+</button>
+    </div>
+    <div class="spd-row">
+      HIZ
+      <input type="range" id="speedSlider" min="1" max="10" value="4">
+      <span id="speedLabel">4×</span>
+    </div>
+    <button class="ctrl btn-start" id="btnStart" onclick="startAnim()">▶ BAŞLAT</button>
+    <button class="ctrl btn-step"  id="btnStep"  onclick="stepOnce()" disabled>⏭ ADIM</button>
+    <button class="ctrl btn-stop"  id="btnStop"  onclick="stopAnim()" disabled>⏸ DURDUR</button>
+    <button class="ctrl btn-reset" id="btnReset" onclick="resetAll()">↺ SIFIRLA</button>
+  </div>
+</header>
+
+<div class="main">
+  <!-- LEFT -->
+  <div class="left">
+    <!-- Stats -->
+    <div class="stats-row">
+      <div class="stat-box">
+        <div class="stat-val" id="statSteps" style="color:var(--blue)">0</div>
+        <div class="stat-lbl">ADIM SAYISI</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val" id="statBack" style="color:var(--red)">0</div>
+        <div class="stat-lbl">GERİ ADIM</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val" id="statSols" style="color:var(--yellow)">0</div>
+        <div class="stat-lbl">ÇÖZÜM</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val" id="statRow" style="color:var(--green)">—</div>
+        <div class="stat-lbl">AKTİF SATIR</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val" id="statCol" style="color:var(--purple)">—</div>
+        <div class="stat-lbl">AKTİF SÜTUN</div>
+      </div>
+    </div>
+
+    <!-- Board -->
+    <div class="board-wrap">
+      <canvas id="board"></canvas>
+    </div>
+
+    <!-- Status bar -->
+    <div class="status-bar">
+      <div class="status-dot" id="statDot"></div>
+      <span id="statMsg">Başlatmak için ▶ BAŞLAT butonuna basın</span>
+    </div>
+  </div>
+
+  <!-- RIGHT -->
+  <div class="right">
+    <div class="tabs">
+      <div class="tab active" onclick="showTab('algo')">ALGORİTMA</div>
+      <div class="tab" onclick="showTab('stack')">CALL STACK</div>
+      <div class="tab" onclick="showTab('log')">LOG</div>
+      <div class="tab" onclick="showTab('explain')">AÇIKLAMA</div>
+    </div>
+    <div class="tab-content">
+
+      <!-- ALGO -->
+      <div class="tab-pane active" id="tab-algo">
+        <div class="algo-info">
+          <strong>N-Queens Problemi:</strong> N×N satranç tahtasına N adet vezir yerleştir; hiçbiri birbirini tehdit etmesin.<br><br>
+          <strong>Backtracking:</strong> Her satıra sırayla bir vezir koy. Geçersizse geri dön ve farklı sütun dene.
+        </div>
+
+        <div class="code-block" id="codeBlock">
+<div class="code-line" id="cl0"><span class="kw">def</span> <span class="fn">solve</span>(row):</div>
+<div class="code-line" id="cl1">  <span class="cm"># Tüm vezirler yerleşti → çözüm!</span></div>
+<div class="code-line" id="cl2">  <span class="kw">if</span> row <span class="op">==</span> <span class="nm">N</span>:</div>
+<div class="code-line" id="cl3">    <span class="kw">return</span> <span class="st">True</span>  <span class="cm"># ✓ ÇÖZÜM BULUNDU</span></div>
+<div class="code-line" id="cl4">&nbsp;</div>
+<div class="code-line" id="cl5">  <span class="kw">for</span> col <span class="kw">in</span> <span class="fn">range</span>(<span class="nm">N</span>):</div>
+<div class="code-line" id="cl6">    <span class="cm"># Bu pozisyon geçerli mi?</span></div>
+<div class="code-line" id="cl7">    <span class="kw">if</span> <span class="fn">is_safe</span>(row, col):</div>
+<div class="code-line" id="cl8">      board[row] <span class="op">=</span> col    <span class="cm"># Vezir koy ♛</span></div>
+<div class="code-line" id="cl9">      <span class="kw">if</span> <span class="fn">solve</span>(row <span class="op">+</span> <span class="nm">1</span>):  <span class="cm"># Özyineleme</span></div>
+<div class="code-line" id="cl10">        <span class="kw">return</span> <span class="st">True</span></div>
+<div class="code-line" id="cl11">      board[row] <span class="op">=</span> <span class="st">None</span>  <span class="cm"># ← GERİ AL</span></div>
+<div class="code-line" id="cl12">&nbsp;</div>
+<div class="code-line" id="cl13">  <span class="kw">return</span> <span class="st">False</span>  <span class="cm"># Bu yol başarısız</span></div>
+        </div>
+
+        <div class="code-block" style="margin-top:4px;">
+<div class="code-line" id="cs0"><span class="kw">def</span> <span class="fn">is_safe</span>(row, col):</div>
+<div class="code-line" id="cs1">  <span class="kw">for</span> r <span class="kw">in</span> <span class="fn">range</span>(row):</div>
+<div class="code-line" id="cs2">    <span class="cm"># Aynı sütun kontrolü</span></div>
+<div class="code-line" id="cs3">    <span class="kw">if</span> board[r] <span class="op">==</span> col: <span class="kw">return</span> <span class="st">False</span></div>
+<div class="code-line" id="cs4">    <span class="cm"># Çapraz kontrol</span></div>
+<div class="code-line" id="cs5">    <span class="kw">if</span> <span class="fn">abs</span>(board[r]<span class="op">-</span>col) <span class="op">==</span> <span class="fn">abs</span>(r<span class="op">-</span>row):</div>
+<div class="code-line" id="cs6">      <span class="kw">return</span> <span class="st">False</span></div>
+<div class="code-line" id="cs7">  <span class="kw">return</span> <span class="st">True</span>  <span class="cm"># Güvenli!</span></div>
+        </div>
+      </div>
+
+      <!-- STACK -->
+      <div class="tab-pane" id="tab-stack">
+        <div style="font-family:var(--mono);font-size:9px;letter-spacing:2px;color:var(--muted);margin-bottom:10px;">RECURSION CALL STACK</div>
+        <div id="stackList"></div>
+      </div>
+
+      <!-- LOG -->
+      <div class="tab-pane" id="tab-log">
+        <div style="font-family:var(--mono);font-size:9px;letter-spacing:2px;color:var(--muted);margin-bottom:10px;">İŞLEM GÜNLÜĞÜ</div>
+        <div id="logList"></div>
+      </div>
+
+      <!-- EXPLAIN -->
+      <div class="tab-pane" id="tab-explain">
+        <div id="explainContent">
+          <div class="explain-step">
+            <h4>PROBLEM NEDİR?</h4>
+            <p>N×N satranç tahtasına <strong>N vezir</strong> yerleştir. Hiçbir vezir diğerini tehdit etmesin. Vezir; yatay, dikey ve çapraz yönlerde saldırır.</p>
+          </div>
+          <div class="explain-step">
+            <h4>BACKTRACKING NEDİR?</h4>
+            <p><strong>Geri izleme</strong> algoritması, çözümü adım adım inşa eder. Bir adım çıkmaza girince geri döner ve farklı bir yol dener. Bu sayede tüm olasılıkları sistematik tarar.</p>
+            <div class="explain-badge" style="background:rgba(63,185,80,.1);color:var(--green);border:1px solid rgba(63,185,80,.3);">✓ Yerleştir → İlerle</div>
+            <div class="explain-badge" style="background:rgba(248,81,73,.1);color:var(--red);border:1px solid rgba(248,81,73,.3);margin-left:6px;">✗ Çıkmaz → Geri Al</div>
+          </div>
+          <div class="explain-step">
+            <h4>ZAMAN KARMAŞIKLİĞİ</h4>
+            <p>En kötü durum: <strong>O(N!)</strong>. Ancak kırpma (pruning) sayesinde çok daha hızlı çalışır.</p>
+          </div>
+          <div class="explain-step">
+            <h4>ÇÖZÜM SAYILARI</h4>
+            <p>N=4: <strong>2</strong> çözüm &nbsp;|&nbsp; N=8: <strong>92</strong> çözüm &nbsp;|&nbsp; N=10: <strong>724</strong> çözüm</p>
+          </div>
+        </div>
+        <div id="currentExplain"></div>
+      </div>
+
+    </div>
+
+    <!-- Solutions gallery -->
+    <div style="border-top:1px solid var(--border);padding:12px 16px;">
+      <div style="font-family:var(--mono);font-size:9px;letter-spacing:2px;color:var(--muted);margin-bottom:8px;">BULUNAN ÇÖZÜMLER (<span id="solCount">0</span>)</div>
+      <div class="solutions-grid" id="solGrid"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ════════════════════════════════════════════════
+   STATE
+════════════════════════════════════════════════ */
+let N = 8;
+let board = new Array(N).fill(null);
+let steps = [];        // pre-computed animation steps
+let stepIdx = 0;
+let animTimer = null;
+let running = false;
+let solutions = [];
+let logs = [];
+
+let statSteps = 0, statBack = 0, statSols = 0;
+let codeHL = -1;     // highlighted code line
+
+/* ════════════════════════════════════════════════
+   BOARD CANVAS
+════════════════════════════════════════════════ */
+const canvas = document.getElementById("board");
+const ctx = canvas.getContext("2d");
+
+function getBoardSize(){
+  const wrap = document.querySelector(".board-wrap");
+  const avail = Math.min(wrap.clientWidth - 20, wrap.clientHeight - 20);
+  return Math.floor(avail / N) * N;
+}
+
+function resizeBoard(){
+  const sz = getBoardSize();
+  canvas.width = canvas.height = sz;
+}
+
+function drawBoard(highlightRow=-1, highlightCol=-1, tryCol=-1, conflictCells=[]){
+  const sz = canvas.width;
+  const cs = sz / N; // cell size
+
+  // cells
+  for(let r=0;r<N;r++){
+    for(let c=0;c<N;c++){
+      const x=c*cs, y=r*cs;
+      const light=(r+c)%2===0;
+
+      // base color
+      let fillColor = light ? "#f0d9b5" : "#b58863";
+
+      // highlight current row
+      if(r===highlightRow){
+        fillColor = light ? "#cde4a0" : "#9acd70";
+      }
+      // highlight try cell
+      if(r===highlightRow && c===tryCol){
+        fillColor = "#7ec850";
+      }
+      // conflict cells
+      if(conflictCells.some(([cr,cc])=>cr===r&&cc===c)){
+        fillColor = light ? "#f4a4a0" : "#e07070";
+      }
+
+      ctx.fillStyle = fillColor;
+      ctx.fillRect(x,y,cs,cs);
+
+      // row/col labels
+      if(c===0){
+        ctx.fillStyle = light ? "#b58863" : "#f0d9b5";
+        ctx.font = `bold ${Math.max(9,cs*.18)}px JetBrains Mono`;
+        ctx.textAlign="left"; ctx.textBaseline="top";
+        ctx.fillText(r+1, x+3, y+3);
+      }
+      if(r===N-1){
+        ctx.fillStyle = light ? "#b58863" : "#f0d9b5";
+        ctx.font = `bold ${Math.max(9,cs*.18)}px JetBrains Mono`;
+        ctx.textAlign="right"; ctx.textBaseline="bottom";
+        ctx.fillText("ABCDEFGHIJKLMNOP"[c], x+cs-3, y+cs-3);
+      }
+    }
+  }
+
+  // attack lines from queens
+  if(highlightRow>=0 && tryCol>=0){
+    drawAttackLines(highlightRow, tryCol, cs);
+  }
+
+  // queens
+  for(let r=0;r<N;r++){
+    if(board[r]!=null){
+      drawQueen(r, board[r], cs, r===highlightRow ? "current" : "placed");
+    }
+  }
+
+  // grid lines
+  ctx.strokeStyle="rgba(0,0,0,.15)";
+  ctx.lineWidth=.5;
+  for(let i=0;i<=N;i++){
+    ctx.beginPath();ctx.moveTo(i*cs,0);ctx.lineTo(i*cs,sz);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(0,i*cs);ctx.lineTo(sz,i*cs);ctx.stroke();
+  }
+}
+
+function drawQueen(r,c,cs,type){
+  const x=c*cs+cs/2, y=r*cs+cs/2;
+  const sz2=cs*.72;
+
+  ctx.save();
+  // shadow
+  ctx.shadowColor="rgba(0,0,0,.5)";
+  ctx.shadowBlur=6;
+
+  // circle bg
+  if(type==="current"){
+    ctx.fillStyle="rgba(63,185,80,.85)";
+  } else if(type==="conflict"){
+    ctx.fillStyle="rgba(248,81,73,.85)";
+  } else {
+    ctx.fillStyle="rgba(30,30,30,.75)";
+  }
+  ctx.beginPath();ctx.arc(x,y,sz2/2,0,Math.PI*2);ctx.fill();
+  ctx.shadowBlur=0;
+
+  // queen emoji
+  ctx.font=`${sz2*.7}px serif`;
+  ctx.textAlign="center";ctx.textBaseline="middle";
+  ctx.fillStyle="#fff";
+  ctx.fillText("♛",x,y+sz2*.06);
+
+  ctx.restore();
+}
+
+function drawAttackLines(fromRow, fromCol, cs){
+  const x1=(fromCol+.5)*cs, y1=(fromRow+.5)*cs;
+
+  ctx.save();
+  ctx.globalAlpha=.25;
+  ctx.strokeStyle="#ff4444";
+  ctx.lineWidth=2;
+  ctx.setLineDash([4,4]);
+
+  // horizontal
+  ctx.beginPath();ctx.moveTo(0,y1);ctx.lineTo(canvas.width,y1);ctx.stroke();
+  // vertical
+  ctx.beginPath();ctx.moveTo(x1,0);ctx.lineTo(x1,canvas.height);ctx.stroke();
+  // diagonals
+  const len=canvas.width;
+  ctx.beginPath();ctx.moveTo(x1-len,y1-len);ctx.lineTo(x1+len,y1+len);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(x1+len,y1-len);ctx.lineTo(x1-len,y1+len);ctx.stroke();
+
+  ctx.restore();
+}
+
+/* ════════════════════════════════════════════════
+   STEP PRE-COMPUTATION
+════════════════════════════════════════════════ */
+function computeSteps(){
+  steps=[];
+  const b=new Array(N).fill(null);
+
+  function isSafe(row,col){
+    for(let r=0;r<row;r++){
+      if(b[r]===col) return false;
+      if(Math.abs(b[r]-col)===Math.abs(r-row)) return false;
+    }
+    return true;
+  }
+
+  function findConflicts(row,col){
+    const cells=[];
+    for(let r=0;r<row;r++){
+      if(b[r]===col||Math.abs(b[r]-col)===Math.abs(r-row)){
+        cells.push([r,b[r]]);
+      }
+    }
+    return cells;
+  }
+
+  function solve(row){
+    steps.push({type:"enter",row,board:[...b],codeLine:2});
+    if(row===N){
+      steps.push({type:"solution",board:[...b],codeLine:3});
+      return;
+    }
+    for(let col=0;col<N;col++){
+      steps.push({type:"try",row,col,board:[...b],codeLine:5});
+      const safe=isSafe(row,col);
+      if(safe){
+        b[row]=col;
+        steps.push({type:"place",row,col,board:[...b],codeLine:8});
+        solve(row+1);
+        b[row]=null;
+        steps.push({type:"remove",row,col,board:[...b],codeLine:11});
+      } else {
+        const conflicts=findConflicts(row,col);
+        steps.push({type:"conflict",row,col,board:[...b],conflicts,codeLine:7});
+      }
+    }
+    steps.push({type:"backtrack",row,board:[...b],codeLine:13});
+  }
+
+  solve(0);
+}
+
+/* ════════════════════════════════════════════════
+   APPLY STEP
+════════════════════════════════════════════════ */
+function applyStep(s){
+  board=[...s.board];
+  statSteps++;
+  document.getElementById("statSteps").textContent=statSteps;
+
+  let dotClass="running", msg="";
+  let hlRow=-1,hlCol=-1,tryCol=-1;
+  let conflicts=[];
+
+  if(s.type==="enter"){
+    hlRow=s.row; msg=`Satır ${s.row+1} işleniyor...`;
+    highlightCode(s.codeLine,"normal");
+    pushStack(s.row);
+    updateExplain("enter",s);
+  }
+  else if(s.type==="try"){
+    hlRow=s.row; tryCol=s.col;
+    msg=`Satır ${s.row+1}, Sütun ${s.col+1} (${"ABCDEFGHIJKLMNOP"[s.col]}) deneniyor`;
+    highlightCode(s.codeLine,"normal");
+    updateStats(s.row,s.col);
+    updateExplain("try",s);
+  }
+  else if(s.type==="conflict"){
+    statBack++;
+    document.getElementById("statBack").textContent=statBack;
+    hlRow=s.row; tryCol=s.col; conflicts=s.conflicts||[];
+    msg=`⚠ Çakışma! Satır ${s.row+1}, Sütun ${s.col+1} güvenli değil`;
+    highlightCode(s.codeLine,"red");
+    dotClass="backtrack";
+    addLog("conflict",s);
+    updateExplain("conflict",s);
+  }
+  else if(s.type==="place"){
+    hlRow=s.row;
+    msg=`✓ Vezir yerleştirildi → Satır ${s.row+1}, Sütun ${s.col+1}`;
+    highlightCode(s.codeLine,"normal");
+    addLog("place",s);
+    updateExplain("place",s);
+  }
+  else if(s.type==="remove"){
+    hlRow=s.row;
+    msg=`↩ Geri alındı → Satır ${s.row+1}, Sütun ${s.col+1}`;
+    highlightCode(s.codeLine,"red");
+    dotClass="backtrack";
+    popStack();
+    updateExplain("remove",s);
+  }
+  else if(s.type==="backtrack"){
+    msg=`↩ Satır ${s.row+1} tüm sütunlar denendi, geri dönülüyor`;
+    highlightCode(s.codeLine,"red");
+    dotClass="backtrack";
+    popStack();
+    updateExplain("backtrack",s);
+  }
+  else if(s.type==="solution"){
+    statSols++;
+    document.getElementById("statSols").textContent=statSols;
+    msg=`🎉 Çözüm ${statSols} bulundu!`;
+    highlightCode(s.codeLine,"normal");
+    dotClass="done";
+    solutions.push([...s.board]);
+    addSolutionMini([...s.board]);
+    addLog("solution",s);
+    updateExplain("solution",s);
+  }
+
+  document.getElementById("statDot").className="status-dot "+dotClass;
+  document.getElementById("statMsg").textContent=msg;
+  drawBoard(hlRow,hlRow>=0&&tryCol>=0?hlRow:-1,tryCol,conflicts);
+}
+
+/* ════════════════════════════════════════════════
+   CODE HIGHLIGHT
+════════════════════════════════════════════════ */
+function highlightCode(line,type){
+  for(let i=0;i<=13;i++){
+    const el=document.getElementById("cl"+i);
+    if(el) el.className="code-line";
+  }
+  const el=document.getElementById("cl"+line);
+  if(el) el.className="code-line "+(type==="red"?"hl-red":"hl");
+}
+
+/* ════════════════════════════════════════════════
+   CALL STACK
+════════════════════════════════════════════════ */
+let stack=[];
+function pushStack(row){
+  stack.push(row);
+  renderStack();
+}
+function popStack(){
+  stack.pop();
+  renderStack();
+}
+function renderStack(){
+  const el=document.getElementById("stackList");
+  if(!el) return;
+  const colors=["var(--green)","var(--blue)","var(--purple)","var(--yellow)","var(--red)","var(--cyan)"];
+  el.innerHTML=stack.slice().reverse().map((r,i)=>`
+    <div class="stack-item ${i===0?'current':''}">
+      <div class="stack-badge" style="background:${colors[r%colors.length]}22;color:${colors[r%colors.length]};border:1px solid ${colors[r%colors.length]}44;">${r+1}</div>
+      <div style="font-size:11px;">
+        <span style="color:var(--blue)">solve</span>(<span style="color:var(--yellow)">row=${r}</span>)
+        ${i===0?'<span style="color:var(--green);margin-left:6px;">← AKTIF</span>':''}
+      </div>
+    </div>
+  `).join("");
+}
+
+/* ════════════════════════════════════════════════
+   LOG
+════════════════════════════════════════════════ */
+function addLog(type,s){
+  const el=document.getElementById("logList");
+  if(!el) return;
+  const time=String(statSteps).padStart(4,"0");
+  let cls="log-try",msg="";
+  if(type==="place"){cls="log-place";msg=`♛ Yerleştirildi → [${s.row+1},${"ABCDEFGHIJKLMNOP"[s.col]}]`;}
+  else if(type==="solution"){cls="log-done";msg=`✓ ÇÖZÜM ${statSols} bulundu!`;}
+  else if(type==="conflict"){cls="log-back";msg=`✗ Çakışma [${s.row+1},${"ABCDEFGHIJKLMNOP"[s.col]}]`;}
+
+  const div=document.createElement("div");
+  div.className="log-entry";
+  div.innerHTML=`<span class="log-t">#${time}</span><span class="${cls}">${msg}</span>`;
+  el.insertBefore(div,el.firstChild);
+  if(el.children.length>60) el.removeChild(el.lastChild);
+}
+
+/* ════════════════════════════════════════════════
+   EXPLAIN
+════════════════════════════════════════════════ */
+function updateExplain(type,s){
+  const el=document.getElementById("currentExplain");
+  if(!el) return;
+  const msgs={
+    enter:`<b>Satır ${s.row+1}</b> için sütunlar sırayla deneniyor. ${s.row} vezir zaten yerleştirilmiş.`,
+    try:`<b>Sütun ${s.col+1} (${" ABCDEFGHIJKLMNOP"[s.col]})</b> deneniyor. Bu pozisyon güvenli mi?`,
+    conflict:`<b>Çakışma!</b> Bu pozisyon zaten yerleştirilmiş bir vezirle çakışıyor. Bir sonraki sütuna geç.`,
+    place:`<b>Güvenli!</b> Satır ${s.row+1}, Sütun ${s.col+1} pozisyonuna vezir yerleştirildi. Özyinelemeli çağrı yapılıyor.`,
+    remove:`<b>Geri alındı.</b> Bu sütundan ilerleme olmadı. Vezir kaldırılıyor, sonraki sütun denenecek.`,
+    backtrack:`<b>Çıkmaz!</b> Satır ${s.row+1} için hiçbir sütun çalışmadı. Bir üst satıra dönülüyor.`,
+    solution:`<b>🎉 Çözüm ${statSols} bulundu!</b> Tüm ${N} vezir başarıyla yerleştirildi.`,
+  };
+  el.innerHTML=`<div class="explain-step" style="border-color:rgba(63,185,80,.3);background:rgba(63,185,80,.04);">
+    <h4>ŞU AN NE OLUYOR?</h4>
+    <p>${msgs[type]||""}</p>
+  </div>`;
+}
+
+/* ════════════════════════════════════════════════
+   SOLUTIONS MINI GALLERY
+════════════════════════════════════════════════ */
+function addSolutionMini(sol){
+  const wrap=document.getElementById("solGrid");
+  document.getElementById("solCount").textContent=solutions.length;
+  const div=document.createElement("div");
+  div.className="sol-mini";
+  div.title=`Çözüm ${solutions.length} - görüntülemek için tıkla`;
+  const mc=document.createElement("canvas");
+  mc.width=mc.height=N*8;
+  div.appendChild(mc);
+  const mctx=mc.getContext("2d");
+  const cs=mc.width/N;
+  for(let r=0;r<N;r++){
+    for(let c=0;c<N;c++){
+      mctx.fillStyle=(r+c)%2===0?"#f0d9b5":"#b58863";
+      mctx.fillRect(c*cs,r*cs,cs,cs);
+    }
+    if(sol[r]!=null){
+      mctx.fillStyle="#2ea043";
+      mctx.fillRect(sol[r]*cs+1,r*cs+1,cs-2,cs-2);
+      mctx.fillStyle="#fff";
+      mctx.font=`${cs*.8}px serif`;
+      mctx.textAlign="center";mctx.textBaseline="middle";
+      mctx.fillText("♛",(sol[r]+.5)*cs,(r+.5)*cs+cs*.05);
+    }
+  }
+  // Click to preview on board
+  div.onclick=()=>{
+    board=[...sol];
+    drawBoard();
+    document.getElementById("statMsg").textContent=`Çözüm ${solutions.indexOf(sol)+1} gösteriliyor`;
+  };
+  wrap.appendChild(div);
+}
+
+/* ════════════════════════════════════════════════
+   CONTROLS
+════════════════════════════════════════════════ */
+function getDelay(){
+  const v=parseInt(document.getElementById("speedSlider").value);
+  // v=1 → 800ms, v=10 → 10ms
+  return Math.round(800 / (v*v*.15+.85));
+}
+
+function startAnim(){
+  if(running) return;
+  if(stepIdx===0){
+    computeSteps();
+    statSteps=0;statBack=0;statSols=0;
+    solutions=[];logs=[];stack=[];
+    document.getElementById("statSteps").textContent=0;
+    document.getElementById("statBack").textContent=0;
+    document.getElementById("statSols").textContent=0;
+    document.getElementById("stackList").innerHTML="";
+    document.getElementById("logList").innerHTML="";
+    document.getElementById("solGrid").innerHTML="";
+    document.getElementById("solCount").textContent=0;
+  }
+  running=true;
+  document.getElementById("btnStart").disabled=true;
+  document.getElementById("btnStop").disabled=false;
+  document.getElementById("btnStep").disabled=false;
+  tick();
+}
+
+function tick(){
+  if(!running) return;
+  if(stepIdx>=steps.length){
+    onDone(); return;
+  }
+  applyStep(steps[stepIdx++]);
+  animTimer=setTimeout(tick, getDelay());
+}
+
+function stopAnim(){
+  running=false;
+  clearTimeout(animTimer);
+  document.getElementById("btnStart").disabled=false;
+  document.getElementById("btnStop").disabled=true;
+  document.getElementById("statDot").className="status-dot";
+  document.getElementById("statMsg").textContent="Duraklatıldı — devam için ▶ BAŞLAT";
+}
+
+function stepOnce(){
+  if(steps.length===0){computeSteps();}
+  if(stepIdx>=steps.length){onDone();return;}
+  applyStep(steps[stepIdx++]);
+}
+
+function onDone(){
+  running=false;
+  clearTimeout(animTimer);
+  document.getElementById("btnStart").disabled=true;
+  document.getElementById("btnStop").disabled=true;
+  document.getElementById("statDot").className="status-dot done";
+  document.getElementById("statMsg").textContent=`✓ Tamamlandı! ${statSols} çözüm bulundu, ${statSteps} adım atıldı.`;
+}
+
+function resetAll(){
+  running=false;
+  clearTimeout(animTimer);
+  stepIdx=0; steps=[];
+  board=new Array(N).fill(null);
+  statSteps=0;statBack=0;statSols=0;solutions=[];stack=[];
+  document.getElementById("statSteps").textContent=0;
+  document.getElementById("statBack").textContent=0;
+  document.getElementById("statSols").textContent=0;
+  document.getElementById("statRow").textContent="—";
+  document.getElementById("statCol").textContent="—";
+  document.getElementById("stackList").innerHTML="";
+  document.getElementById("logList").innerHTML="";
+  document.getElementById("solGrid").innerHTML="";
+  document.getElementById("solCount").textContent=0;
+  document.getElementById("btnStart").disabled=false;
+  document.getElementById("btnStop").disabled=true;
+  document.getElementById("btnStep").disabled=true;
+  document.getElementById("statDot").className="status-dot";
+  document.getElementById("statMsg").textContent="Başlatmak için ▶ BAŞLAT butonuna basın";
+  document.getElementById("currentExplain").innerHTML="";
+  for(let i=0;i<=13;i++){const e=document.getElementById("cl"+i);if(e)e.className="code-line";}
+  drawBoard();
+}
+
+function updateStats(row,col){
+  document.getElementById("statRow").textContent=row+1;
+  document.getElementById("statCol").textContent="ABCDEFGHIJKLMNOP"[col]+" ("+(col+1)+")";
+}
+
+function changeN(d){
+  const newN=Math.max(4,Math.min(12,N+d));
+  if(newN===N) return;
+  N=newN;
+  document.getElementById("nVal").textContent=N;
+  resetAll();
+  resizeBoard();
+  drawBoard();
+}
+
+function showTab(name){
+  document.querySelectorAll(".tab-pane").forEach(p=>p.classList.remove("active"));
+  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+  document.getElementById("tab-"+name).classList.add("active");
+  event.currentTarget.classList.add("active");
+}
+
+document.getElementById("speedSlider").addEventListener("input",function(){
+  document.getElementById("speedLabel").textContent=this.value+"×";
+});
+
+/* ── INIT ── */
+window.addEventListener("resize",()=>{resizeBoard();drawBoard();});
+resizeBoard();
+drawBoard();
+</script>
+</body>
+</html>
