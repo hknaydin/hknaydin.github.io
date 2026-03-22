@@ -8,6 +8,89 @@
 	<!-- Latest compiled and minified CSS -->
 	<link rel="stylesheet" href="css/bootstrap.min.css">
 	<link rel="stylesheet" href="css/index.css">
+	<style>
+		/* ===== MATRIX 3D CUBE ===== */
+		.hero-wrapper {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			gap: 40px;
+			padding: 20px 0;
+		}
+
+		.cube-scene {
+			width: 90px;
+			height: 90px;
+			perspective: 400px;
+			flex-shrink: 0;
+		}
+
+		.cube {
+			width: 90px;
+			height: 90px;
+			position: relative;
+			transform-style: preserve-3d;
+			animation: spinCube 6s linear infinite;
+		}
+
+		.cube-right {
+			animation-direction: reverse;
+		}
+
+		.cube__face {
+			position: absolute;
+			width: 90px;
+			height: 90px;
+			border: 1px solid rgba(0, 255, 65, .35);
+			box-shadow: 0 0 18px rgba(0, 255, 65, .25), inset 0 0 10px rgba(0, 255, 65, .08);
+			overflow: hidden;
+			border-radius: 2px;
+		}
+
+		.cube__face canvas {
+			position: absolute;
+			inset: 0;
+			display: block;
+		}
+
+		.cube__face--front {
+			transform: rotateY(0deg) translateZ(45px);
+		}
+
+		.cube__face--back {
+			transform: rotateY(180deg) translateZ(45px);
+		}
+
+		.cube__face--right {
+			transform: rotateY(90deg) translateZ(45px);
+		}
+
+		.cube__face--left {
+			transform: rotateY(-90deg) translateZ(45px);
+		}
+
+		.cube__face--top {
+			transform: rotateX(90deg) translateZ(45px);
+		}
+
+		.cube__face--bottom {
+			transform: rotateX(-90deg) translateZ(45px);
+		}
+
+		@keyframes spinCube {
+			0% {
+				transform: rotateX(-18deg) rotateY(0deg);
+			}
+
+			100% {
+				transform: rotateX(-18deg) rotateY(360deg);
+			}
+		}
+
+		.cube-right {
+			animation-direction: reverse;
+		}
+	</style>
 	<link href="css/font-awesome.min.css" rel="stylesheet">
 
 	<!-- jQuery library -->
@@ -42,8 +125,37 @@
 
 
 			<div class="jumbotron">
-				<h1><strong>Hakan AYDIN</strong></h1>
-				<h2>Computer Engineer</h2>
+				<div class="hero-wrapper">
+					<!-- Left Cube -->
+					<div class="cube-scene">
+						<div class="cube cube-left" id="cube-left">
+							<div class="cube__face cube__face--front"><canvas></canvas></div>
+							<div class="cube__face cube__face--back"><canvas></canvas></div>
+							<div class="cube__face cube__face--right"><canvas></canvas></div>
+							<div class="cube__face cube__face--left"><canvas></canvas></div>
+							<div class="cube__face cube__face--top"><canvas></canvas></div>
+							<div class="cube__face cube__face--bottom"><canvas></canvas></div>
+						</div>
+					</div>
+
+					<!-- Title -->
+					<div>
+						<h1><strong>Hakan AYDIN</strong></h1>
+						<h2>Computer Engineer</h2>
+					</div>
+
+					<!-- Right Cube -->
+					<div class="cube-scene">
+						<div class="cube cube-right" id="cube-right">
+							<div class="cube__face cube__face--front"><canvas></canvas></div>
+							<div class="cube__face cube__face--back"><canvas></canvas></div>
+							<div class="cube__face cube__face--right"><canvas></canvas></div>
+							<div class="cube__face cube__face--left"><canvas></canvas></div>
+							<div class="cube__face cube__face--top"><canvas></canvas></div>
+							<div class="cube__face cube__face--bottom"><canvas></canvas></div>
+						</div>
+					</div>
+				</div>
 			</div>
 
 
@@ -173,6 +285,44 @@
 	<!-- SHA-256 for secure client-side hashing -->
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/js-sha256/0.9.0/sha256.min.js"></script>
 	<script src="js/matrix.js"></script>
+	<script>
+		/* ===== MATRIX RAIN ON CUBE FACES ===== */
+		(function () {
+			var chars = '日ﾊﾐﾋｰｳｼﾅﾓﾆｻﾜﾂｵﾘｱﾎﾃﾏｹﾒｴｶｷﾑﾕﾗｾﾈｽﾀﾇﾍ01234567890$+-*/【】<>';
+			var FONT = 9;          // px — font size & column width
+			var SPEED = 50;        // ms per frame (≈20 fps)
+
+			function initFaceCanvas(canvas) {
+				var W = canvas.offsetWidth || 90;
+				var H = canvas.offsetHeight || 90;
+				canvas.width = W;
+				canvas.height = H;
+				var ctx = canvas.getContext('2d');
+				var cols = Math.floor(W / FONT);
+				var drops = [];
+				for (var i = 0; i < cols; i++) drops[i] = Math.random() * -H / FONT | 0;
+
+				return setInterval(function () {
+					ctx.fillStyle = 'rgba(0,0,0,0.13)';
+					ctx.fillRect(0, 0, W, H);
+					ctx.fillStyle = '#00ff41';
+					ctx.font = FONT + 'px monospace';
+					for (var c = 0; c < cols; c++) {
+						var ch = chars[Math.random() * chars.length | 0];
+						ctx.fillText(ch, c * FONT, drops[c] * FONT);
+						if (drops[c] * FONT > H && Math.random() > 0.975) drops[c] = 0;
+						drops[c]++;
+					}
+				}, SPEED);
+			}
+
+			window.addEventListener('DOMContentLoaded', function () {
+				document.querySelectorAll('.cube__face canvas').forEach(function (cv) {
+					initFaceCanvas(cv);
+				});
+			});
+		})();
+	</script>
 	<script src="js/auth.js"></script>
 </body>
 <footer class="footer text-center ">
